@@ -1,0 +1,41 @@
+/* Custom Scrollbar Hide */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Watermark Text untuk Struk Digital Otentik */
+.receipt-watermark-box {
+    position: relative;
+    overflow: hidden;
+}
+
+.watermark-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: rgba(217, 119, 6, 0.12);
+    pointer-events: none;
+    user-select: none;
+    letter-spacing: 0.2em;
+    border: 6px dashed rgba(217, 119, 6, 0.15);
+    padding: 0.2rem 1.5rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+}
+
+/* Print Rules */
+@media print {
+    body * { visibility: hidden; }
+    #printable-area, #printable-area * { visibility: visible; }
+    #printable-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 320px;
+        padding: 10px;
+        font-family: monospace;
+    }
+}
