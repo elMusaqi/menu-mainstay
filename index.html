@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="app-page-title">Mainstay Drink Shop - POS & Order System</title>
+    
+    <!-- Dynamic Favicon & Apple Touch Icon -->
+    <link id="dynamic-favicon" rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3081/3081162.png">
+    <link id="dynamic-apple-touch" rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081162.png">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        themebrand: {
+                            50: 'var(--color-brand-50, #fffbe3)',
+                            100: 'var(--color-brand-100, #fef3c7)',
+                            400: 'var(--color-brand-400, #fbbf24)',
+                            500: 'var(--color-brand-500, #f59e0b)',
+                            600: 'var(--color-brand-600, #d97706)',
+                            700: 'var(--color-brand-700, #b45309)',
+                            900: 'var(--color-brand-900, #78350f)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome & Chart.js & QR Engine & Render PNG -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Firebase SDK v9 (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans min-h-screen pb-20">
+
+    <!-- HEADER & ROLE NAVIGATION BAR -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div id="app-logo-box" class="w-10 h-10 rounded-xl bg-themebrand-500 flex items-center justify-center overflow-hidden shadow">
+                    <img id="app-logo-img" src="" class="w-full h-full object-cover hidden">
+                    <i id="app-logo-icon" class="fa-solid fa-mug-hot text-slate-950 text-xl"></i>
+                </div>
+                <div>
+                    <h1 id="app-resto-name" class="font-black text-sm sm:text-base leading-tight text-white">Mainstay Drink Shop</h1>
+                    <p id="live-clock-display" class="text-[10px] text-themebrand-400 font-bold">Memuat waktu...</p>
+                </div>
+            </div>
+            
+            <!-- Switch Role Buttons -->
+            <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-2xl border border-slate-700">
+                <button type="button" id="btn-role-customer" onclick="setRole('customer')" class="nav-tab-btn active px-3 py-1.5 rounded-xl text-xs font-black">Customer</button>
+                <button type="button" id="btn-role-kasir" onclick="setRole('kasir')" class="nav-tab-btn px-3 py-1.5 rounded-xl text-xs font-black relative">
+                    Kasir <span id="badge-pending-orders" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+                </button>
+                <button type="button" id="btn-role-owner" onclick="requestAccess('owner')" class="nav-tab-btn px-3 py-1.5 rounded-xl text-xs font-black">Owner</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTAINER TAMPILAN APLIKASI -->
+    <main class="max-w-4xl mx-auto p-3 sm:p-4">
+
+        <!-- VIEW 1: CUSTOMER CATALOG & ORDER -->
+        <section id="view-customer" class="space-y-4">
+            
+            <!-- CAROUSEL BANNER IKLAN / PROMO -->
+            <div class="relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-lg">
+                <div id="carousel-slides" class="flex transition-transform duration-500 ease-out"></div>
+                <div id="carousel-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10"></div>
+            </div>
+
+            <!-- CARD BENEFIT JOIN MEMBER VIP (NEW) -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 p-4 rounded-3xl text-white shadow-md border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="space-y-1 text-center sm:text-left">
+                    <span class="inline-block px-2.5 py-0.5 bg-amber-400 text-slate-950 font-black rounded-lg text-[9px] uppercase tracking-wider">MEMBER VIP GRATIS</span>
+                    <h3 class="font-black text-sm sm:text-base text-amber-300">Dapatkan Promo Rahasia & Diskon Spesial!</h3>
+                    <p class="text-[11px] text-slate-300">Gabung Komunitas VIP WA kami dalam 1-Klik untuk info promo terbatas.</p>
+                </div>
+                <button type="button" onclick="openJoinMemberModal()" class="btn-press px-4 py-2 bg-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-md whitespace-nowrap shrink-0">
+                    <i class="fa-solid fa-crown mr-1"></i> Join Member Now
+                </button>
+            </div>
+
+            <!-- SEARCH & FILTER KATEGORI -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="cust-search" onkeyup="renderCustomerMenu()" placeholder="Cari menu favorit Anda..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-themebrand-500">
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <div id="cust-categories" class="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1"></div>
+                    <div class="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-slate-50 shrink-0">
+                        <button type="button" id="btn-cust-grid" onclick="setCustomerLayout('grid')" class="p-1.5 rounded-lg text-xs text-themebrand-600 bg-themebrand-100 font-bold"><i class="fa-solid fa-border-all"></i></button>
+                        <button type="button" id="btn-cust-list" onclick="setCustomerLayout('list')" class="p-1.5 rounded-lg text-xs text-slate-400 font-bold"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KATALOG MENU GRID / LIST -->
+            <div id="cust-menu-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        </section>
+
+        <!-- VIEW 2: KASIR POS & KITCHEN PIPELINE -->
+        <section id="view-kasir" class="hidden space-y-4">
+            <!-- SUB TAB KASIR -->
+            <div class="flex items-center justify-between bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-kasir-pos" onclick="setKasirSubTab('pos')" class="sub-tab-btn active px-4 py-2 rounded-xl text-xs font-bold">POS / Order Baru</button>
+                    <button type="button" id="btn-kasir-kitchen" onclick="setKasirSubTab('kitchen')" class="sub-tab-btn px-4 py-2 rounded-xl text-xs font-bold relative">
+                        Antrean Dapur <span id="badge-kitchen-kitchen" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+                    </button>
+                </div>
+                <button type="button" id="btn-kasir-lock" onclick="toggleKasirLockMode()" class="btn-press px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-themebrand-400 border border-slate-800">
+                    <i class="fa-solid fa-lock-open mr-1"></i> Kunci Kasir
+                </button>
+            </div>
+
+            <!-- KASIR POS CONTENT -->
+            <div id="kasir-pos-content" class="space-y-3">
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+                    <input type="text" id="kasir-search" onkeyup="renderKasirMenu()" placeholder="Cari menu kasir..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                    <div class="flex items-center gap-1 border rounded-xl p-1 bg-slate-50 shrink-0">
+                        <button type="button" id="btn-kasir-grid" onclick="setKasirLayout('grid')" class="p-1.5 rounded-lg text-xs text-themebrand-600 bg-themebrand-100 font-bold"><i class="fa-solid fa-border-all"></i></button>
+                        <button type="button" id="btn-kasir-list" onclick="setKasirLayout('list')" class="p-1.5 rounded-lg text-xs text-slate-400 font-bold"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+                <div id="kasir-menu-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+            </div>
+
+            <!-- KASIR KITCHEN PIPELINE CONTENT -->
+            <div id="kasir-kitchen-content" class="hidden space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <!-- Column 1: Pending Order -->
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="font-extrabold text-xs text-amber-600"><i class="fa-solid fa-clock mr-1"></i> Pesanan Masuk</span>
+                            <span id="cnt-pending" class="bg-amber-100 text-amber-800 font-black text-[10px] px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <div id="list-pending" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <!-- Column 2: Cooking / Sedang Dibuat -->
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="font-extrabold text-xs text-blue-600"><i class="fa-solid fa-fire-burner mr-1"></i> Sedang Dibuat</span>
+                            <span id="cnt-cooking" class="bg-blue-100 text-blue-800 font-black text-[10px] px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <div id="list-cooking" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <!-- Column 3: Completed / Selesai -->
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="font-extrabold text-xs text-emerald-600"><i class="fa-solid fa-circle-check mr-1"></i> Selesai Siap Ambil</span>
+                            <span id="cnt-completed" class="bg-emerald-100 text-emerald-800 font-black text-[10px] px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <div id="list-completed" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: DASHBOARD OWNER MASTER -->
+        <section id="view-owner" class="hidden space-y-4">
+            <!-- STATISTIK RINGKASAN & GRAFIK -->
+            <div class="bg-slate-900 text-white p-4 sm:p-5 rounded-3xl shadow-md border border-slate-800 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-black text-base text-white">Dashboard Kontrol Owner</h2>
+                        <p class="text-[10px] text-slate-400">Monitoring omset & manajemen toko terpusat</p>
+                    </div>
+                    <select id="stat-range-filter" onchange="updateOwnerStats()" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none">
+                        <option value="today">Hari Ini</option>
+                        <option value="7days">7 Hari Terakhir</option>
+                        <option value="30days">30 Hari Terakhir</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] text-slate-400 font-bold">TOTAL OMSET</p>
+                        <p id="stat-revenue" class="font-black text-sm sm:text-base text-amber-400 mt-0.5">Rp 0</p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] text-slate-400 font-bold">TOTAL ORDER</p>
+                        <p id="stat-orders-count" class="font-black text-sm sm:text-base text-white mt-0.5">0 Order</p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] text-slate-400 font-bold">MENU AKTIF</p>
+                        <p id="stat-menu-count" class="font-black text-sm sm:text-base text-white mt-0.5">0 Item</p>
+                    </div>
+                </div>
+
+                <!-- CANVAS GRAFIK CHART.JS -->
+                <div class="h-44 w-full bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- TAB OWNER NAVIGATION -->
+            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+                <button type="button" id="tab-owner-branding" onclick="setOwnerTab('branding')" class="owner-tab-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Branding & Logo</button>
+                <button type="button" id="tab-owner-members" onclick="setOwnerTab('members')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap relative">
+                    Database Member
+                </button>
+                <button type="button" id="tab-owner-inventory" onclick="setOwnerTab('inventory')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Kelola Menu</button>
+                <button type="button" id="tab-owner-banners" onclick="setOwnerTab('banners')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Banner Iklan</button>
+                <button type="button" id="tab-owner-staffhrm" onclick="setOwnerTab('staffhrm')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Staf & HRM</button>
+                <button type="button" id="tab-owner-attendancelog" onclick="setOwnerTab('attendancelog')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Log Absensi</button>
+                <button type="button" id="tab-owner-ownerprofile" onclick="setOwnerTab('ownerprofile')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Profil Owner</button>
+                <button type="button" id="tab-owner-categories" onclick="setOwnerTab('categories')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Kategori Menu</button>
+                <button type="button" id="tab-owner-flashsale" onclick="setOwnerTab('flashsale')" class="owner-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">Flash Sale</button>
+            </div>
+
+            <!-- TAB CONTENT 1: BRANDING, LOGO, FAVICON & LINK CUSTOM -->
+            <div id="owner-content-branding" class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-extrabold text-sm text-slate-900 border-b pb-2"><i class="fa-solid fa-palette text-amber-500 mr-2"></i> Pengaturan Branding, Logo & Kontak Toko</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Nama Toko / Resto:</label>
+                        <input type="text" id="cfg-resto-name" placeholder="Mainstay Drink Shop" class="w-full p-2.5 bg-slate-50 border rounded-xl font-semibold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Nomor WA Resto (Kasir Utama):</label>
+                        <input type="text" id="cfg-resto-phone" placeholder="6281234567890" class="w-full p-2.5 bg-slate-50 border rounded-xl font-semibold">
+                    </div>
+
+                    <!-- LINK SALURAN / GROUP WA MEMBER (NEW) -->
+                    <div class="col-span-full space-y-1 bg-amber-50 p-3 rounded-2xl border border-amber-200">
+                        <label class="font-black text-amber-900"><i class="fa-brands fa-whatsapp text-emerald-600 mr-1"></i> Link Saluran / Group WA Member (Direct Join):</label>
+                        <input type="url" id="cfg-broadcast-wa-link" placeholder="https://chat.whatsapp.com/... ATAU https://whatsapp.com/channel/..." class="w-full p-2.5 bg-white border border-amber-300 rounded-xl font-semibold">
+                        <p class="text-[10px] text-amber-700 font-medium">Customer yang menekan tombol Join Member akan otomatis langsung diarahkan ke Link WA ini.</p>
+                    </div>
+
+                    <!-- LOGO TOKO (DUAL SOURCE: UPLOAD & URL) -->
+                    <div class="space-y-1 bg-slate-50 p-3 rounded-2xl border">
+                        <label class="font-bold text-slate-700">Logo Toko Utama:</label>
+                        <input type="text" id="cfg-logo-url" placeholder="https://..." class="w-full p-2 bg-white border rounded-xl text-xs mb-1">
+                        <input type="file" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-logo-url')" class="w-full text-[10px] text-slate-500">
+                    </div>
+
+                    <!-- FAVICON / APP ICON (DUAL SOURCE) -->
+                    <div class="space-y-1 bg-slate-50 p-3 rounded-2xl border">
+                        <label class="font-bold text-slate-700">Icon Aplikasi & Favicon Browser:</label>
+                        <input type="text" id="cfg-app-icon-url" placeholder="https://..." class="w-full p-2 bg-white border rounded-xl text-xs mb-1">
+                        <input type="file" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-app-icon-url')" class="w-full text-[10px] text-slate-500">
+                    </div>
+
+                    <!-- WARNA TEMA APLIKASI -->
+                    <div class="col-span-full space-y-1">
+                        <label class="font-bold text-slate-700">Pilihan Warna Akses Aksen Aplikasi:</label>
+                        <select id="cfg-theme-color" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold">
+                            <option value="amber">Amber Gold (Default Warm)</option>
+                            <option value="emerald">Emerald Green (Fresh)</option>
+                            <option value="blue">Royal Blue (Modern)</option>
+                            <option value="rose">Rose Pink (Sweet)</option>
+                        </select>
+                    </div>
+
+                    <!-- MEDIA SOSIAL & PLATFORM DELIVERY -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Link GrabFood:</label>
+                        <input type="url" id="cfg-link-grab" placeholder="https://grab.com/..." class="w-full p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Link GoFood:</label>
+                        <input type="url" id="cfg-link-gofood" placeholder="https://gofood.link/..." class="w-full p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Link Instagram:</label>
+                        <input type="url" id="cfg-link-ig" placeholder="https://instagram.com/..." class="w-full p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Link TikTok:</label>
+                        <input type="url" id="cfg-link-tiktok" placeholder="https://tiktok.com/..." class="w-full p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                </div>
+
+                <button type="button" onclick="saveBrandingConfig(this)" class="btn-press w-full py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl text-xs shadow-md">
+                    Simpan Semua Pengaturan Branding
+                </button>
+            </div>
+
+            <!-- TAB CONTENT 2: DATABASE MEMBER REAL-TIME (NEW) -->
+            <div id="owner-content-members" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b pb-2">
+                    <div>
+                        <h3 class="font-extrabold text-sm text-slate-900"><i class="fa-solid fa-users text-amber-500 mr-2"></i> Database Member Terdaftar</h3>
+                        <p class="text-[10px] text-slate-400">Data terakumulasi otomatis secara real-time dari registrasi customer</p>
+                    </div>
+                    <span id="cnt-total-members" class="bg-amber-100 text-amber-900 font-black text-xs px-3 py-1 rounded-full">0 Member</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 border-b">
+                                <th class="p-2 font-extrabold">Nama Lengkap</th>
+                                <th class="p-2 font-extrabold">No. WhatsApp</th>
+                                <th class="p-2 font-extrabold">Waktu Bergabung</th>
+                                <th class="p-2 font-extrabold text-center">Aksi WA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="owner-members-tbody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT 3: KELOLA MENU & INVENTORY -->
+            <div id="owner-content-inventory" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-extrabold text-sm text-slate-900 border-b pb-2"><i class="fa-solid fa-boxes-stacked text-amber-500 mr-2"></i> Tambah & Kelola Daftar Menu</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-2xl border">
+                    <input type="text" id="menu-name" placeholder="Nama Menu Minuman" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <select id="menu-category" class="p-2.5 bg-white border rounded-xl font-bold"></select>
+                    <input type="number" id="menu-price" placeholder="Harga Jual (Rp)" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    
+                    <!-- DUAL SOURCE GAMBAR MENU -->
+                    <div class="space-y-1">
+                        <input type="text" id="menu-img" placeholder="URL Foto Menu (https://...)" class="w-full p-2 bg-white border rounded-xl">
+                        <input type="file" accept="image/*" onchange="handleDualFileUpload(event, 'menu-img')" class="w-full text-[10px] text-slate-500">
+                    </div>
+
+                    <input type="text" id="menu-desc" placeholder="Deskripsi Singkat Menu" class="col-span-full p-2.5 bg-white border rounded-xl font-semibold">
+                    
+                    <div class="col-span-full flex flex-wrap gap-4 pt-1 font-bold text-slate-700">
+                        <label class="flex items-center gap-1.5"><input type="checkbox" id="m-opt-ice" checked> Opsi Es</label>
+                        <label class="flex items-center gap-1.5"><input type="checkbox" id="m-opt-sugar" checked> Opsi Gula</label>
+                        <label class="flex items-center gap-1.5"><input type="checkbox" id="m-opt-hot"> Opsi Hangat</label>
+                        <label class="flex items-center gap-1.5"><input type="checkbox" id="m-opt-boba" checked> Extra Boba</label>
+                    </div>
+
+                    <button type="button" onclick="submitMenuItem(this)" class="col-span-full btn-press py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl text-xs shadow-md">
+                        + Tambahkan Menu Ke Katalog
+                    </button>
+                </div>
+
+                <div id="owner-inventory-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+
+            <!-- TAB CONTENT 4: BANNER IKLAN CAROUSEL -->
+            <div id="owner-content-banners" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-extrabold text-sm text-slate-900 border-b pb-2"><i class="fa-solid fa-images text-amber-500 mr-2"></i> Banner Promo Carousel</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-2xl border">
+                    <input type="text" id="banner-tag" placeholder="Tag Banner (misal: 🔥 PROMO)" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="text" id="banner-title" placeholder="Judul Banner" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="text" id="banner-desc" placeholder="Deskripsi Banner" class="col-span-full p-2.5 bg-white border rounded-xl font-semibold">
+                    <div class="col-span-full space-y-1">
+                        <input type="text" id="banner-img" placeholder="URL Background Gambar Banner" class="w-full p-2 bg-white border rounded-xl">
+                        <input type="file" accept="image/*" onchange="handleDualFileUpload(event, 'banner-img')" class="w-full text-[10px] text-slate-500">
+                    </div>
+                    <button type="button" onclick="submitBannerItem(this)" class="col-span-full btn-press py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl text-xs shadow">
+                        + Tambahkan Banner
+                    </button>
+                </div>
+                <div id="owner-banners-list" class="space-y-2"></div>
+            </div>
+
+            <!-- TAB CONTENT 5: STAF HRM & PENGGAJIAN -->
+            <div id="owner-content-staffhrm" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b pb-2">
+                    <h3 id="hrm-form-title" class="font-extrabold text-sm text-slate-900"><i class="fa-solid fa-users-gear text-amber-500 mr-2"></i> Manajemen Staf & Shift HRM</h3>
+                    <button type="button" id="btn-cancel-edit-staff" onclick="resetStaffForm()" class="hidden text-xs text-rose-600 font-bold">Batal Edit</button>
+                </div>
+
+                <input type="hidden" id="hrm-editing-id">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-2xl border">
+                    <input type="text" id="hrm-staff-name" placeholder="Nama Staf Kasir" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="text" id="hrm-staff-phone" placeholder="Nomor WA Staf" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="password" id="hrm-staff-pin" placeholder="PIN Akses Kasir (4 Angka)" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Foto Profil Staf:</label>
+                        <input type="text" id="hrm-staff-photo" placeholder="https://..." class="w-full p-2 bg-white border rounded-xl text-xs">
+                        <input type="file" accept="image/*" onchange="handleDualFileUpload(event, 'hrm-staff-photo')" class="w-full text-[10px] text-slate-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Shift Jam Masuk:</label>
+                        <input type="time" id="hrm-shift-in" value="08:00" class="w-full p-2 bg-white border rounded-xl font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Shift Jam Pulang:</label>
+                        <input type="time" id="hrm-shift-out" value="16:00" class="w-full p-2 bg-white border rounded-xl font-bold">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Toleransi Terlambat (Menit):</label>
+                        <input type="number" id="hrm-shift-tolerance" value="15" class="w-full p-2 bg-white border rounded-xl font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Sistem Gaji:</label>
+                        <select id="hrm-salary-type" class="w-full p-2 bg-white border rounded-xl font-bold">
+                            <option value="daily">Harian</option>
+                            <option value="monthly">Bulanan</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-700">Nominal Gaji Pokok (Rp):</label>
+                        <input type="number" id="hrm-salary-rate" placeholder="80000" class="w-full p-2 bg-white border rounded-xl font-bold">
+                    </div>
+
+                    <button type="button" id="btn-submit-staff" onclick="submitStaffProfile(this)" class="col-span-full btn-press py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl text-xs shadow-md">
+                        + Simpan Profil Staf
+                    </button>
+                </div>
+
+                <div id="hrm-staff-list" class="space-y-2"></div>
+            </div>
+
+            <!-- TAB CONTENT 6: LOG ABSENSI KAMERA LIVE -->
+            <div id="owner-content-attendancelog" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b pb-2">
+                    <h3 class="font-extrabold text-sm text-slate-900"><i class="fa-solid fa-camera text-amber-500 mr-2"></i> Log Absensi Foto Staf</h3>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openDirectCameraAttendance()" class="btn-press px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow"><i class="fa-solid fa-camera mr-1"></i> Buka Absensi</button>
+                        <button type="button" onclick="exportAttendanceCSV()" class="btn-press px-3 py-1.5 bg-slate-900 text-themebrand-400 font-bold rounded-xl text-xs shadow"><i class="fa-solid fa-file-csv mr-1"></i> Export CSV</button>
+                    </div>
+                </div>
+                <div id="owner-attendance-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+            </div>
+
+            <!-- TAB CONTENT 7: PROFIL OWNER MASTER & QRIS -->
+            <div id="owner-content-ownerprofile" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-extrabold text-sm text-slate-900 border-b pb-2"><i class="fa-solid fa-user-shield text-amber-500 mr-2"></i> Profil Owner & Rekening / QRIS Toko</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-2xl border">
+                    <input type="text" id="ow-name" placeholder="Nama Owner Master" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="password" id="ow-pin" placeholder="PIN Master Owner (Default: 9999)" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="text" id="ow-bank" placeholder="Nama Bank / E-Wallet" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <input type="text" id="ow-rekening" placeholder="Nomor Rekening" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    
+                    <div class="col-span-full space-y-1">
+                        <label class="font-bold text-slate-700">Gambar QRIS Toko (Dual Source):</label>
+                        <input type="text" id="cfg-ow-qris-url" placeholder="https://..." class="w-full p-2 bg-white border rounded-xl text-xs">
+                        <input type="file" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-ow-qris-url')" class="w-full text-[10px] text-slate-500">
+                    </div>
+
+                    <button type="button" onclick="saveOwnerProfile(this)" class="col-span-full btn-press py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl text-xs shadow">
+                        Simpan Profil Owner
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT 8: KATEGORI & FLASH SALE -->
+            <div id="owner-content-categories" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-extrabold text-sm text-slate-900 border-b pb-2"><i class="fa-solid fa-list text-amber-500 mr-2"></i> Kategori Menu Minuman</h3>
+                <div class="flex gap-2 text-xs">
+                    <input type="text" id="cat-new-name" placeholder="Nama Kategori Baru" class="flex-1 p-2.5 bg-slate-50 border rounded-xl font-semibold">
+                    <button type="button" onclick="addCategory()" class="btn-press px-4 py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl shadow">+ Tambah</button>
+                </div>
+                <div id="owner-categories-list" class="space-y-2"></div>
+            </div>
+
+            <div id="owner-content-flashsale" class="hidden bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-extrabold text-sm text-slate-900 border-b pb-2"><i class="fa-solid fa-bolt text-rose-500 mr-2"></i> Pengaturan Flash Sale Minuman</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-2xl border">
+                    <select id="flash-sale-item-select" class="p-2.5 bg-white border rounded-xl font-bold"></select>
+                    <input type="number" id="flash-sale-price-input" placeholder="Harga Promo Flash Sale (Rp)" class="p-2.5 bg-white border rounded-xl font-semibold">
+                    <button type="button" onclick="saveFlashSaleConfig(this)" class="btn-press py-2.5 bg-rose-600 text-white font-extrabold rounded-xl shadow">Aktifkan Flash Sale</button>
+                    <button type="button" onclick="disableFlashSale()" class="btn-press py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl">Matikan Flash Sale</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FLOATING CART BAR (CUSTOMER) -->
+    <div id="floating-cart" class="fixed bottom-3 left-0 right-0 max-w-md mx-auto px-4 transition-all duration-300 translate-y-32 z-30">
+        <div class="bg-slate-900 text-white p-3 rounded-2xl shadow-2xl border border-slate-800 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-themebrand-500 text-slate-950 flex items-center justify-center font-black">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                </div>
+                <div>
+                    <p id="cart-item-count" class="font-black text-xs text-amber-300">0 Item</p>
+                    <p id="cart-total-price" class="font-extrabold text-sm text-white">Rp 0</p>
+                </div>
+            </div>
+            <button type="button" onclick="openCartModal()" class="btn-press px-4 py-2 bg-themebrand-500 text-slate-950 font-black text-xs rounded-xl shadow">
+                Lihat Keranjang <i class="fa-solid fa-chevron-right ml-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 1: JOIN MEMBER VIP (NEW SIMPLIFIED) -->
+    <div id="modal-join-member" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 text-xs relative animate-fade-in">
+            <button type="button" onclick="closeJoinMemberModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-base"><i class="fa-solid fa-xmark"></i></button>
+
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 mx-auto flex items-center justify-center text-xl font-black mb-2 shadow-inner">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <h3 class="font-black text-base text-slate-900">Gabung Member VIP Gratis</h3>
+                <p class="text-[11px] text-slate-500">Dapatkan akses langsung ke promo rahasia & diskon khusus!</p>
+            </div>
+
+            <div class="space-y-3">
+                <div class="space-y-1">
+                    <label class="font-bold text-slate-700">Nama Lengkap Anda:</label>
+                    <input type="text" id="mb-name-input" placeholder="Contoh: Budi Santoso" class="w-full p-2.5 bg-slate-50 border rounded-xl font-semibold focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="space-y-1">
+                    <label class="font-bold text-slate-700">Nomor WhatsApp Aktif:</label>
+                    <input type="tel" id="mb-phone-input" placeholder="081234567890" class="w-full p-2.5 bg-slate-50 border rounded-xl font-semibold focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" id="mb-consent-check" class="mt-0.5 accent-amber-500">
+                        <span class="text-[10px] text-amber-900 font-medium">Saya setuju mendaftar sebagai Member VIP & bergabung ke Saluran WhatsApp Promo.</span>
+                    </label>
+                </div>
+
+                <button type="button" onclick="submitJoinMember(this)" class="btn-press w-full py-3 bg-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-md">
+                    <i class="fa-brands fa-whatsapp mr-1 text-sm"></i> Konfirmasi & Masuk Saluran WA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: KERANJANG & CHECKOUT -->
+    <div id="modal-cart" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 text-xs relative max-h-[90vh] flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b pb-2">
+                <h3 class="font-black text-sm text-slate-900"><i class="fa-solid fa-cart-shopping text-themebrand-600 mr-2"></i> Keranjang Belanja</h3>
+                <button type="button" onclick="closeCartModal()" class="text-slate-400 font-bold"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+
+            <div id="cart-items-list" class="space-y-2 overflow-y-auto max-h-48 pr-1 flex-1"></div>
+
+            <div class="space-y-3 border-t pt-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="btn-order-now" onclick="setOrderType('now')" class="py-2 rounded-xl font-bold active-border shadow">Instant / Langsung</button>
+                    <button type="button" id="btn-order-po" onclick="setOrderType('preorder')" class="py-2 rounded-xl font-bold border bg-white">Pre-Order (PO)</button>
+                </div>
+
+                <div id="box-preorder-schedule" class="hidden grid grid-cols-2 gap-2 bg-amber-50 p-2 rounded-xl border border-amber-200">
+                    <input type="date" id="po-date-input" class="p-1.5 bg-white border rounded-lg font-bold">
+                    <input type="time" id="po-time-input" value="13:00" class="p-1.5 bg-white border rounded-lg font-bold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="btn-pay-qris" onclick="setPayMethod('qris')" class="py-2 rounded-xl font-bold active-border shadow">QRIS / Transfer</button>
+                    <button type="button" id="btn-pay-cash" onclick="setPayMethod('cash')" class="py-2 rounded-xl font-bold border bg-white">Bayar di Kasir</button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <input type="text" id="cust-name-input" placeholder="Nama Pemesan" class="w-full p-2 bg-slate-50 border rounded-xl font-semibold">
+                    <input type="tel" id="cust-phone-input" placeholder="Nomor WhatsApp" class="w-full p-2 bg-slate-50 border rounded-xl font-semibold">
+                </div>
+
+                <div class="flex items-center justify-between font-black text-sm pt-2 border-t">
+                    <span>Total Pembayaran:</span>
+                    <span id="summary-grandtotal" class="text-themebrand-600">Rp 0</span>
+                </div>
+
+                <button type="button" onclick="submitCheckout(this)" class="btn-press w-full py-3 bg-slate-900 text-themebrand-400 font-black rounded-xl text-xs shadow-md">
+                    Kirim Pesanan Ke WhatsApp Kasir <i class="fa-solid fa-paper-plane ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: KUSTOMISASI VARIAN MINUMAN -->
+    <div id="modal-item-options" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 text-xs relative">
+            <button type="button" onclick="closeOptionModal()" class="absolute top-4 right-4 text-slate-400 font-bold"><i class="fa-solid fa-xmark text-base"></i></button>
+            <h3 id="opt-item-name" class="font-black text-sm text-slate-900 border-b pb-2">Kustomisasi Minuman</h3>
+
+            <div id="box-opt-ice" class="space-y-1">
+                <label class="font-bold text-slate-700">Level Es (Ice Level):</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" id="opt-ice-normal" onclick="selectIce('Normal Ice')" class="opt-btn-ice py-1.5 active-border font-bold rounded-xl">Normal Ice</button>
+                    <button type="button" id="opt-ice-less" onclick="selectIce('Less Ice')" class="opt-btn-ice py-1.5 bg-slate-50 border rounded-xl">Less Ice</button>
+                    <button type="button" id="opt-ice-none" onclick="selectIce('No Ice')" class="opt-btn-ice py-1.5 bg-slate-50 border rounded-xl">No Ice</button>
+                </div>
+            </div>
+
+            <div id="box-opt-sugar" class="space-y-1">
+                <label class="font-bold text-slate-700">Level Gula (Sugar Level):</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" id="opt-sugar-100" onclick="selectSugar('100% Sugar')" class="opt-btn-sugar py-1.5 active-border font-bold rounded-xl">100% Gula</button>
+                    <button type="button" id="opt-sugar-50" onclick="selectSugar('50% Sugar')" class="opt-btn-sugar py-1.5 bg-slate-50 border rounded-xl">50% Gula</button>
+                    <button type="button" id="opt-sugar-0" onclick="selectSugar('No Sugar')" class="opt-btn-sugar py-1.5 bg-slate-50 border rounded-xl">Tanpa Gula</button>
+                </div>
+            </div>
+
+            <div id="box-opt-boba" class="hidden">
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-700 p-2 bg-slate-50 rounded-xl border">
+                    <input type="checkbox" id="opt-topping-boba" class="accent-amber-500">
+                    <span>Tambahkan Extra Boba (+Rp 3.000)</span>
+                </label>
+            </div>
+
+            <button type="button" onclick="confirmAddToCartWithOptions()" class="btn-press w-full py-2.5 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl text-xs shadow">
+                Masukan Ke Keranjang
+            </button>
+        </div>
+    </div>
+
+    <!-- AREA STRUK FISIK & THERMAL (PRINTER FIXED PRINTABLE AREA) -->
+    <div id="printable-area" class="hidden bg-white p-4 text-black font-mono text-[11px] leading-tight max-w-[300px] mx-auto border shadow-md">
+        <div class="text-center border-b pb-2 mb-2">
+            <h2 id="rec-resto-title" class="font-black text-sm uppercase">Mainstay Drink Shop</h2>
+            <p id="rec-timestamp" class="text-[9px]">Waktu...</p>
+            <p id="rec-id" class="font-bold text-[10px]">#ORD-0000</p>
+        </div>
+        <div class="space-y-1 mb-2">
+            <p><strong>Pelanggan:</strong> <span id="rec-name">-</span></p>
+            <p><strong>WA:</strong> <span id="rec-phone">-</span></p>
+            <p><strong>Tipe:</strong> <span id="rec-type">Instant</span></p>
+        </div>
+        <div id="rec-items-list" class="border-t border-b py-2 space-y-1"></div>
+        <div class="text-right font-black text-xs pt-2">
+            <span>TOTAL: </span><span id="rec-total">Rp 0</span>
+        </div>
+        <div class="text-center text-[8px] mt-4 border-t pt-2">
+            <p>Terima kasih atas kunjungan Anda!</p>
+            <p>Simpan Struk Ini Sebagai Bukti Sah</p>
+        </div>
+    </div>
+
+    <!-- CAMERA ABSENSI MODAL -->
+    <div id="modal-camera-attendance" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-3 text-xs relative text-center">
+            <button type="button" onclick="closeDirectCameraAttendance()" class="absolute top-4 right-4 text-slate-400 font-bold"><i class="fa-solid fa-xmark text-base"></i></button>
+            <h3 class="font-black text-sm text-slate-900">Absensi Foto Live Staf</h3>
+            <div class="relative w-full h-48 bg-slate-900 rounded-2xl overflow-hidden border">
+                <video id="att-video-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="att-photo-canvas" class="hidden"></canvas>
+            </div>
+            <div class="space-y-2 text-left">
+                <select id="att-camera-staff" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></select>
+                <select id="att-camera-type" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+                    <option value="IN">🟢 Clock-In (Masuk Shift)</option>
+                    <option value="OUT">🔴 Clock-Out (Pulang Shift)</option>
+                </select>
+                <input type="password" id="att-camera-pin" placeholder="PIN Staf Anda" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+            </div>
+            <button type="button" onclick="captureAndSubmitAttendance(this)" class="btn-press w-full py-2.5 bg-emerald-600 text-white font-extrabold rounded-xl shadow">
+                <i class="fa-solid fa-camera mr-1"></i> Ambil Foto & Submit Absen
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-4 right-4 bg-slate-900 text-amber-400 px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-800 transition-all duration-300 translate-x-80 opacity-0 z-50 flex items-center gap-2 text-xs font-extrabold">
+        <i class="fa-solid fa-circle-info text-amber-400"></i>
+        <span id="toast-msg">Notifikasi</span>
+    </div>
+
+    <!-- AUTH MODAL FOR OWNER & KASIR -->
+    <div id="modal-auth" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl space-y-3 text-xs text-center">
+            <h3 id="auth-title" class="font-black text-sm text-slate-900">Verifikasi PIN</h3>
+            <input type="password" id="auth-pin" placeholder="Masukkan PIN 4 Angka" class="w-full p-2.5 bg-slate-50 border rounded-xl font-extrabold text-center text-base tracking-widest">
+            <div class="flex gap-2">
+                <button type="button" onclick="closeAuthModal()" class="w-1/2 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl">Batal</button>
+                <button type="button" onclick="submitAuth()" class="w-1/2 py-2 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl">Verifikasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS CORE & ENGINES -->
+    <script src="app-core.js"></script>
+    <script src="app-customer.js"></script>
+    <script src="app-kasir-owner.js"></script>
+</body>
+</html>
