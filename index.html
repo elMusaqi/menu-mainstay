@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mainstay Drink Shop - POS & E-Menu</title>
+
+    <link id="dynamic-favicon" rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081162.png">
+    <link id="dynamic-apple-touch" rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081162.png">
+    <meta name="theme-color" content="#d97706">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: {
+                        themebrand: {
+                            50: 'var(--color-brand-50, #fffbe3)',
+                            100: 'var(--color-brand-100, #fef3c7)',
+                            400: 'var(--color-brand-400, #fbbf24)',
+                            500: 'var(--color-brand-500, #f59e0b)',
+                            600: 'var(--color-brand-600, #d97706)',
+                            700: 'var(--color-brand-700, #b45309)',
+                            900: 'var(--color-brand-900, #78350f)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased pb-28 selection:bg-themebrand-500 selection:text-white">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-2xl bg-themebrand-500 flex items-center justify-center text-slate-900 font-black shadow-md overflow-hidden border border-themebrand-400 shrink-0">
+                    <i id="app-logo-icon" class="fa-solid fa-glass-water text-lg text-slate-900"></i>
+                    <img id="app-logo-img" src="" class="hidden w-full h-full object-cover" alt="Logo">
+                </div>
+                <div class="truncate">
+                    <h1 id="app-resto-name" class="font-extrabold text-xs sm:text-base text-slate-900 tracking-tight leading-none truncate">Mainstay Drink Shop</h1>
+                    <p class="text-[9px] text-themebrand-700 font-bold mt-0.5 uppercase tracking-wider truncate">MINUMAN ANDALANMU • TAKEAWAY & PRE-ORDER</p>
+                </div>
+            </div>
+
+            <!-- Jam Real-Time WIB -->
+            <div class="bg-slate-900 text-themebrand-400 px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] sm:text-xs font-mono font-bold flex items-center gap-2 shrink-0 shadow-inner">
+                <i class="fa-solid fa-clock text-themebrand-500 animate-pulse"></i>
+                <span id="live-clock-display">Loading waktu...</span>
+            </div>
+
+            <!-- Role Switcher Nav -->
+            <div class="bg-slate-100 p-1 rounded-2xl border border-slate-200 flex items-center gap-1 text-[11px] font-semibold shrink-0">
+                <button type="button" onclick="setRole('customer')" id="btn-role-customer" class="nav-tab-btn active px-3 py-1.5 rounded-xl transition text-slate-700">
+                    <i class="fa-solid fa-store mr-1"></i> Menu
+                </button>
+                <button type="button" onclick="requestAccess('kasir')" id="btn-role-kasir" class="nav-tab-btn px-3 py-1.5 rounded-xl transition text-slate-700 relative">
+                    <i class="fa-solid fa-cash-register mr-1"></i> Kasir
+                    <span id="badge-pending-orders" class="badge-punch-hole hidden absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-black animate-bounce shadow">0</span>
+                </button>
+                <button type="button" onclick="requestAccess('owner')" id="btn-role-owner" class="nav-tab-btn px-3 py-1.5 rounded-xl transition text-slate-700">
+                    <i class="fa-solid fa-chart-pie mr-1"></i> Owner
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed top-16 right-4 z-50 transform translate-x-80 transition-all duration-300 pointer-events-none opacity-0">
+        <div class="bg-slate-900 text-themebrand-400 px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 text-xs font-bold">
+            <div class="w-7 h-7 rounded-xl bg-themebrand-500/20 text-themebrand-400 flex items-center justify-center"><i class="fa-solid fa-circle-check"></i></div>
+            <span id="toast-msg">Notifikasi...</span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <!-- VIEW 1: CUSTOMER CATALOG -->
+        <section id="view-customer" class="space-y-4">
+            <div class="relative overflow-hidden rounded-3xl bg-slate-900 text-white shadow-xl border border-themebrand-500/30">
+                <div id="carousel-slides" class="flex transition-transform duration-500 ease-out w-full"></div>
+                <button type="button" onclick="prevSlide()" class="btn-press absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/50 text-white border border-white/20 flex items-center justify-center text-xs hover:bg-slate-900"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" onclick="nextSlide()" class="btn-press absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/50 text-white border border-white/20 flex items-center justify-center text-xs hover:bg-slate-900"><i class="fa-solid fa-chevron-right"></i></button>
+                <div id="carousel-dots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10"></div>
+            </div>
+
+            <!-- STAMP MEMBER CARD -->
+            <div class="bg-gradient-to-r from-themebrand-500 to-themebrand-600 rounded-2xl p-3.5 text-white shadow-md border border-themebrand-400 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-slate-900/20 flex items-center justify-center text-white text-lg font-black shrink-0"><i class="fa-solid fa-award"></i></div>
+                    <div>
+                        <p class="font-extrabold text-sm">Kartu Stempel Member</p>
+                        <p id="stamp-rule-desc" class="text-[10px] text-white/90">Dapatkan 1 stempel tiap min. belanja Rp 20.000!</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 bg-slate-900/20 p-1.5 rounded-xl border border-white/20" id="stamp-indicators"></div>
+            </div>
+
+            <!-- FILTER & SEARCH -->
+            <div class="flex flex-col sm:flex-row gap-2.5 items-center justify-between">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="relative flex-1 sm:w-80">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="cust-search" oninput="renderCustomerMenu()" placeholder="Cari boba, kopi, cemilan..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-themebrand-500 shadow-sm">
+                    </div>
+                    <div class="bg-white p-1 border border-slate-200 rounded-2xl flex items-center shadow-sm shrink-0">
+                        <button type="button" onclick="setCustomerLayout('grid')" id="btn-cust-grid" class="p-2 rounded-xl text-xs text-themebrand-600 bg-themebrand-100"><i class="fa-solid fa-border-all"></i></button>
+                        <button type="button" onclick="setCustomerLayout('list')" id="btn-cust-list" class="p-2 rounded-xl text-xs text-slate-400"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 overflow-x-auto hide-scrollbar w-full sm:w-auto pb-1" id="cust-categories"></div>
+            </div>
+
+            <div id="cust-menu-grid"></div>
+        </section>
+
+        <!-- VIEW 2: KASIR POS & KITCHEN PIPELINE -->
+        <section id="view-kasir" class="hidden space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2.5 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" onclick="setKasirSubTab('pos')" id="btn-kasir-pos" class="btn-press sub-tab-btn active px-3.5 py-2 rounded-xl text-xs font-bold text-center"><i class="fa-solid fa-cash-register mr-1"></i> Mode Kasir POS</button>
+                    <button type="button" onclick="setKasirSubTab('kitchen')" id="btn-kasir-kitchen" class="btn-press sub-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-center relative">
+                        <i class="fa-solid fa-whiskey-glass mr-1"></i> Bar Antrean
+                        <span id="badge-kitchen-kitchen" class="badge-punch-hole hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-black">0</span>
+                    </button>
+                </div>
+                <button type="button" onclick="openDirectCameraAttendance()" class="btn-press px-3.5 py-2 rounded-xl text-xs font-bold bg-themebrand-100 text-themebrand-900 border border-themebrand-300 hover:bg-themebrand-200 transition">
+                    <i class="fa-solid fa-camera mr-1"></i> Absen Staf (Kamera Live)
+                </button>
+            </div>
+
+            <div id="kasir-pos-content" class="space-y-4">
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="kasir-search" oninput="renderKasirMenu()" placeholder="Cari pesanan..." class="flex-1 pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs text-slate-800 shadow-sm">
+                    <div class="bg-white p-1 border border-slate-200 rounded-2xl flex items-center shadow-sm shrink-0">
+                        <button type="button" onclick="setKasirLayout('grid')" id="btn-kasir-grid" class="p-2 rounded-xl text-xs text-themebrand-600 bg-themebrand-100"><i class="fa-solid fa-border-all"></i></button>
+                        <button type="button" onclick="setKasirLayout('list')" id="btn-kasir-list" class="p-2 rounded-xl text-xs text-slate-400"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+                <div id="kasir-menu-grid"></div>
+            </div>
+
+            <div id="kasir-kitchen-content" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2"><h3 class="font-extrabold text-xs text-amber-600"><i class="fa-solid fa-clock"></i> Order Masuk / PO</h3><span id="cnt-pending" class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span></div>
+                    <div id="list-pending" class="space-y-2 max-h-[600px] overflow-y-auto"></div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2"><h3 class="font-extrabold text-xs text-blue-600"><i class="fa-solid fa-blender"></i> Sedang Dibuat</h3><span id="cnt-cooking" class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span></div>
+                    <div id="list-cooking" class="space-y-2 max-h-[600px] overflow-y-auto"></div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2"><h3 class="font-extrabold text-xs text-emerald-600"><i class="fa-solid fa-circle-check"></i> Selesai / Siap Ambil</h3><span id="cnt-completed" class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span></div>
+                    <div id="list-completed" class="space-y-2 max-h-[600px] overflow-y-auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: OWNER DASHBOARD (WITH HRM & PROFILE) -->
+        <section id="view-owner" class="hidden space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm"><p class="text-[11px] text-slate-500">Total Omset</p><p id="stat-revenue" class="text-xl font-black text-themebrand-600 mt-1">Rp 0</p></div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm"><p class="text-[11px] text-slate-500">Total Transaksi</p><p id="stat-orders-count" class="text-xl font-black text-slate-900 mt-1">0 Order</p></div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm"><p class="text-[11px] text-slate-500">Menu Aktif</p><p id="stat-menu-count" class="text-xl font-black text-themebrand-700 mt-1">0 Item</p></div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <p class="text-[11px] text-slate-500">QR Display Toko</p>
+                    <button type="button" onclick="openQrModalOptions()" class="btn-press mt-2 px-3 py-1.5 bg-slate-900 text-themebrand-400 font-bold text-xs rounded-xl"><i class="fa-solid fa-qrcode mr-1"></i> Opsi QR Toko</button>
+                </div>
+            </div>
+
+            <!-- CHART VISUALISASI PENJUALAN -->
+            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                <h3 class="font-bold text-xs text-slate-900"><i class="fa-solid fa-chart-line text-themebrand-600 mr-2"></i> Grafik Omset Penjualan Harian</h3>
+                <div class="h-56 relative w-full"><canvas id="salesChart"></canvas></div>
+            </div>
+
+            <!-- OWNER NAVIGATION TABS -->
+            <div class="flex border-b border-slate-200 bg-white p-1 rounded-2xl gap-1 overflow-x-auto hide-scrollbar shadow-sm">
+                <button type="button" onclick="setOwnerTab('ownerprofile')" id="tab-owner-ownerprofile" class="owner-tab-btn active px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap">👑 Profil Owner</button>
+                <button type="button" onclick="setOwnerTab('staffhrm')" id="tab-owner-staffhrm" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">👥 Staf & Penggajian</button>
+                <button type="button" onclick="setOwnerTab('attendancelog')" id="tab-owner-attendancelog" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">📸 Rekap Absensi</button>
+                <button type="button" onclick="setOwnerTab('branding')" id="tab-owner-branding" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🎨 Branding & Tema</button>
+                <button type="button" onclick="setOwnerTab('banners')" id="tab-owner-banners" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🖼️ Media Iklan Banner</button>
+                <button type="button" onclick="setOwnerTab('categories')" id="tab-owner-categories" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🏷️ Kategori Menu</button>
+                <button type="button" onclick="setOwnerTab('inventory')" id="tab-owner-inventory" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🧋 Kelola Menu</button>
+                <button type="button" onclick="setOwnerTab('flashsale')" id="tab-owner-flashsale" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🔥 Flash Sale</button>
+                <button type="button" onclick="setOwnerTab('stamps')" id="tab-owner-stamps" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🎟️ Stempel Member</button>
+                <button type="button" onclick="setOwnerTab('integrations')" id="tab-owner-integrations" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">🌐 Google Sheets</button>
+                <button type="button" onclick="setOwnerTab('backup')" id="tab-owner-backup" class="owner-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-600 whitespace-nowrap">💾 Backup Data</button>
+            </div>
+
+            <!-- OWNER TAB 1: PROFIL OWNER -->
+            <div id="owner-content-ownerprofile" class="bg-white p-5 rounded-3xl border border-slate-200 space-y-4 shadow-sm text-xs">
+                <h3 class="font-bold text-slate-900 border-b pb-2"><i class="fa-solid fa-user-shield text-themebrand-600 mr-2"></i> Pengaturan Profil Master Owner</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block font-bold mb-1">Nama Owner</label><input type="text" id="ow-name" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold"></div>
+                    <div><label class="block font-bold mb-1">PIN Master Owner (4 Digit)</label><input type="password" maxlength="4" id="ow-pin" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold tracking-widest text-center"></div>
+                    <div><label class="block font-bold mb-1">Nama Bank / E-Wallet Toko</label><input type="text" id="ow-bank" placeholder="BCA / Mandiri / GoPay" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold"></div>
+                    <div><label class="block font-bold mb-1">No. Rekening / No. HP Toko</label><input type="text" id="ow-rekening" placeholder="123456789" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold"></div>
+                </div>
+                
+                <!-- DUAL-OPTION PROFIL OWNER PHOTO & QRIS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                    <div class="space-y-2">
+                        <label class="block font-bold">Foto Profil Owner</label>
+                        <div class="flex gap-2">
+                            <input type="file" id="file-ow-photo" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-ow-photo-url')" class="hidden">
+                            <button type="button" onclick="document.getElementById('file-ow-photo').click()" class="px-3 py-1.5 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                            <input type="text" id="cfg-ow-photo-url" placeholder="atau Paste Link URL Gambar" class="flex-1 p-1.5 bg-slate-50 border rounded-xl">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block font-bold">QRIS Toko / Kas Master</label>
+                        <div class="flex gap-2">
+                            <input type="file" id="file-ow-qris" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-ow-qris-url')" class="hidden">
+                            <button type="button" onclick="document.getElementById('file-ow-qris').click()" class="px-3 py-1.5 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                            <input type="text" id="cfg-ow-qris-url" placeholder="atau Paste Link URL QRIS" class="flex-1 p-1.5 bg-slate-50 border rounded-xl">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="saveOwnerProfile(this)" class="btn-press px-5 py-2.5 bg-themebrand-500 text-slate-950 font-extrabold rounded-xl"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Profil Owner</button>
+            </div>
+
+            <!-- OWNER TAB 2: STAF & PENGGAJIAN (HRM) -->
+            <div id="owner-content-staffhrm" class="hidden space-y-4 text-xs">
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 space-y-3 shadow-sm">
+                    <h3 class="font-bold text-slate-900 border-b pb-2"><i class="fa-solid fa-user-plus text-themebrand-600 mr-2"></i> Tambah / Edit Profil Staf Kasir</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div><label class="block font-bold mb-1">Nama Staf *</label><input type="text" id="hrm-staff-name" placeholder="Nama Lengkap" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></div>
+                        <div><label class="block font-bold mb-1">No. WhatsApp Staf *</label><input type="text" id="hrm-staff-phone" placeholder="628123456789" class="w-full p-2 bg-slate-50 border rounded-xl font-bold text-themebrand-700"></div>
+                        <div><label class="block font-bold mb-1">PIN Rahasia Staf (4 Digit) *</label><input type="password" maxlength="4" id="hrm-staff-pin" placeholder="1234" class="w-full p-2 bg-slate-50 border rounded-xl font-bold text-center tracking-widest"></div>
+                    </div>
+
+                    <!-- PENGATURAN SHIFT & KETERLAMBATAN -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border">
+                        <div><label class="block font-bold mb-1">Jam Masuk Shift</label><input type="time" id="hrm-shift-in" value="08:00" class="w-full p-2 bg-white border rounded-xl font-bold"></div>
+                        <div><label class="block font-bold mb-1">Jam Pulang Shift</label><input type="time" id="hrm-shift-out" value="16:00" class="w-full p-2 bg-white border rounded-xl font-bold"></div>
+                        <div><label class="block font-bold mb-1">Toleransi Terlambat (Menit)</label><input type="number" id="hrm-shift-tolerance" value="15" class="w-full p-2 bg-white border rounded-xl font-bold"></div>
+                    </div>
+
+                    <!-- SKEMA GAJI & REKENING STAF -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-bold mb-1">Skema Gaji Utama</label>
+                            <select id="hrm-salary-type" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+                                <option value="monthly">Bulanan (Monthly)</option>
+                                <option value="daily">Harian (Per Shift)</option>
+                                <option value="hourly">Per Jam (Hourly)</option>
+                            </select>
+                        </div>
+                        <div><label class="block font-bold mb-1">Nominal Gaji Utama (Rp)</label><input type="number" id="hrm-salary-rate" placeholder="2500000" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></div>
+                        <div><label class="block font-bold mb-1">Denda Keterlambatan / Jam (Rp)</label><input type="number" id="hrm-late-fine" placeholder="10000" class="w-full p-2 bg-slate-50 border rounded-xl font-bold text-rose-600"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div><label class="block font-bold mb-1">Nama Bank / E-Wallet Staf</label><input type="text" id="hrm-staff-bank" placeholder="BCA / DANA" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></div>
+                        <div><label class="block font-bold mb-1">No. Rekening / No. HP E-Wallet</label><input type="text" id="hrm-staff-rekening" placeholder="0812345678" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></div>
+                        <div><label class="block font-bold mb-1">Nama Pemilik Rekening</label><input type="text" id="hrm-staff-rekname" placeholder="Sesuai Tabungan" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></div>
+                    </div>
+
+                    <!-- DUAL OPTION FOTO & QRIS STAF -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="block font-bold mb-1">Foto Profil Staf</label>
+                            <div class="flex gap-1.5">
+                                <input type="file" id="file-staff-photo" accept="image/*" onchange="handleDualFileUpload(event, 'hrm-staff-photourl')" class="hidden">
+                                <button type="button" onclick="document.getElementById('file-staff-photo').click()" class="px-3 py-1.5 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                                <input type="text" id="hrm-staff-photourl" placeholder="atau Paste Link URL" class="flex-1 p-1.5 bg-slate-50 border rounded-xl">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-1">QRIS Transfer Staf</label>
+                            <div class="flex gap-1.5">
+                                <input type="file" id="file-staff-qris" accept="image/*" onchange="handleDualFileUpload(event, 'hrm-staff-qrisurl')" class="hidden">
+                                <button type="button" onclick="document.getElementById('file-staff-qris').click()" class="px-3 py-1.5 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                                <input type="text" id="hrm-staff-qrisurl" placeholder="atau Paste Link URL" class="flex-1 p-1.5 bg-slate-50 border rounded-xl">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="submitStaffProfile(this)" class="btn-press px-4 py-2 bg-themebrand-500 text-slate-950 font-extrabold rounded-xl">+ Simpan Profil Staf</button>
+                </div>
+
+                <!-- FORM INPUT BONUS EXTRA UNTUK STAF -->
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 space-y-3 shadow-sm">
+                    <h3 class="font-bold text-slate-900 border-b pb-2"><i class="fa-solid fa-gift text-rose-500 mr-2"></i> Form Input Bonus / THR Extra Staf</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <select id="bonus-staff-select" class="p-2 bg-slate-50 border rounded-xl font-bold"></select>
+                        <input type="number" id="bonus-amount-input" placeholder="Nominal Bonus (Rp)" class="p-2 bg-slate-50 border rounded-xl font-bold text-emerald-600">
+                        <select id="bonus-label-select" class="p-2 bg-slate-50 border rounded-xl font-bold">
+                            <option value="Bonus Hari Raya (THR)">Bonus Hari Raya (THR)</option>
+                            <option value="Bonus Performa Target">Bonus Performa Target</option>
+                            <option value="Bonus Rajin & Inisiatif">Bonus Rajin & Inisiatif</option>
+                            <option value="Bonus Khusus Owner">Bonus Khusus Owner</option>
+                        </select>
+                        <input type="text" id="bonus-desc-input" placeholder="Catatan/Deskripsi..." class="p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                    <button type="button" onclick="addStaffBonus(this)" class="btn-press px-4 py-2 bg-slate-900 text-themebrand-400 font-extrabold rounded-xl">+ Tambahkan Bonus Ke Staf</button>
+                </div>
+
+                <div id="hrm-staff-list" class="space-y-3"></div>
+            </div>
+
+            <!-- OWNER TAB 3: REKAP ABSENSI LOG -->
+            <div id="owner-content-attendancelog" class="hidden bg-white p-5 rounded-3xl border border-slate-200 space-y-3 shadow-sm text-xs">
+                <h3 class="font-bold text-slate-900 border-b pb-2"><i class="fa-solid fa-camera text-themebrand-600 mr-2"></i> Log Rekap Absensi Live Foto Staf</h3>
+                <div id="owner-attendance-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+            </div>
+
+            <!-- OWNER TAB 4: BRANDING & TEMA (LENGKAP DUAL OPTION) -->
+            <div id="owner-content-branding" class="hidden bg-white p-5 rounded-3xl border border-slate-200 space-y-4 shadow-sm text-xs">
+                <h3 class="font-bold text-slate-900 border-b pb-2"><i class="fa-solid fa-sliders text-themebrand-600 mr-2"></i> Pengaturan Branding & Warna Tema</h3>
+                <div>
+                    <label class="block font-bold mb-1">Pilihan Warna Tema Aplikasi</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                        <button type="button" onclick="applyThemeColor('amber')" class="p-2 rounded-xl font-bold bg-amber-500 text-white">Amber</button>
+                        <button type="button" onclick="applyThemeColor('emerald')" class="p-2 rounded-xl font-bold bg-emerald-600 text-white">Emerald</button>
+                        <button type="button" onclick="applyThemeColor('blue')" class="p-2 rounded-xl font-bold bg-blue-600 text-white">Royal Blue</button>
+                        <button type="button" onclick="applyThemeColor('rose')" class="p-2 rounded-xl font-bold bg-rose-600 text-white">Rose Red</button>
+                        <button type="button" onclick="applyThemeColor('violet')" class="p-2 rounded-xl font-bold bg-violet-600 text-white">Violet</button>
+                        <button type="button" onclick="applyThemeColor('slate')" class="p-2 rounded-xl font-bold bg-slate-800 text-white">Slate Dark</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block font-bold mb-1">Nama Resto / Outlet</label><input type="text" id="cfg-name" placeholder="Nama Outlet" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold"></div>
+                    <div><label class="block font-bold mb-1">Nomor WhatsApp Resto</label><input type="text" id="cfg-phone" placeholder="WhatsApp (6281234567890)" class="w-full p-2.5 bg-slate-50 border rounded-xl font-bold text-themebrand-700"></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-3">
+                    <div class="space-y-1">
+                        <label class="block font-bold">Logo Utama Resto</label>
+                        <div class="flex gap-2">
+                            <input type="file" id="file-branding-logo" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-logo')" class="hidden">
+                            <button type="button" onclick="document.getElementById('file-branding-logo').click()" class="px-3 py-1.5 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                            <input type="text" id="cfg-logo" placeholder="atau Paste Link URL Logo" class="flex-1 p-2 bg-slate-50 border rounded-xl">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block font-bold">Gambar QRIS Toko</label>
+                        <div class="flex gap-2">
+                            <input type="file" id="file-branding-qris" accept="image/*" onchange="handleDualFileUpload(event, 'cfg-qris')" class="hidden">
+                            <button type="button" onclick="document.getElementById('file-branding-qris').click()" class="px-3 py-1.5 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                            <input type="text" id="cfg-qris" placeholder="atau Paste Link URL QRIS" class="flex-1 p-2 bg-slate-50 border rounded-xl">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="saveBrandingConfig(this)" class="btn-press px-5 py-2.5 bg-themebrand-500 text-slate-950 font-extrabold rounded-xl">Simpan Perubahan Branding</button>
+            </div>
+
+            <!-- OTHER OWNER TABS -->
+            <div id="owner-content-banners" class="hidden space-y-3 text-xs">
+                <div class="bg-white p-4 rounded-3xl border space-y-2">
+                    <input type="text" id="banner-tag" placeholder="Tag (misal: 🥤 PROMO)" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+                    <input type="text" id="banner-title" placeholder="Judul Banner" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+                    <textarea id="banner-desc" rows="2" placeholder="Deskripsi..." class="w-full p-2 bg-slate-50 border rounded-xl"></textarea>
+                    <div class="flex gap-2">
+                        <input type="file" id="file-banner-img" accept="image/*" onchange="handleDualFileUpload(event, 'banner-img')" class="hidden">
+                        <button type="button" onclick="document.getElementById('file-banner-img').click()" class="px-3 py-2 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload Gambar</button>
+                        <input type="text" id="banner-img" placeholder="atau Paste Link URL Gambar" class="flex-1 p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                    <button type="button" onclick="submitBannerItem(this)" class="btn-press w-full py-2 bg-themebrand-500 text-slate-950 font-bold rounded-xl">+ Tambah Ke Carousel</button>
+                </div>
+                <div id="owner-banners-list" class="space-y-2"></div>
+            </div>
+
+            <div id="owner-content-categories" class="hidden space-y-3 text-xs">
+                <div class="flex gap-2"><input type="text" id="cat-new-name" placeholder="Kategori baru..." class="flex-1 p-2 bg-slate-50 border rounded-xl font-bold"><button type="button" onclick="addCategory()" class="btn-press px-4 py-2 bg-themebrand-500 font-bold rounded-xl">+ Tambah</button></div>
+                <div id="owner-categories-list" class="space-y-2"></div>
+            </div>
+
+            <div id="owner-content-inventory" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="bg-white p-4 rounded-3xl border space-y-2">
+                    <input type="text" id="menu-name" placeholder="Nama Item" class="w-full p-2 bg-slate-50 border rounded-xl">
+                    <select id="menu-category" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></select>
+                    <input type="number" id="menu-price" placeholder="Harga (Rp)" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+                    <textarea id="menu-desc" placeholder="Deskripsi..." class="w-full p-2 bg-slate-50 border rounded-xl"></textarea>
+                    <div class="flex gap-2">
+                        <input type="file" id="file-menu-img" accept="image/*" onchange="handleDualFileUpload(event, 'menu-img')" class="hidden">
+                        <button type="button" onclick="document.getElementById('file-menu-img').click()" class="px-3 py-2 bg-slate-100 border rounded-xl font-bold"><i class="fa-solid fa-upload"></i> Upload</button>
+                        <input type="text" id="menu-img" placeholder="atau Paste Link Foto" class="flex-1 p-2 bg-slate-50 border rounded-xl">
+                    </div>
+                    <button type="button" onclick="submitMenuItem(this)" class="btn-press w-full py-2 bg-themebrand-500 font-bold rounded-xl">+ Tambah Menu</button>
+                </div>
+                <div class="md:col-span-2 space-y-2" id="owner-inventory-grid"></div>
+            </div>
+
+            <div id="owner-content-flashsale" class="hidden bg-white p-5 rounded-3xl border space-y-3 text-xs">
+                <h3 class="font-bold text-slate-900"><i class="fa-solid fa-bolt text-rose-500"></i> Kelola Item Flash Sale</h3>
+                <select id="flash-sale-item-select" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></select>
+                <input type="number" id="flash-sale-price-input" placeholder="Harga Diskon Flash Sale (Rp)" class="w-full p-2 bg-slate-50 border rounded-xl font-bold text-rose-600">
+                <button type="button" onclick="saveFlashSaleConfig(this)" class="btn-press px-4 py-2 bg-rose-600 text-white font-bold rounded-xl">Aktifkan Flash Sale</button>
+                <button type="button" onclick="disableFlashSale()" class="btn-press px-4 py-2 bg-slate-100 font-bold rounded-xl">Matikan Flash Sale</button>
+            </div>
+
+            <div id="owner-content-stamps" class="hidden bg-white p-5 rounded-3xl border space-y-4 text-xs">
+                <h3 class="font-bold text-slate-900"><i class="fa-solid fa-award text-themebrand-600"></i> Aturan Stempel & Reward</h3>
+                <input type="number" id="stamp-min-spend" placeholder="Min. Belanja Stempel (Rp)" class="w-full p-2 bg-slate-50 border rounded-xl font-bold">
+                <select id="stamp-reward-item-select" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></select>
+                <button type="button" onclick="saveStampRules(this)" class="btn-press px-4 py-2 bg-themebrand-500 text-slate-950 font-bold rounded-xl">Simpan Aturan Stempel</button>
+            </div>
+
+            <div id="owner-content-integrations" class="hidden bg-white p-5 rounded-3xl border space-y-3 text-xs">
+                <h3 class="font-bold text-slate-900">🌐 Sync Google Sheets (Real-Time Webhook)</h3>
+                <input type="text" id="cfg-sheet-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full p-2 bg-slate-50 border rounded-xl font-medium">
+                <button type="button" onclick="saveSheetWebhook(this)" class="btn-press px-4 py-2 bg-slate-900 text-themebrand-400 font-bold rounded-xl">Simpan Webhook URL</button>
+            </div>
+
+            <div id="owner-content-backup" class="hidden bg-white p-5 rounded-3xl border space-y-3 text-xs">
+                <h3 class="font-bold text-slate-900">⚡ Backup & Pulihkan Database</h3>
+                <div class="flex gap-2">
+                    <button type="button" onclick="downloadJSONBackup()" class="btn-press px-4 py-2 bg-slate-100 border rounded-xl font-bold">Unduh Backup JSON</button>
+                    <label class="btn-press px-4 py-2 bg-slate-900 text-themebrand-400 rounded-xl font-bold cursor-pointer">Pulihkan JSON <input type="file" accept=".json" onchange="restoreJSONBackup(event)" class="hidden"></label>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FLOATING CART BAR -->
+    <div id="floating-cart" class="fixed bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-30 max-w-lg mx-auto transform translate-y-32 transition-all duration-300">
+        <button type="button" onclick="openCartModal()" class="btn-press w-full bg-slate-900 border border-themebrand-500/50 text-white p-3.5 sm:p-4 rounded-2xl font-bold flex items-center justify-between shadow-2xl">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-themebrand-500 text-slate-950 flex items-center justify-center font-black"><i class="fa-solid fa-basket-shopping"></i></div>
+                <div class="text-left"><p class="text-[10px] text-themebrand-400 font-extrabold uppercase">Pesanan Saya</p><p id="cart-total-price" class="text-base font-black text-white">Rp 0</p></div>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-xl text-themebrand-400"><span id="cart-item-count">0 Item</span><i class="fa-solid fa-chevron-right text-xs"></i></div>
+        </button>
+    </div>
+
+    <!-- MODAL ITEM OPTIONS -->
+    <div id="modal-item-options" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 text-xs shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-2"><h3 id="opt-item-name" class="font-extrabold text-sm text-slate-900">Kustomisasi Pesanan</h3><button type="button" onclick="closeOptionModal()" class="text-slate-400"><i class="fa-solid fa-xmark text-base"></i></button></div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Level Es</label>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button type="button" onclick="selectIce('Normal Ice')" id="opt-ice-normal" class="py-1.5 bg-themebrand-100 text-themebrand-900 font-bold rounded-xl border">Normal Ice</button>
+                        <button type="button" onclick="selectIce('Less Ice')" id="opt-ice-less" class="py-1.5 bg-slate-50 text-slate-600 rounded-xl border">Less Ice</button>
+                        <button type="button" onclick="selectIce('No Ice')" id="opt-ice-none" class="py-1.5 bg-slate-50 text-slate-600 rounded-xl border">No Ice</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Level Gula</label>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button type="button" onclick="selectSugar('100% Sugar')" id="opt-sugar-100" class="py-1.5 bg-themebrand-100 text-themebrand-900 font-bold rounded-xl border">100% Normal</button>
+                        <button type="button" onclick="selectSugar('50% Sugar')" id="opt-sugar-50" class="py-1.5 bg-slate-50 text-slate-600 rounded-xl border">50% Less</button>
+                        <button type="button" onclick="selectSugar('No Sugar')" id="opt-sugar-0" class="py-1.5 bg-slate-50 text-slate-600 rounded-xl border">No Sugar</button>
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border"><input type="checkbox" id="opt-topping-boba" class="rounded text-themebrand-600"><span class="font-bold text-slate-800">Extra Boba (+Rp 3.000)</span></label>
+            </div>
+            <button type="button" onclick="confirmAddToCartWithOptions()" class="btn-press w-full py-3 bg-slate-900 text-themebrand-400 font-black rounded-2xl shadow-md">Tambahkan Ke Keranjang</button>
+        </div>
+    </div>
+
+    <!-- MODAL AUTH -->
+    <div id="modal-auth" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <h3 id="auth-title" class="font-extrabold text-base text-slate-900">Verifikasi PIN</h3>
+            <input type="password" id="auth-pin" maxlength="4" placeholder="••••" class="w-full text-center text-3xl tracking-widest py-3 bg-slate-50 border-2 rounded-2xl text-slate-900 font-black">
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="closeAuthModal()" class="py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs">Batal</button>
+                <button type="button" onclick="submitAuth()" class="btn-press py-2 bg-themebrand-500 text-slate-950 font-extrabold rounded-xl text-xs">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHECKOUT CART -->
+    <div id="modal-cart" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b flex items-center justify-between"><h3 class="font-extrabold text-slate-900 text-sm"><i class="fa-solid fa-receipt text-themebrand-600 mr-2"></i> Rincian Pesanan</h3><button type="button" onclick="closeCartModal()"><i class="fa-solid fa-xmark text-lg text-slate-400"></i></button></div>
+            <div class="p-4 overflow-y-auto flex-1 space-y-4 text-xs">
+                <div id="cart-items-list" class="space-y-2"></div>
+                <div class="bg-slate-50 p-4 rounded-2xl border space-y-3">
+                    <div>
+                        <label class="block text-slate-800 font-bold mb-1">Tipe Pemesanan *</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="setOrderType('now')" id="btn-order-now" class="py-2 rounded-xl font-bold border bg-slate-900 text-themebrand-400">⚡ Ambil Langsung</button>
+                            <button type="button" onclick="setOrderType('preorder')" id="btn-order-po" class="py-2 rounded-xl font-bold border bg-white text-slate-700">📅 Pre-Order (Jadwal)</button>
+                        </div>
+                    </div>
+                    <div id="box-preorder-schedule" class="hidden p-3 bg-themebrand-50 border border-themebrand-200 rounded-xl space-y-2">
+                        <p class="font-bold text-themebrand-900 text-[11px]">Waktu Pengambilan Pre-Order:</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" id="po-date-input" class="p-2 bg-white border rounded-lg font-bold">
+                            <input type="time" id="po-time-input" class="p-2 bg-white border rounded-lg font-bold">
+                        </div>
+                    </div>
+                    <div id="kasir-checkout-opts" class="hidden space-y-2 border-b pb-3">
+                        <select id="select-kasir-staff" class="w-full p-2 bg-white border rounded-xl font-bold"></select>
+                        <select id="select-kasir-discount" onchange="renderCartModalItems()" class="w-full p-2 bg-white border rounded-xl font-bold text-themebrand-700"></select>
+                    </div>
+                    <input type="text" id="cust-name-input" placeholder="Nama Pemesan *" class="w-full p-2.5 bg-white border rounded-xl font-medium">
+                    <input type="tel" id="cust-phone-input" placeholder="Nomor WhatsApp *" class="w-full p-2.5 bg-white border rounded-xl font-medium">
+                </div>
+                <div class="space-y-1 border-t pt-2 font-bold">
+                    <div class="flex justify-between text-slate-500"><span>Subtotal:</span><span id="summary-subtotal">Rp 0</span></div>
+                    <div class="flex justify-between text-slate-900 text-sm"><span>Total Tagihan:</span><span id="summary-grandtotal" class="text-themebrand-600">Rp 0</span></div>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t rounded-b-3xl">
+                <button type="button" onclick="submitCheckout(this)" class="btn-press w-full bg-slate-900 text-themebrand-400 font-black py-3.5 rounded-2xl shadow-md">Kirim Draft WA & Lanjut QRIS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL STRUK DIGITAL RESMI & QRIS -->
+    <div id="modal-payment" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white border w-full max-w-md rounded-3xl p-6 text-center space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div id="qris-view" class="space-y-3">
+                <h3 class="font-extrabold text-base text-slate-900">Pembayaran QRIS Mainstay</h3>
+                <div class="my-2 p-2 bg-white rounded-2xl border-2 border-themebrand-500 inline-block">
+                    <img id="qris-img-display" src="" class="w-44 h-44 mx-auto object-contain">
+                </div>
+                <div class="text-xl font-black text-themebrand-600" id="qris-amount-display">Rp 0</div>
+                <button type="button" onclick="confirmPaymentAndReceipt(this)" class="btn-press w-full bg-slate-900 text-themebrand-400 font-extrabold py-3.5 rounded-2xl text-xs shadow-md">
+                    <i class="fa-brands fa-whatsapp text-base mr-1"></i> Auto Draft WA Resto + Jeda Kirim Bukti
+                </button>
+            </div>
+
+            <div id="receipt-view" class="hidden text-left space-y-4">
+                <div id="printable-area" class="bg-slate-50 p-5 rounded-2xl border text-xs space-y-2 receipt-watermark-box">
+                    <div id="receipt-watermark" class="watermark-text">LUNAS</div>
+                    <p class="text-center font-black text-sm uppercase text-slate-900" id="rec-resto-title">MAINSTAY DRINK SHOP</p>
+                    <p class="text-center text-[10px] text-themebrand-700 font-bold border-b pb-2">STRUK DIGITAL RESMI • PRESISI REAL-TIME</p>
+                    <div class="space-y-1 text-slate-700 pt-1">
+                        <p><strong>ID Order:</strong> <span id="rec-id" class="font-bold">#ORD-0000</span></p>
+                        <p><strong>Waktu Presisi:</strong> <span id="rec-timestamp" class="font-bold text-slate-900">-</span></p>
+                        <p><strong>Tipe Pesanan:</strong> <span id="rec-type" class="font-bold">-</span></p>
+                        <p><strong>Pemesan:</strong> <span id="rec-name" class="font-bold">-</span></p>
+                        <p><strong>No WA:</strong> <span id="rec-phone" class="font-bold">-</span></p>
+                    </div>
+                    <div id="rec-items-list" class="border-t border-b py-2 space-y-1"></div>
+                    <p class="pt-1"><strong>Total Tagihan:</strong> <span id="rec-total" class="text-themebrand-700 font-black text-sm">Rp 0</span></p>
+                    
+                    <div class="pt-2 text-center space-y-1">
+                        <div id="receipt-verify-qr" class="inline-block p-1 bg-white border rounded-lg"></div>
+                        <p class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Scan Kode QR Untuk Verifikasi Keaslian Struk</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <button type="button" onclick="downloadReceiptPNG(this)" class="btn-press w-full bg-themebrand-500 text-slate-950 font-extrabold py-3 rounded-2xl text-xs shadow-md">
+                        <i class="fa-solid fa-download mr-1"></i> Unduh Struk Digital (PNG)
+                    </button>
+                    <a id="btn-wa-customer" href="#" target="_blank" class="block w-full bg-slate-900 text-themebrand-400 font-extrabold py-3 rounded-2xl text-center text-xs shadow-md">
+                        <i class="fa-brands fa-whatsapp mr-1"></i> Kirim Struk Ke WA Customer
+                    </a>
+                </div>
+                <button type="button" onclick="closePaymentModal()" class="w-full bg-slate-100 text-slate-600 font-semibold py-2 rounded-2xl text-xs">Kembali Ke Katalog</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KAMERA ABSENSI LIVE DIRECT -->
+    <div id="modal-camera-attendance" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 text-center space-y-3 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-2"><h3 class="font-extrabold text-xs text-slate-900"><i class="fa-solid fa-camera text-themebrand-600 mr-1"></i> Kamera Absensi Live Staf</h3><button type="button" onclick="closeDirectCameraAttendance()"><i class="fa-solid fa-xmark text-slate-400"></i></button></div>
+            <div class="space-y-2 text-left text-xs">
+                <select id="att-camera-staff" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"></select>
+                <select id="att-camera-type" class="w-full p-2 bg-slate-50 border rounded-xl font-bold"><option value="IN">🟢 Masuk Shift (Clock-In)</option><option value="OUT">🔴 Pulang Shift (Clock-Out)</option></select>
+                <input type="password" id="att-camera-pin" maxlength="4" placeholder="PIN Staf (4 Digit)" class="w-full p-2 text-center text-lg tracking-widest bg-slate-50 border rounded-xl font-bold">
+            </div>
+
+            <div class="relative w-full h-52 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                <video id="att-video-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="att-photo-canvas" class="hidden"></canvas>
+            </div>
+
+            <button type="button" onclick="captureAndSubmitAttendance(this)" class="btn-press w-full py-3 bg-themebrand-500 text-slate-950 font-black rounded-2xl shadow-md">
+                <i class="fa-solid fa-circle-dot mr-1 animate-pulse"></i> Absen Foto Live Seketika
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL POP-UP SUMMARY ABSENSI (AUTO-CLOSE 3 DETIK) -->
+    <div id="modal-attendance-summary" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-5 text-center space-y-3 shadow-2xl border-2 border-themebrand-500">
+            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-black"><i class="fa-solid fa-check"></i></div>
+            <h3 class="font-extrabold text-sm text-slate-900">Absensi Berhasil Dicatat!</h3>
+            <img id="sum-att-photo" src="" class="w-28 h-28 mx-auto rounded-2xl object-cover border">
+            <div class="text-xs space-y-1 text-slate-700 text-left bg-slate-50 p-2.5 rounded-xl border">
+                <p><strong>Staf:</strong> <span id="sum-att-name">-</span></p>
+                <p><strong>Status Shift:</strong> <span id="sum-att-type" class="font-bold text-amber-700">-</span></p>
+                <p><strong>Waktu Presisi:</strong> <span id="sum-att-time" class="font-bold text-slate-900">-</span></p>
+                <p><strong>Kehadiran:</strong> <span id="sum-att-late" class="font-extrabold">-</span></p>
+            </div>
+            <p class="text-[9px] text-slate-400 font-bold uppercase animate-pulse">Menutup otomatis dalam 3 detik...</p>
+        </div>
+    </div>
+
+    <!-- MODAL 4 OPSI DESAIN POSTER QR TOKO -->
+    <div id="modal-qr-options" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 text-center space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-2"><h3 class="font-extrabold text-xs text-slate-900"><i class="fa-solid fa-qrcode text-themebrand-600 mr-1"></i> Opsi Cetak Poster QR Display Toko</h3><button type="button" onclick="closeQrModalOptions()"><i class="fa-solid fa-xmark text-slate-400"></i></button></div>
+            
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <button type="button" onclick="selectQrDesign(1)" id="btn-qr-opt-1" class="p-2 rounded-xl font-bold border text-left">1. Polos Clean Mentah</button>
+                <button type="button" onclick="selectQrDesign(2)" id="btn-qr-opt-2" class="p-2 rounded-xl font-bold border text-left">2. Standee Akrilik Kasir</button>
+                <button type="button" onclick="selectQrDesign(3)" id="btn-qr-opt-3" class="p-2 rounded-xl font-bold border text-left">3. Poster Dinding Playful</button>
+                <button type="button" onclick="selectQrDesign(4)" id="btn-qr-opt-4" class="p-2 rounded-xl font-bold border text-left">4. Stiker Mini Cup</button>
+            </div>
+
+            <div id="qr-preview-wrapper" class="p-4 bg-slate-50 border rounded-2xl min-h-[260px] flex items-center justify-center">
+                <!-- DYNAMIC PREVIEW CANVAS -->
+                <div id="qr-poster-card" class="bg-white p-5 rounded-2xl border-2 border-themebrand-500 shadow-md max-w-xs mx-auto text-center relative overflow-hidden">
+                    <div id="qr-poster-header" class="space-y-1"></div>
+                    <div id="qr-code-box" class="my-3 inline-block p-2 bg-white border border-slate-200 rounded-xl shadow-inner"></div>
+                    <div id="qr-poster-footer" class="space-y-1"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="downloadSelectedQrPNG(this)" class="btn-press py-2.5 bg-themebrand-500 font-extrabold text-xs rounded-xl shadow"><i class="fa-solid fa-download mr-1"></i> Unduh Gambar PNG</button>
+                <button type="button" onclick="printSelectedQrStandee()" class="btn-press py-2.5 bg-slate-900 text-themebrand-400 font-extrabold text-xs rounded-xl"><i class="fa-solid fa-print mr-1"></i> Cetak Poster</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app-core.js"></script>
+    <script src="app-customer.js"></script>
+    <script src="app-kasir-owner.js"></script>
+</body>
+</html>
