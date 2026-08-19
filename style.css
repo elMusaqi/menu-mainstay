@@ -1,0 +1,84 @@
+/* Reset & General Styles */
+* { box-sizing: border-box; }
+body { -webkit-tap-highlight-color: transparent; }
+
+/* Micro-Interactions: Animasi saat tombol ditekan */
+.btn-press {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+.btn-press:active {
+    transform: scale(0.95);
+}
+
+/* Navigasi & Tab Aktif Header */
+.nav-tab-btn { transition: all 0.2s ease; }
+.nav-tab-btn.active {
+    background-color: #0f172a !important; /* slate-900 */
+    color: #fbbf24 !important; /* amber-400 */
+    box-shadow: 0 0 0 2px #f59e0b !important;
+}
+
+/* Owner Sub-Tab Aktif */
+.owner-tab-btn.active {
+    background-color: #0f172a !important;
+    color: #fbbf24 !important;
+}
+
+/* Sub-Tab Kasir Aktif */
+.sub-tab-btn.active {
+    background-color: #0f172a !important;
+    color: #fbbf24 !important;
+}
+
+/* Border Menyala & Elemen Aktif Pilihan Modal/Form */
+.active-border { 
+    border: 2px solid #f59e0b !important; 
+    background-color: #fffbe3 !important; 
+    color: #78350f !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; 
+}
+
+/* Utilities */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.hidden { display: none !important; }
+
+/* Loading Spinner untuk Tombol */
+.btn-loading { pointer-events: none; opacity: 0.8; }
+.btn-loading::after {
+    content: "";
+    display: inline-block;
+    width: 0.9rem; height: 0.9rem;
+    margin-left: 0.4rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: button-spinner 0.6s linear infinite;
+    vertical-align: middle;
+}
+@keyframes button-spinner { to { transform: rotate(360deg); } }
+
+/* PERBAIKAN CETAK THERMAL (PRINTER BLUETOOTH / USB) */
+@media print {
+    body * { 
+        visibility: hidden !important; 
+    }
+    #printable-area, #printable-area * { 
+        visibility: visible !important; 
+    }
+    #printable-area { 
+        display: block !important;
+        position: absolute !important; 
+        left: 0 !important; 
+        top: 0 !important; 
+        width: 100% !important; 
+        max-width: 58mm !important; /* Kertas Thermal 58mm */
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+}
