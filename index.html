@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mainstay Coffee - Web Catalog & POS System</title>
+  
+  <!-- CDN Tailwind CSS (Wajib agar tampilan rapi & presisi) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="stylesheet" href="style.css">
+  <!-- Feather Icons untuk Ikon Sosmed & UI -->
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-amber-500 selection:text-slate-900">
+
+  <!-- ================= TOPBAR HEADER REAL-TIME ================= -->
+  <header class="topbar-header sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
+      <!-- Info Waktu & Status Toko -->
+      <div class="flex items-center gap-3">
+        <div id="statusBadge" class="status-badge status-buka">
+          <span class="status-dot"></span>
+          <span id="statusBadgeText" class="status-text">BUKA</span>
+        </div>
+        <div class="header-datetime text-xs text-slate-400 border-l border-slate-800 pl-3 hidden sm:block">
+          <span id="realtimeDayDate" class="font-medium text-slate-300">Kamis, 20 Ags 2026</span>
+          <span class="mx-1">•</span>
+          <span id="realtimeClock" class="font-bold text-amber-400">20:19:05 WIB</span>
+        </div>
+      </div>
+
+      <!-- Logo & Resto Title -->
+      <div class="flex items-center gap-2 cursor-pointer" onclick="App.switchView('customer')">
+        <img id="headerLogo" src="https://via.placeholder.com/80/f59e0b/1e293b?text=MC" alt="Mainstay Logo" class="w-8 h-8 rounded-full border border-amber-500/30 object-cover">
+        <div>
+          <h1 id="headerRestoName" class="text-base font-bold tracking-tight text-slate-100 leading-none">Mainstay Coffee</h1>
+          <p id="headerTagline" class="text-[10px] text-amber-500 font-medium">Quality Coffee & Comfort</p>
+        </div>
+      </div>
+
+      <!-- Quick Action: Switch POS / Owner Login -->
+      <div class="flex items-center gap-2">
+        <button id="btnMemberArea" onclick="App.openModal('modalMember')" class="btn-slate text-xs py-1.5 px-3 flex items-center gap-1.5 border border-amber-500/30 text-amber-400">
+          <i data-feather="gift" class="w-3.5 h-3.5"></i>
+          <span class="hidden md:inline">Loyalty Member</span>
+        </button>
+        <button id="btnLoginPortal" onclick="App.openModal('modalLogin')" class="btn-amber text-xs py-1.5 px-3 font-semibold">
+          <i data-feather="user" class="w-3.5 h-3.5 inline mr-1"></i>
+          <span>Internal Portal</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= RUNNING ANNOUNCEMENT (TEKS BERJALAN) ================= -->
+  <div id="runningTextContainer" class="bg-amber-500/10 border-b border-amber-500/20 py-1.5 overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 flex items-center">
+      <span class="bg-amber-500 text-slate-950 text-[10px] font-extrabold px-2 py-0.5 rounded mr-3 whitespace-nowrap uppercase">INFO</span>
+      <marquee id="marqueeText" class="text-xs text-amber-300 font-medium tracking-wide">
+        Info: Nikmati diskon spesial untuk Member Mainstay! Pasokan bahan baku segar tiba setiap hari.
+      </marquee>
+    </div>
+  </div>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- ---------------- SECTION 1: CUSTOMER CATALOG VIEW ---------------- -->
+    <section id="viewCustomer" class="view-section space-y-8">
+      
+      <!-- Banner Carousel Interaktif (Gambar & Video Short Looping) -->
+      <div class="banner-carousel-container relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-xl">
+        <div id="carouselSlides" class="carousel-track flex transition-transform duration-500 ease-in-out">
+          <!-- Slide Banner dirender otomatis oleh JavaScript -->
+        </div>
+        <button onclick="Carousel.prev()" class="carousel-arrow left-2"><i data-feather="chevron-left"></i></button>
+        <button onclick="Carousel.next()" class="carousel-arrow right-2"><i data-feather="chevron-right"></i></button>
+        <div id="carouselIndicators" class="carousel-indicators"></div>
+      </div>
+
+      <!-- Action Card Loyalty Member (Area Depan) -->
+      <div class="loyalty-banner-card bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg relative overflow-hidden">
+        <div class="space-y-1 text-center md:text-left z-10">
+          <div class="inline-flex items-center gap-1.5 text-xs text-amber-400 font-semibold uppercase tracking-wider">
+            <i data-feather="award" class="w-4 h-4"></i> Program Stamp Loyalty
+          </div>
+          <h2 class="text-lg font-bold text-slate-100">Kumpulkan Stempel & Dapatkan Kopi Gratis!</h2>
+          <p class="text-xs text-slate-400">Daftar member sekarang untuk klaim voucher promo instan via WhatsApp.</p>
+        </div>
+        <div class="flex items-center gap-2 z-10 w-full md:w-auto">
+          <button onclick="App.openModal('modalMemberCheck')" class="btn-slate flex-1 md:flex-none text-xs py-2.5 px-4 font-semibold border border-amber-500/40 text-amber-400 hover:bg-amber-500/10">
+            🎁 Cek Stem Member
+          </button>
+          <button onclick="App.openModal('modalMemberJoin')" class="btn-amber flex-1 md:flex-none text-xs py-2.5 px-4 font-bold shadow-md shadow-amber-500/20">
+            💳 Daftar Member
+          </button>
+        </div>
+      </div>
+
+      <!-- Katalog Produk & Menu -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+            <i data-feather="coffee" class="text-amber-500"></i> Katalog Menu Cafe
+          </h2>
+          <!-- Filter Kategori -->
+          <div id="categoryFilters" class="flex gap-2 overflow-x-auto pb-1 text-xs">
+            <button class="cat-btn active" onclick="App.filterCategory('all')">Semua</button>
+            <button class="cat-btn" onclick="App.filterCategory('coffee')">Coffee</button>
+            <button class="cat-btn" onclick="App.filterCategory('non-coffee')">Non-Coffee</button>
+            <button class="cat-btn" onclick="App.filterCategory('food')">Makanan</button>
+          </div>
+        </div>
+
+        <!-- Grid Kartu Menu Customer -->
+        <div id="customerMenuGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Social Media Icons & Embedded Google Maps (Full Width) -->
+      <div class="border-t border-slate-800 pt-8 space-y-6">
+        <div class="flex flex-col items-center justify-center space-y-3">
+          <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold">Ikuti & Hubungi Kami</p>
+          <div id="socialMediaIcons" class="flex items-center gap-4">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Google Maps Display (Full Width) -->
+        <div class="maps-container rounded-2xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950">
+          <iframe id="googleMapsIframe" src="about:blank" width="100%" height="320" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ---------------- SECTION 2: POS KASIR (Akses Universal Owner & Staf) ---------------- -->
+    <section id="viewPOS" class="view-section hidden space-y-6">
+      <div class="flex items-center justify-between bg-slate-800/60 p-4 rounded-xl border border-slate-700">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <i data-feather="shopping-bag" class="text-amber-500"></i> Layar POS Kasir & Transaksi
+          </h2>
+          <p class="text-xs text-slate-400">Akses katalog lengkap untuk pemesanan manual di tempat.</p>
+        </div>
+        <button onclick="App.switchView('customer')" class="btn-slate text-xs py-2 px-3 border border-slate-600">
+          <i data-feather="arrow-left" class="inline w-3.5 h-3.5 mr-1"></i> Kembali ke Katalog
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Katalog Menu POS (2 Kolom) -->
+        <div class="lg:col-span-2 space-y-4">
+          <div id="posMenuGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Panel Ringkasan Keranjang POS Kasir (1 Kolom) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between h-fit sticky top-20">
+          <div class="space-y-3">
+            <h3 class="text-base font-bold text-slate-100 border-b border-slate-800 pb-2">Keranjang Pesanan</h3>
+            
+            <!-- Inisialisasi Data Pelanggan Kasir -->
+            <div class="space-y-2">
+              <input type="text" id="posCustomerName" placeholder="Nama Pelanggan" class="input-field text-xs">
+              <input type="text" id="posCustomerPhone" placeholder="No WhatsApp (contoh: 08123456789)" class="input-field text-xs">
+            </div>
+
+            <!-- List Item Keranjang -->
+            <div id="posCartItems" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs divide-y divide-slate-800/50">
+              <p class="text-slate-500 text-center py-6">Keranjang masih kosong</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 border-t border-slate-800 pt-3">
+            <!-- Ringkasan Subtotal & Promo -->
+            <div class="space-y-1 text-xs">
+              <div class="flex justify-between text-slate-400"><span>Subtotal</span><span id="posSubtotalText">Rp 0</span></div>
+              <div class="flex justify-between text-emerald-400"><span>Diskon Voucher</span><span id="posDiscountText">-Rp 0</span></div>
+              <div class="flex justify-between text-sm font-bold text-slate-100 border-t border-slate-800 pt-2"><span>Total</span><span id="posTotalText" class="text-amber-400">Rp 0</span></div>
+            </div>
+
+            <!-- Metode Pembayaran & Tombol Eksekusi -->
+            <select id="posPaymentMethod" class="input-field text-xs">
+              <option value="Tunai">Metode: Tunai / Cash</option>
+              <option value="QRIS Non-Tunai">Metode: QRIS Non-Tunai</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="POS.clearCart()" class="btn-slate text-xs py-2.5 font-semibold text-rose-400 border border-rose-500/20">Batal</button>
+              <button onclick="POS.checkout()" class="btn-amber text-xs py-2.5 font-bold shadow-md shadow-amber-500/20">Proses Bayar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- SECTION 3: DASHBOARD OWNER CONTROL CENTRALIZED ---------------- -->
+    <section id="viewOwner" class="view-section hidden space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+        <div>
+          <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+            <i data-feather="sliders" class="text-amber-500"></i> Dashboard Owner Control Centralized
+          </h2>
+          <p class="text-xs text-slate-400">Pusat kontrol operasional, branding, profiling, & database master.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="App.switchView('pos')" class="btn-amber text-xs py-2 px-3 font-semibold">
+            <i data-feather="shopping-bag" class="inline w-3.5 h-3.5 mr-1"></i> Buka Katalog POS
+          </button>
+          <button onclick="App.logout()" class="btn-slate text-xs py-2 px-3 text-rose-400 border border-rose-500/30">
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Dashboard Owner -->
+      <div class="owner-tabs flex gap-2 border-b border-slate-800 overflow-x-auto pb-1 text-xs">
+        <button class="owner-tab-btn active" onclick="Owner.switchTab('branding')">Custom Web Branding</button>
+        <button class="owner-tab-btn" onclick="Owner.switchTab('vouchers')">Control Voucher</button>
+        <button class="owner-tab-btn" onclick="Owner.switchTab('stamps')">Loyalty Stamp Settings</button>
+        <button class="owner-tab-btn" onclick="Owner.switchTab('profiles')">Profiling Owner & Staf</button>
+        <button class="owner-tab-btn" onclick="Owner.switchTab('attendance')">Monitoring Absensi Staf</button>
+        <button class="owner-tab-btn" onclick="Owner.switchTab('database')">Database Master & Backup</button>
+      </div>
+
+      <!-- Tab 1: Custom Web Branding Control -->
+      <div id="tabOwnerBranding" class="owner-tab-content space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">1. Identitas Visual & Kontak Resto</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label class="label-text">Nama Cafe / Resto</label>
+              <input type="text" id="ownRestoName" class="input-field">
+            </div>
+            <div>
+              <label class="label-text">Tagline Resto</label>
+              <input type="text" id="ownTagline" class="input-field">
+            </div>
+            <div>
+              <label class="label-text">Nomor WA Resto Universal (Contoh: 628123456789)</label>
+              <input type="text" id="ownUniversalWa" class="input-field">
+            </div>
+            <div>
+              <label class="label-text">Link Broadcast WhatsApp Resto (Auto-Redirect Member)</label>
+              <input type="text" id="ownWaBroadcastUrl" class="input-field">
+            </div>
+          </div>
+
+          <!-- Dual Upload Aset Gambar (File / Link URL) -->
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 pt-4">2. Upload Aset Visual (Dual-Option: File / URL)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <!-- Logo -->
+            <div class="space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="label-text font-bold">Logo Resto</label>
+              <input type="file" id="ownLogoFileInput" onchange="Owner.handleFileUpload(this, 'ownLogoUrl')" class="text-[10px]">
+              <input type="text" id="ownLogoUrl" placeholder="Atau Tempel URL Logo" class="input-field text-[11px]">
+            </div>
+            <!-- Favicon -->
+            <div class="space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="label-text font-bold">Favicon Web</label>
+              <input type="file" id="ownFaviconFileInput" onchange="Owner.handleFileUpload(this, 'ownFaviconUrl')" class="text-[10px]">
+              <input type="text" id="ownFaviconUrl" placeholder="Atau Tempel URL Favicon" class="input-field text-[11px]">
+            </div>
+            <!-- QRIS -->
+            <div class="space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="label-text font-bold">Barcode QRIS</label>
+              <input type="file" id="ownQrisFileInput" onchange="Owner.handleFileUpload(this, 'ownQrisUrl')" class="text-[10px]">
+              <input type="text" id="ownQrisUrl" placeholder="Atau Tempel URL QRIS" class="input-field text-[11px]">
+            </div>
+          </div>
+
+          <!-- Running Text, Maps, & Policy -->
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 pt-4">3. Running Text, Google Maps, & Kebijakan</h3>
+          <div class="space-y-4 text-xs">
+            <div>
+              <label class="label-text">Teks Pengumuman Berjalan (Running Text)</label>
+              <input type="text" id="ownRunningText" class="input-field">
+            </div>
+            <div>
+              <label class="label-text">Embed Link Google Maps (Full-Width)</label>
+              <input type="text" id="ownMapsEmbedUrl" class="input-field" placeholder="https://www.google.com/maps/embed?pb=...">
+            </div>
+            <div>
+              <label class="label-text">Teks Kebijakan & Catatan Pemesanan (Modal Keranjang)</label>
+              <textarea id="ownPolicyText" class="input-field h-20"></textarea>
+            </div>
+          </div>
+
+          <button onclick="Owner.saveBrandingSettings()" class="btn-amber text-xs py-2.5 px-6 font-bold shadow-md shadow-amber-500/20">
+            💾 Simpan Perubahan Branding
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Control Voucher -->
+      <div id="tabOwnerVouchers" class="owner-tab-content hidden space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider">Manajemen Voucher Promo</h3>
+            <button onclick="Owner.openVoucherModal()" class="btn-amber text-xs py-1.5 px-3 font-semibold">+ Buat Voucher</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Kode</th>
+                  <th class="p-3">Judul Promo</th>
+                  <th class="p-3">Nilai Diskon</th>
+                  <th class="p-3">Target Orang</th>
+                  <th class="p-3">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="voucherTableBody" class="divide-y divide-slate-800">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Loyalty Stamp Settings -->
+      <div id="tabOwnerStamps" class="owner-tab-content hidden space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 text-xs">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">Pengaturan Syarat & Kadaluarsa Stempel</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="label-text">Syarat Minimal Belanja untuk +1 Stempel (Rp)</label>
+              <input type="number" id="ownStampMinAmount" class="input-field" placeholder="30000">
+            </div>
+            <div>
+              <label class="label-text">Target Jumlah Stempel Penuh</label>
+              <input type="number" id="ownStampTarget" class="input-field" placeholder="5">
+            </div>
+            <div>
+              <label class="label-text">Durasi Masa Kadaluarsa Hadiah (Angka)</label>
+              <input type="number" id="ownStampExpiryVal" class="input-field" placeholder="1">
+            </div>
+            <div>
+              <label class="label-text">Satuan Waktu Kadaluarsa</label>
+              <select id="ownStampExpiryUnit" class="input-field">
+                <option value="hours">Jam</option>
+                <option value="days">Hari</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="Owner.saveStampSettings()" class="btn-amber text-xs py-2.5 px-6 font-bold">
+            💾 Simpan Pengaturan Stempel
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 4: Profiling Owner & Staf -->
+      <div id="tabOwnerProfiles" class="owner-tab-content hidden space-y-6">
+        <!-- Section Profil Owner Master -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 text-xs">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">1. Profil Owner Master (Tanpa Absen)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="label-text">Nama Owner</label>
+              <input type="text" id="ownOwnerName" class="input-field">
+            </div>
+            <div>
+              <label class="label-text">PIN Master Owner (Default: 9999)</label>
+              <input type="text" id="ownOwnerPin" class="input-field">
+            </div>
+            <div>
+              <label class="label-text">No. WA Owner</label>
+              <input type="text" id="ownOwnerPhone" class="input-field">
+            </div>
+          </div>
+          <button onclick="Owner.saveOwnerProfile()" class="btn-amber text-xs py-2 px-4 font-semibold">Simpan Profil Owner</button>
+        </div>
+
+        <!-- Section Profil Staf / Kasir (Full CRUD & Direct WA) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 text-xs">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider">2. Daftar Profil Staf / Kasir Shift</h3>
+            <button onclick="Owner.openStaffModal()" class="btn-amber text-xs py-1.5 px-3 font-semibold">+ Tambah Staf Baru</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Nama</th>
+                  <th class="p-3">PIN</th>
+                  <th class="p-3">Kategori Gaji</th>
+                  <th class="p-3">Nominal Gaji</th>
+                  <th class="p-3">Direct WA</th>
+                  <th class="p-3">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody" class="divide-y divide-slate-800">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Monitoring Absensi Staf -->
+      <div id="tabOwnerAttendance" class="owner-tab-content hidden space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 text-xs">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">Log Absensi Kamera Staf Real-Time</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Tanggal & Waktu</th>
+                  <th class="p-3">Nama Staf</th>
+                  <th class="p-3">Foto Kamera Log</th>
+                  <th class="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceTableBody" class="divide-y divide-slate-800">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 6: Database Master, Master Spreadsheet Sync & JSON Backup -->
+      <div id="tabOwnerDatabase" class="owner-tab-content hidden space-y-6 text-xs">
+        <!-- Master Spreadsheet Access -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">1. Master Spreadsheet Data Pusat (Multi-Tab)</h3>
+          <p class="text-slate-400">Seluruh data transaksi, profil staf, member, dan stempel tersinkronisasi secara otomatis di latar belakang ke Google Sheets.</p>
+          <div class="flex items-center gap-3">
+            <input type="text" id="ownSpreadsheetUrlInput" placeholder="Tempel URL Link Master Spreadsheet" class="input-field">
+            <button onclick="Owner.saveSpreadsheetUrl()" class="btn-slate text-xs py-2 px-4 whitespace-nowrap">Simpan Link</button>
+            <a id="btnOpenSpreadsheet" href="#" target="_blank" class="btn-amber text-xs py-2 px-4 font-bold whitespace-nowrap flex items-center gap-1">
+              📊 Buka Master Spreadsheet
+            </a>
+          </div>
+        </div>
+
+        <!-- JSON System Backup & Restore -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">2. Backup & Restore Sistem (JSON Format)</h3>
+          <div class="flex flex-wrap items-center gap-4">
+            <button onclick="mainStore.exportJSONBackup()" class="btn-amber text-xs py-2.5 px-4 font-bold flex items-center gap-1.5">
+              💾 Download JSON System Backup
+            </button>
+            <div class="flex items-center gap-2 border border-slate-700 p-1.5 rounded-xl bg-slate-950">
+              <input type="file" id="jsonImportInput" accept=".json" class="text-[10px]">
+              <button onclick="App.handleImportJSON()" class="btn-slate text-xs py-1 px-3">Restore JSON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= MODALS & POP-UPS (PRESERVED STYLES) ================= -->
+
+  <!-- Modal Login Internal (Kasir / Owner) -->
+  <div id="modalLogin" class="modal-backdrop hidden">
+    <div class="modal-card max-w-xs space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-slate-100">Portal Login Internal</h3>
+        <button onclick="App.closeModal('modalLogin')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="label-text">Masukkan PIN Otorisasi</label>
+          <input type="password" id="inputLoginPin" placeholder="PIN Master / Kasir" class="input-field text-center font-bold text-lg tracking-widest">
+        </div>
+        <button onclick="App.processLogin()" class="btn-amber w-full py-2.5 font-bold">Masuk Portal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cek Stempel Member -->
+  <div id="modalMemberCheck" class="modal-backdrop hidden">
+    <div class="modal-card max-w-sm space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+          <i data-feather="award" class="w-4 h-4"></i> Cek Stem Member
+        </h3>
+        <button onclick="App.closeModal('modalMemberCheck')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="label-text">Masukkan Nomor WhatsApp Anda</label>
+          <input type="text" id="checkMemberPhone" placeholder="08123456789" class="input-field">
+        </div>
+        <button onclick="Member.checkStamps()" class="btn-amber w-full py-2.5 font-bold">Cek Stempel Saya</button>
+        <div id="stampResultBox" class="hidden border border-slate-800 bg-slate-950 p-4 rounded-xl space-y-3 text-center">
+          <!-- Render Visual Stamp Grid oleh JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Daftar Member (Auto-Redirect WA Broadcast) -->
+  <div id="modalMemberJoin" class="modal-backdrop hidden">
+    <div class="modal-card max-w-sm space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-slate-100">Pendaftaran Member Mainstay</h3>
+        <button onclick="App.closeModal('modalMemberJoin')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="label-text">Nama Lengkap</label>
+          <input type="text" id="joinMemberName" placeholder="Contoh: Budi Santoso" class="input-field">
+        </div>
+        <div>
+          <label class="label-text">Nomor WhatsApp</label>
+          <input type="text" id="joinMemberPhone" placeholder="08123456789" class="input-field">
+        </div>
+        <button onclick="Member.joinMember()" class="btn-amber w-full py-2.5 font-bold">
+          Daftar & Join WA Broadcast Resto
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOADER -->
+  <script src="app.js"></script>
+  <script>feather.replace();</script>
+</body>
+</html>
