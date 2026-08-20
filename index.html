@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mainstay Drink Shop</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="theme-light">
+
+  <!-- TOPBAR HEADER -->
+  <header class="topbar-header">
+    <div class="header-container">
+      <div class="header-brand-box" onclick="App.switchView('customer')">
+        <img id="headerLogo" src="https://via.placeholder.com/80/f59e0b/ffffff?text=MDS" alt="Logo" class="header-logo-square">
+        <div class="header-text-group">
+          <h1 id="headerRestoName" class="brand-title-singleline">Mainstay Drink Shop</h1>
+          <p id="headerTagline" class="brand-tagline">Minuman Andalanmu</p>
+          <div class="header-datetime-sub">
+            <span id="realtimeDayDate">Kamis, 20 Ags 2026</span>
+            <span class="dot-separator">•</span>
+            <span id="realtimeClock" class="clock-live">20:40:00 WIB</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions-right">
+        <div id="statusBadge" class="status-badge-small status-buka">
+          <span class="status-dot"></span>
+          <span id="statusBadgeText">BUKA</span>
+        </div>
+        <div class="header-buttons">
+          <button onclick="App.openModal('modalMemberCheck')" class="btn-light-slate btn-sm">🎁 Loyalty Member</button>
+          <button onclick="App.openModal('modalLogin')" class="btn-amber-light btn-sm">👤 Internal Portal</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- RUNNING ANNOUNCEMENT -->
+  <div id="runningTextContainer" class="running-text-bar">
+    <div class="running-text-inner">
+      <span class="badge-info">INFO</span>
+      <marquee id="marqueeText" class="marquee-content">
+        Info: Nikmati diskon spesial untuk Member Mainstay! Pasokan bahan baku segar tiba setiap hari.
+      </marquee>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-container">
+
+    <!-- CATALOG VIEW -->
+    <section id="viewCustomer" class="view-section">
+      <div class="banner-carousel">
+        <div id="carouselSlides" class="carousel-track"></div>
+        <button onclick="Carousel.prev()" class="carousel-arrow left">&lt;</button>
+        <button onclick="Carousel.next()" class="carousel-arrow right">&gt;</button>
+        <div id="carouselIndicators" class="carousel-indicators"></div>
+      </div>
+
+      <div class="loyalty-card-light">
+        <div class="loyalty-info">
+          <span class="loyalty-badge">🏆 Program Stamp Loyalty</span>
+          <h2>Kumpulkan Stempel & Dapatkan Kopi Gratis!</h2>
+          <p>Daftar member sekarang untuk klaim voucher promo instan via WhatsApp.</p>
+        </div>
+        <div class="loyalty-actions">
+          <button onclick="App.openModal('modalMemberCheck')" class="btn-light-slate">🎁 Cek Stem</button>
+          <button onclick="App.openModal('modalMemberJoin')" class="btn-amber-light">💳 Daftar</button>
+        </div>
+      </div>
+
+      <div class="catalog-section">
+        <div class="section-header">
+          <h2>☕ Katalog Menu Cafe</h2>
+          <div id="categoryFilters" class="category-filters">
+            <button class="cat-btn active" onclick="App.filterCategory('all', event)">Semua</button>
+            <button class="cat-btn" onclick="App.filterCategory('coffee', event)">Coffee</button>
+            <button class="cat-btn" onclick="App.filterCategory('non-coffee', event)">Non-Coffee</button>
+            <button class="cat-btn" onclick="App.filterCategory('food', event)">Makanan</button>
+          </div>
+        </div>
+        <div id="customerMenuGrid" class="menu-grid"></div>
+      </div>
+
+      <div class="footer-branding">
+        <div class="social-box">
+          <p class="social-title">IKUTI & HUBUNGI KAMI</p>
+          <div id="socialMediaIcons" class="social-icons flex-row"></div>
+        </div>
+        <div class="maps-box">
+          <iframe id="googleMapsIframe" src="about:blank" width="100%" height="220" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- POS VIEW -->
+    <section id="viewPOS" class="view-section hidden">
+      <div class="owner-header">
+        <div>
+          <h2>🛍️ Layar POS Kasir & Transaksi</h2>
+          <p class="owner-subtitle">Pemesanan manual di tempat.</p>
+        </div>
+        <button onclick="App.switchView('customer')" class="btn-light-slate btn-sm">← Kembali</button>
+      </div>
+
+      <div class="view-section">
+        <div id="posMenuGrid" class="menu-grid"></div>
+
+        <div class="panel-card space-y">
+          <h3>Keranjang Pesanan</h3>
+          <div class="flex-col gap">
+            <input type="text" id="posCustomerName" placeholder="Nama Pelanggan" class="input-field">
+            <input type="text" id="posCustomerPhone" placeholder="No WA (08123456789)" class="input-field">
+          </div>
+          <div id="posCartItems" style="max-height: 180px; overflow-y: auto;">
+            <p style="text-align:center; color:#94a3b8; padding: 1rem 0;">Keranjang kosong</p>
+          </div>
+
+          <div class="space-y" style="border-top:1px solid #e2e8f0; padding-top:0.5rem;">
+            <div class="flex-row" style="justify-content:space-between; font-size:0.75rem;"><span>Total</span><span id="posTotalText" style="font-weight:700; color:#d97706;">Rp 0</span></div>
+            <select id="posPaymentMethod" class="input-field">
+              <option value="Tunai">Tunai / Cash</option>
+              <option value="QRIS Non-Tunai">QRIS Non-Tunai</option>
+            </select>
+            <div class="flex-row gap">
+              <button onclick="POS.clearCart()" class="btn-light-slate w-full" style="color:#dc2626;">Batal</button>
+              <button onclick="POS.checkout()" class="btn-amber-light w-full">Proses Bayar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OWNER VIEW -->
+    <section id="viewOwner" class="view-section hidden">
+      <div class="owner-header">
+        <div>
+          <h2 class="owner-title">⚙️ Owner Control</h2>
+          <p class="owner-subtitle">Pusat kontrol operasional & branding.</p>
+        </div>
+        <div class="owner-actions">
+          <button onclick="App.switchView('pos')" class="btn-amber-light btn-sm">🛍️ POS</button>
+          <button onclick="App.logout()" class="btn-light-slate btn-sm" style="color:#dc2626;">Logout</button>
+        </div>
+      </div>
+
+      <div class="owner-tabs-wrapper">
+        <div class="owner-tabs">
+          <button class="owner-tab-btn active" onclick="Owner.switchTab('branding', event)">Branding</button>
+          <button class="owner-tab-btn" onclick="Owner.switchTab('vouchers', event)">Voucher</button>
+          <button class="owner-tab-btn" onclick="Owner.switchTab('stamps', event)">Stempel</button>
+          <button class="owner-tab-btn" onclick="Owner.switchTab('profiles', event)">Profil & Staf</button>
+          <button class="owner-tab-btn" onclick="Owner.switchTab('database', event)">Database</button>
+        </div>
+      </div>
+
+      <div id="tabOwnerBranding" class="owner-tab-content">
+        <div class="panel-card space-y">
+          <h3 class="panel-title">1. Identitas & Kontak</h3>
+          <div class="grid-2">
+            <div><label class="label-text">Nama Cafe</label><input type="text" id="ownRestoName" class="input-field"></div>
+            <div><label class="label-text">Tagline</label><input type="text" id="ownTagline" class="input-field"></div>
+            <div><label class="label-text">No WA Resto</label><input type="text" id="ownUniversalWa" class="input-field"></div>
+            <div><label class="label-text">Link WA Broadcast</label><input type="text" id="ownWaBroadcastUrl" class="input-field"></div>
+          </div>
+
+          <h3 class="panel-title">2. Media & Visual</h3>
+          <div class="space-y">
+            <div><label class="label-text">Running Text</label><input type="text" id="ownRunningText" class="input-field"></div>
+            <div><label class="label-text">Embed Google Maps</label><input type="text" id="ownMapsEmbedUrl" class="input-field"></div>
+          </div>
+          <button onclick="Owner.saveBrandingSettings()" class="btn-amber-light w-full">💾 Simpan Perubahan</button>
+        </div>
+      </div>
+
+      <div id="tabOwnerVouchers" class="owner-tab-content hidden">
+        <div class="panel-card space-y">
+          <button onclick="Owner.openVoucherModal()" class="btn-amber-light btn-sm">+ Buat Voucher</button>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>Kode</th><th>Judul</th><th>Diskon</th></tr></thead>
+              <tbody id="voucherTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tabOwnerStamps" class="owner-tab-content hidden">
+        <div class="panel-card space-y">
+          <div class="grid-2">
+            <div><label class="label-text">Min Belanja Rp</label><input type="number" id="ownStampMinAmount" class="input-field"></div>
+            <div><label class="label-text">Target Stempel</label><input type="number" id="ownStampTarget" class="input-field"></div>
+          </div>
+          <button onclick="Owner.saveStampSettings()" class="btn-amber-light w-full">💾 Simpan Pengaturan</button>
+        </div>
+      </div>
+
+      <div id="tabOwnerProfiles" class="owner-tab-content hidden">
+        <div class="panel-card space-y">
+          <h3 class="panel-title">Profil Owner</h3>
+          <div class="grid-3">
+            <div><label class="label-text">Nama</label><input type="text" id="ownOwnerName" class="input-field"></div>
+            <div><label class="label-text">PIN</label><input type="text" id="ownOwnerPin" class="input-field"></div>
+            <div><label class="label-text">No WA</label><input type="text" id="ownOwnerPhone" class="input-field"></div>
+          </div>
+          <button onclick="Owner.saveOwnerProfile()" class="btn-amber-light btn-sm">Simpan Profil Owner</button>
+        </div>
+
+        <div class="panel-card space-y">
+          <button onclick="Owner.openStaffModal()" class="btn-amber-light btn-sm">+ Tambah Staf</button>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>Nama</th><th>PIN</th><th>Gaji</th><th>Aksi</th></tr></thead>
+              <tbody id="staffTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tabOwnerDatabase" class="owner-tab-content hidden">
+        <div class="panel-card space-y">
+          <input type="text" id="ownSpreadsheetUrlInput" placeholder="URL Spreadsheet" class="input-field">
+          <button onclick="Owner.saveSpreadsheetUrl()" class="btn-light-slate">Simpan Link</button>
+          <a id="btnOpenSpreadsheet" href="#" target="_blank" class="btn-amber-light font-bold">📊 Buka Spreadsheet</a>
+        </div>
+
+        <div class="panel-card space-y">
+          <button onclick="mainStore.exportJSONBackup()" class="btn-amber-light w-full">💾 Download JSON Backup</button>
+          <div class="upload-box flex-row gap">
+            <input type="file" id="jsonImportInput" accept=".json">
+            <button onclick="App.handleImportJSON()" class="btn-light-slate">Restore</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODALS -->
+  <div id="modalLogin" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-head"><h3>Portal Login</h3><button onclick="App.closeModal('modalLogin')" class="close-btn">✕</button></div>
+      <div class="modal-body space-y">
+        <input type="password" id="inputLoginPin" placeholder="Masukkan PIN" class="input-field text-center font-bold">
+        <button onclick="App.processLogin()" class="btn-amber-light w-full">Masuk Portal</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalMemberCheck" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-head"><h3>🎁 Cek Stem</h3><button onclick="App.closeModal('modalMemberCheck')" class="close-btn">✕</button></div>
+      <div class="modal-body space-y">
+        <input type="text" id="checkMemberPhone" placeholder="08123456789" class="input-field">
+        <button onclick="Member.checkStamps()" class="btn-amber-light w-full">Cek Stempel</button>
+        <div id="stampResultBox" class="stamp-box hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalMemberJoin" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-head"><h3>Pendaftaran Member</h3><button onclick="App.closeModal('modalMemberJoin')" class="close-btn">✕</button></div>
+      <div class="modal-body space-y">
+        <input type="text" id="joinMemberName" placeholder="Nama Lengkap" class="input-field">
+        <input type="text" id="joinMemberPhone" placeholder="08123456789" class="input-field">
+        <button onclick="Member.joinMember()" class="btn-amber-light w-full">Daftar & Join WA Broadcast</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>if (window.feather) feather.replace();</script>
+</body>
+</html>
