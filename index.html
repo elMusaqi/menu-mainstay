@@ -141,7 +141,7 @@
         <!-- ========================================== -->
         <!-- 4. TAMPILAN CUSTOMER (E-MENU & ORDER)      -->
         <!-- ========================================== -->
-        <main id="view-customer" class="flex-1 bg-white relative pb-24"> 
+        <main id="view-customer" data-role-view="customer" class="flex-1 bg-white relative pb-24"> 
             
             <div class="px-4 sticky top-0 z-30 bg-white/95 backdrop-blur-sm pt-3 pb-3 border-b border-gray-50">
                 <div class="relative">
@@ -151,15 +151,15 @@
             </div>
 
             <div class="px-4 mt-4 mb-5 flex items-center gap-2 overflow-x-auto hide-scrollbar" id="category-tabs-customer">
-                <button class="px-4 py-1.5 rounded-full bg-[#ea580c] text-white text-[11px] font-bold whitespace-nowrap shadow-md">Semua Menu</button>
-                <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap hover:bg-gray-200">☕ Coffee</button>
-                <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap hover:bg-gray-200">🍹 Non-Coffee</button>
-                <button class="px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap hover:bg-gray-200">🍟 Snack</button>
+                <button type="button" data-category="all" class="category-btn category-active px-4 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-md">Semua Menu</button>
+                <button type="button" data-category="coffee" class="category-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap hover:bg-gray-200">☕ Coffee</button>
+                <button type="button" data-category="non-coffee" class="category-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap hover:bg-gray-200">🍹 Non-Coffee</button>
+                <button type="button" data-category="snack" class="category-btn px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap hover:bg-gray-200">🍟 Snack</button>
             </div>
 
             <div id="menu-grid-customer" class="grid grid-cols-2 gap-4 px-4">
                 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col relative group">
+                <div data-menu-category="coffee" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col relative group">
                     <span class="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm z-10">HEMAT 20%</span>
                     <div class="aspect-square w-full bg-gray-100 relative overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80" alt="Es Kopi" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
@@ -179,7 +179,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col relative group">
+                <div data-menu-category="non-coffee" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col relative group">
                     <div class="aspect-square w-full bg-gray-100 relative overflow-hidden">
                         <video autoplay loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
@@ -221,7 +221,7 @@
         <!-- ========================================== -->
         <!-- 5. TAMPILAN KASIR (POS & MANAJEMEN DAPUR)  -->
         <!-- ========================================== -->
-        <main id="view-kasir" class="hidden flex-1 bg-gray-50 flex flex-col relative">
+        <main id="view-kasir" data-role-view="kasir" class="hidden flex-1 bg-gray-50 flex flex-col relative">
             
             <!-- Header Status Kasir -->
             <div class="bg-white px-4 py-3 border-b border-gray-200 flex items-center justify-between sticky top-0 z-20">
@@ -356,7 +356,7 @@
         <!-- ========================================== -->
         <!-- 6. TAMPILAN MASTER OWNER (STATISTIK & MENU)-->
         <!-- ========================================== -->
-        <main id="view-owner" class="hidden flex-1 bg-gray-50 flex flex-col pb-24">
+        <main id="view-owner" data-role-view="owner" class="hidden flex-1 bg-gray-50 flex flex-col pb-24">
             
             <!-- A. LIVE COMMAND CENTER -->
             <div class="bg-gray-900 text-white rounded-b-[2rem] px-4 pt-5 pb-8 shadow-lg relative">

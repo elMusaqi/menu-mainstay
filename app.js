@@ -51,21 +51,32 @@ const rupiah = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 // ------------------------------------------
 window.switchRoleView = function(role) {
     const validRoles = ['customer', 'kasir', 'owner'];
-    if (!validRoles.includes(role)) return;
+    if (!validRoles.includes(role)) return false;
 
     validRoles.forEach((name) => {
         const view = document.getElementById(`view-${name}`);
         const button = document.getElementById(`btn-view-${name}`);
+        const active = name === role;
 
-        if (view) view.classList.toggle('hidden', name !== role);
+        // Use the native hidden property as the source of truth. This does not
+        // depend on Tailwind/CDN loading, so navigation still works offline.
+        if (view) {
+            view.hidden = !active;
+            view.setAttribute('aria-hidden', String(!active));
+            view.classList.toggle('hidden', !active);
+        }
 
         if (button) {
-            button.classList.toggle('bg-[#ea580c]', name === role);
-            button.classList.toggle('text-white', name === role);
-            button.classList.toggle('bg-gray-100', name !== role);
-            button.classList.toggle('text-gray-500', name !== role);
+            button.classList.toggle('nav-role-active', active);
+            button.classList.toggle('nav-role-inactive', !active);
+            button.setAttribute('aria-selected', String(active));
         }
     });
+
+    const promo = document.getElementById('promo-section');
+    if (promo) promo.hidden = role !== 'customer';
+
+    return true;
 };
 
 window.openModal = function(id) {
@@ -537,8 +548,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Search menu
+    // Search menu + category navigation
     const searchInput = document.getElementById('search-menu-customer');
+    const categoryButtons = [...document.querySelectorAll('#category-tabs-customer [data-category]')];
+    const categoryCards = [...document.querySelectorAll('#menu-grid-customer [data-menu-category]')];
+
+    categoryButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const category = button.dataset.category;
+            categoryButtons.forEach((other) => {
+                const active = other === button;
+                other.classList.toggle('category-active', active);
+                other.classList.toggle('bg-gray-100', !active);
+                other.classList.toggle('text-gray-600', !active);
+                other.classList.toggle('text-white', active);
+            });
+            categoryCards.forEach((card) => {
+                const show = category === 'all' || card.dataset.menuCategory === category;
+                card.hidden = !show;
+                card.classList.toggle('hidden', !show);
+            });
+            if (searchInput) searchInput.value = '';
+        });
+    });
     const menuCards = [...document.querySelectorAll('#menu-grid-customer > div')];
 
     searchInput?.addEventListener('input', () => {
@@ -569,6 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     restoreSavedLogo();
+    switchRoleView('customer');
     updateMenuDetailUI();
     updateFloatingCartUI();
     renderCartReview();
