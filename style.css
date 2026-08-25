@@ -1,0 +1,758 @@
+/* ==========================================================================
+   MAINSTAY DRINK - MOBILE POS & WEB APP STYLESHEET
+   Tema Utama : Orange (#d97706), Green (#059669), Dark Slate (#111827)
+   ========================================================================== */
+
+:root {
+    /* Warna Utama & Aksen */
+    --primary-orange: #d97706;
+    --primary-orange-hover: #b45309;
+    --primary-green: #059669;
+    --primary-green-hover: #047857;
+    
+    /* Warna Gelap (Teks & Elemen UI Utama) */
+    --dark-main: #111827;
+    --dark-card: #1f2937;
+    
+    /* Latar Belakang & Border */
+    --bg-light: #f9fafb;
+    --card-white: #ffffff;
+    --border-color: #e5e7eb;
+    
+    /* Teks */
+    --text-main: #111827;
+    --text-muted: #6b7280;
+
+    /* Warna Status */
+    --status-red-bg: #ffe4e6;
+    --status-red-text: #e11d48;
+    --status-green-bg: #d1fae5;
+    --status-green-text: #059669;
+
+    /* Radius Sudut */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   LAYOUT UTAMA (MOBILE-FIRST APP CONTAINER)
+   ========================================================================== */
+.mobile-app-container {
+    max-width: 480px; /* Lebar maksimal menyerupai layar HP */
+    margin: 0 auto;
+    background-color: var(--bg-light);
+    min-height: 100vh;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+}
+
+.main-content {
+    padding: 16px;
+}
+
+/* ==========================================================================
+   HEADER APLIKASI
+   ========================================================================== */
+.app-header {
+    background-color: var(--card-white);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+}
+
+.brand-text h1 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--dark-main);
+    margin-bottom: 2px;
+}
+
+.brand-text p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Status Toko (Buka/Tutup) */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.status-badge.closed { background-color: var(--status-red-bg); color: var(--status-red-text); }
+.status-badge.open { background-color: var(--status-green-bg); color: var(--status-green-text); }
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+/* ==========================================================================
+   BANNER PROMO & KATEGORI
+   ========================================================================== */
+.promo-section {
+    margin-bottom: 20px;
+}
+
+.promo-banner-image {
+    background: linear-gradient(to right, #4b5563, #1f2937);
+    color: white;
+    padding: 24px 16px;
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+}
+
+.join-member-card {
+    background-color: var(--primary-orange);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 16px;
+}
+
+.member-info {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.member-info strong {
+    font-size: 0.95rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.member-info p {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.member-icon {
+    font-size: 1.5rem;
+    background: rgba(255,255,255,0.2);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+/* Category Filter Tabs */
+.filter-pills-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+.filter-pills-row::-webkit-scrollbar { display: none; /* Hide scrollbar Chrome/Safari */ }
+
+.filter-pill {
+    background-color: var(--card-white);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-pill.active {
+    background-color: var(--primary-orange);
+    color: white;
+    border-color: var(--primary-orange);
+}
+
+/* ==========================================================================
+   GRID KATALOG PRODUK (MENU)
+   ========================================================================== */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.product-card {
+    background: var(--card-white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+.product-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.product-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--dark-main);
+}
+
+.product-desc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin: 4px 0 12px 0;
+    line-height: 1.3;
+}
+
+.product-price {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--primary-orange);
+    margin-bottom: 8px;
+}
+
+/* ==========================================================================
+   KOMPONEN TOMBOL DASAR
+   ========================================================================== */
+.btn-orange {
+    background-color: var(--primary-orange);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-green {
+    background-color: var(--primary-green);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-dark-full {
+    background-color: var(--dark-main);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    width: 100%;
+    cursor: pointer;
+}
+
+.btn-icon-dark {
+    background-color: var(--dark-main);
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Utility Classes */
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.pb-safe { padding-bottom: 40px; }
+.full-width { width: 100%; }
+.flex-1 { flex: 1; }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.text-green { color: var(--primary-green); }
+.text-uppercase { text-transform: uppercase; }
+/* ==========================================================================
+   FLOATING CART (KERANJANG MELAYANG DI BAWAH)
+   ========================================================================== */
+.floating-cart-wrapper {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 448px; /* Menyesuaikan max-width mobile-app-container (480 - padding) */
+    background-color: var(--primary-orange);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 14px 20px;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+    cursor: pointer;
+    z-index: 90;
+    transition: transform 0.2s ease;
+}
+
+.floating-cart-wrapper:active {
+    transform: translateX(-50%) scale(0.98);
+}
+
+.floating-cart-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cart-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cart-icon-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background-color: var(--dark-main);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid var(--primary-orange);
+}
+
+.cart-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.cart-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.cart-estimate-text {
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+.cart-total-price {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   SISTEM MODAL (POP-UP & BOTTOM SHEET)
+   ========================================================================== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: flex-end; /* Default untuk bottom sheet */
+    justify-content: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-card {
+    background: var(--card-white);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Tipe-tipe Modal */
+.bottom-sheet {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: slideUp 0.3s ease-out;
+}
+
+.center-modal {
+    border-radius: var(--radius-lg);
+    margin: 20px;
+    align-self: center; /* Override flex-end di overlay */
+    padding: 24px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.full-screen-modal {
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    animation: slideUp 0.2s ease-out;
+}
+
+/* Modal Header & Close Button */
+.modal-close {
+    position: absolute;
+    top: 16px; 
+    right: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    border: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--dark-main);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.modal-header-sticky {
+    position: sticky;
+    top: 0;
+    background: var(--card-white);
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    z-index: 5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Modal Detail Produk (Gambar dll) */
+.modal-product-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.modal-body {
+    padding: 20px 16px;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--dark-main);
+}
+
+.modal-price {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--primary-orange);
+    margin-top: 4px;
+}
+
+.modal-description {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   FORM, INPUT, & PILIHAN VARIAN
+   ========================================================================== */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--dark-main);
+}
+
+.form-control, .form-control-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    outline: none;
+    font-size: 0.95rem;
+    background-color: var(--bg-light);
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    border-color: var(--primary-orange);
+    background-color: white;
+}
+
+.form-section-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--dark-main);
+    margin-bottom: 8px;
+}
+
+/* Pilihan Varian (Level Es / Gula - UI Pill) */
+.option-group {
+    margin-top: 20px;
+}
+
+.option-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--dark-main);
+    margin-bottom: 10px;
+    display: block;
+}
+
+.pill-selector {
+    display: flex;
+    gap: 8px;
+}
+
+.pill-item {
+    flex: 1;
+    text-align: center;
+}
+
+.pill-item input { display: none; }
+
+.pill-item span {
+    display: block;
+    padding: 10px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.pill-item input:checked + span {
+    background-color: #ebf8f4; /* Hijau pudar */
+    color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+/* Pilihan Topping & Checkbox Card */
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.check-card {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: white;
+    transition: border-color 0.2s;
+}
+
+.check-card:has(input:checked) {
+    border-color: var(--primary-orange);
+    background-color: #fff7ed;
+}
+
+.check-card input[type="checkbox"], .check-card input[type="radio"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-orange);
+}
+
+.check-card span { flex-grow: 1; color: var(--dark-main); font-weight: 600; }
+.check-card strong { color: var(--text-muted); font-size: 0.85rem; }
+
+/* Radio Card Group (Tipe Pemesanan & Pembayaran) */
+.radio-card-group {
+    display: flex;
+    gap: 10px;
+}
+
+.radio-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    text-align: center;
+}
+
+.radio-card input { display: none; }
+
+.radio-card:has(input:checked) {
+    border-color: var(--primary-green);
+    background-color: #ebf8f4;
+    color: var(--primary-green);
+}
+
+/* Footer Modal Order (Sticky) */
+.modal-footer-action {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    position: sticky;
+    bottom: 0;
+    background: var(--card-white);
+    padding-top: 12px;
+}
+
+.qty-counter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    width: 100px;
+    background: var(--bg-light);
+}
+
+.qty-btn {
+    border: none;
+    background: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-weight: 800;
+    color: var(--dark-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* ==========================================================================
+   RANGKUMAN KERANJANG (PAYMENT SUMMARY)
+   ========================================================================== */
+.payment-summary {
+    background: var(--bg-light);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.divider {
+    border: none;
+    border-top: 1px dashed #cbd5e1;
+    margin: 12px 0;
+}
+
+/* ==========================================================================
+   EFEK KHUSUS (LIVE DOT & FLASH SCREEN)
+   ========================================================================== */
+/* Indikator Status Staf */
+.live-status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+.live-status-dot.active { background-color: #10b981; } /* Hijau */
+.live-status-dot.busy { background-color: #f59e0b; } /* Kuning/Orange */
+.live-status-dot.offline { background-color: #9ca3af; } /* Abu-abu */
+
+/* Animasi Kedip Layar Pesanan Masuk */
+.flash-screen-active {
+    animation: flashBg 0.8s infinite alternate;
+}
+
+@keyframes flashBg {
+    from { background-color: #f9fafb; }
+    to { background-color: #fef3c7; } /* Berkedip ke warna kuning pudar */
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
