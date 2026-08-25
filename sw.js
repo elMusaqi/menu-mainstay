@@ -1,5 +1,5 @@
 // Ganti nama cache agar browser tahu ada update kodingan baru
-const CACHE_NAME = 'mainstay-app-v2';
+const CACHE_NAME = 'mainstay-app-v3';
 
 // Daftar file yang harus disimpan di memori HP (Offline Mode)
 const urlsToCache = [
