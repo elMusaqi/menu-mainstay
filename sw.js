@@ -1,50 +1,48 @@
-// Ganti nama cache agar browser tahu ada update kodingan baru
 const CACHE_NAME = 'mainstay-app-v3';
 
-// Daftar file yang harus disimpan di memori HP (Offline Mode)
 const urlsToCache = [
   './',
   './index.html',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  './logo-192.png',
+  './logo-512.png'
 ];
 
-// Proses Install: Menyimpan file ke memori (Cache)
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Cache berhasil dibuka');
-        return cache.addAll(urlsToCache);
-      })
+      .then((cache) => cache.addAll(urlsToCache))
   );
-  self.skipWaiting(); // Paksa langsung aktif
+  self.skipWaiting();
 });
 
-// Proses Activate: Menghapus memori (Cache) kodingan yang lama
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Menghapus cache lama:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames
+          .filter((cacheName) => cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
+      )
+    )
   );
   self.clients.claim();
 });
 
-// Proses Fetch: Memanggil data (Jika offline, ambil dari memori)
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Jika ada di cache, tampilkan. Jika tidak, minta ke internet.
-        return response || fetch(event.request);
-      })
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+
+      return fetch(event.request).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+        return Response.error();
+      });
+    })
   );
 });

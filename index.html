@@ -248,7 +248,7 @@
 
             <!-- Tab Manajemen Pesanan (3 Tahap) -->
             <div class="bg-white px-3 py-2 flex gap-2 border-b border-gray-200 shadow-sm sticky top-[60px] z-10 overflow-x-auto hide-scrollbar">
-                <button class="flex-1 min-w-[110px] bg-[#ea580c] text-white text-[10px] font-bold py-2 rounded-xl shadow">
+                <button data-absen-type="masuk" class="flex-1 min-w-[110px] bg-[#ea580c] text-white text-[10px] font-bold py-2 rounded-xl shadow">
                     1. Konfirmasi <span class="bg-white text-[#ea580c] px-1.5 py-0.5 rounded-full ml-1">1</span>
                 </button>
                 <button class="flex-1 min-w-[110px] bg-gray-100 text-gray-500 hover:text-gray-900 text-[10px] font-bold py-2 rounded-xl">
@@ -334,8 +334,8 @@
                     <input type="password" placeholder="Masukkan PIN Karyawan" class="w-full text-center px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-lg font-black tracking-widest focus:outline-none focus:ring-2 focus:ring-[#ea580c] mb-3">
                     
                     <div class="flex w-full gap-2">
-                        <button class="flex-1 bg-green-500 text-white py-3 rounded-xl font-black text-xs hover:bg-green-600 shadow"><i class="fa-solid fa-right-to-bracket mr-1"></i> MASUK</button>
-                        <button class="flex-1 bg-red-500 text-white py-3 rounded-xl font-black text-xs hover:bg-red-600 shadow"><i class="fa-solid fa-right-from-bracket mr-1"></i> PULANG</button>
+                        <button data-absen-type="masuk" type="button" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-black text-xs hover:bg-green-600 shadow"><i class="fa-solid fa-right-to-bracket mr-1"></i> MASUK</button>
+                        <button data-absen-type="pulang" type="button" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-black text-xs hover:bg-red-600 shadow"><i class="fa-solid fa-right-from-bracket mr-1"></i> PULANG</button>
                     </div>
                 </div>
             </div>
@@ -348,6 +348,7 @@
                 <img src="" alt="Jepretan" class="w-20 h-20 bg-gray-200 rounded-full border-2 border-green-500 mb-3 object-cover">
                 <p class="text-xs font-bold text-gray-700">Nama: Muhammad Ihsan</p>
                 <p class="text-xs font-bold text-gray-700">Jam Masuk: 07:55 WIB</p>
+                <p data-attendance-status class="text-xs text-green-600 font-bold mt-1">Absen Masuk berhasil</p>
                 <span class="mt-2 bg-green-100 text-green-700 text-[10px] px-3 py-1 rounded-full font-black">TEPAT WAKTU</span>
                 <p class="text-[9px] text-gray-400 mt-4 animate-pulse">Menutup otomatis dalam 5 detik...</p>
             </div>
@@ -523,13 +524,13 @@
         <div class="bg-white w-full max-w-[480px] mx-auto rounded-t-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             
             <div class="relative w-full h-56 bg-gray-200">
-                <img src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80" class="w-full h-full object-cover">
+                <img id="menu-detail-image" src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80" alt="Detail menu" class="w-full h-full object-cover">
                 <button onclick="closeModal('modal-menu-detail')" class="absolute top-4 right-4 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/80 backdrop-blur"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="p-5 overflow-y-auto hide-scrollbar">
-                <h2 class="text-xl font-extrabold text-gray-900 mb-1">Es Kopi Mainstay</h2>
-                <p class="text-xs text-gray-500 mb-4">Kopi susu gula aren original dengan krim lembut racikan khusus.</p>
+                <h2 id="menu-detail-name" class="text-xl font-extrabold text-gray-900 mb-1">Es Kopi Mainstay</h2>
+                <p id="menu-detail-description" class="text-xs text-gray-500 mb-4">Kopi susu gula aren original dengan krim lembut racikan khusus.</p>
                 
                 <div class="mb-5">
                     <h4 class="text-xs font-bold text-gray-900 mb-2">Ukuran Cup <span class="text-red-500">*</span></h4>
@@ -537,37 +538,37 @@
                         <label class="border-2 border-[#ea580c] bg-orange-50 rounded-xl p-2 text-center cursor-pointer relative">
                             <input type="radio" name="size" class="hidden" checked>
                             <span class="block text-[10px] font-bold text-[#ea580c]">Small</span>
-                            <span class="block text-[9px] text-gray-500 mt-1">Rp 16.000</span>
+                            <span id="menu-price-small" class="block text-[9px] text-gray-500 mt-1">Rp 16.000</span>
                             <i class="fa-solid fa-circle-check absolute -top-2 -right-2 text-[#ea580c] bg-white rounded-full"></i>
                         </label>
                         <label class="border-2 border-gray-200 rounded-xl p-2 text-center cursor-pointer relative hover:border-gray-300">
                             <input type="radio" name="size" class="hidden">
                             <span class="block text-[10px] font-bold text-gray-700">Medium</span>
-                            <span class="block text-[9px] text-gray-500 mt-1">+ Rp 3.000</span>
+                            <span id="menu-price-medium" class="block text-[9px] text-gray-500 mt-1">Rp 19.000</span>
                         </label>
                         <label class="border-2 border-gray-200 rounded-xl p-2 text-center cursor-pointer relative hover:border-gray-300">
                             <input type="radio" name="size" class="hidden">
                             <span class="block text-[10px] font-bold text-gray-700">Large</span>
-                            <span class="block text-[9px] text-gray-500 mt-1">+ Rp 6.000</span>
+                            <span id="menu-price-large" class="block text-[9px] text-gray-500 mt-1">Rp 22.000</span>
                         </label>
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <h4 class="text-xs font-bold text-gray-900 mb-2">Catatan Tambahan</h4>
-                    <textarea class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#ea580c] focus:outline-none" rows="2" placeholder="Contoh: Esnya dipisah ya..."></textarea>
+                    <textarea id="menu-note" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#ea580c] focus:outline-none" rows="2" placeholder="Contoh: Esnya dipisah ya..."></textarea>
                 </div>
             </div>
             
             <div class="p-4 border-t border-gray-100 bg-white flex items-center gap-4">
                 <div class="flex items-center bg-gray-100 rounded-xl p-1">
-                    <button class="w-8 h-8 flex items-center justify-center text-gray-600 font-bold hover:bg-gray-200 rounded-lg"><i class="fa-solid fa-minus"></i></button>
-                    <span class="w-8 text-center text-sm font-black">1</span>
-                    <button class="w-8 h-8 flex items-center justify-center text-[#ea580c] font-bold hover:bg-gray-200 rounded-lg"><i class="fa-solid fa-plus"></i></button>
+                    <button id="menu-qty-minus" type="button" class="w-8 h-8 flex items-center justify-center text-gray-600 font-bold hover:bg-gray-200 rounded-lg"><i class="fa-solid fa-minus"></i></button>
+                    <span id="menu-qty" class="w-8 text-center text-sm font-black">1</span>
+                    <button id="menu-qty-plus" type="button" class="w-8 h-8 flex items-center justify-center text-[#ea580c] font-bold hover:bg-gray-200 rounded-lg"><i class="fa-solid fa-plus"></i></button>
                 </div>
-                <button onclick="closeModal('modal-menu-detail')" class="flex-1 bg-[#ea580c] text-white py-3 rounded-xl font-black text-xs flex justify-between px-4 hover:bg-orange-700 transition shadow">
+                <button id="btn-add-to-cart" type="button" class="flex-1 bg-[#ea580c] text-white py-3 rounded-xl font-black text-xs flex justify-between px-4 hover:bg-orange-700 transition shadow">
                     <span>Tambah Pesanan</span>
-                    <span>Rp 16.000</span>
+                    <span id="cart-grand-total">Rp 0</span>
                 </button>
             </div>
         </div>
@@ -584,25 +585,7 @@
             
             <div class="p-5 overflow-y-auto hide-scrollbar flex-1 bg-gray-50 space-y-5">
                 
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
-                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-gray-100">
-                        <div>
-                            <h4 class="font-bold text-xs text-gray-900">1x Es Kopi Mainstay</h4>
-                            <p class="text-[9px] text-gray-500">Ukuran Small</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-bold text-xs text-gray-900">Rp 16.000</p>
-                            <div class="flex items-center gap-2 mt-1 justify-end">
-                                <button class="w-5 h-5 bg-gray-100 rounded text-gray-500 text-[10px]"><i class="fa-solid fa-minus"></i></button>
-                                <span class="text-[10px] font-bold">1</span>
-                                <button class="w-5 h-5 bg-gray-100 rounded text-[#ea580c] text-[10px]"><i class="fa-solid fa-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="closeModal('modal-cart-review')" class="w-full text-center text-[#ea580c] text-[10px] font-bold p-2 border border-[#ea580c] rounded-lg border-dashed">
-                        <i class="fa-solid fa-plus mr-1"></i> Tambah Menu Lain
-                    </button>
-                </div>
+                <div id="cart-items-list" class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100"></div>
 
                 <div class="flex gap-2">
                     <input type="text" placeholder="Masukkan Kode Promo" class="flex-1 bg-white border border-gray-200 p-2.5 rounded-xl text-xs uppercase font-bold focus:ring-2 focus:ring-[#ea580c] focus:outline-none">
@@ -645,15 +628,15 @@
             <div class="p-4 border-t border-gray-200 bg-white">
                 <div class="flex justify-between text-[11px] text-gray-500 mb-1">
                     <span>Subtotal</span>
-                    <span>Rp 16.000</span>
+                    <span id="cart-subtotal">Rp 0</span>
                 </div>
                 <div class="flex justify-between text-[11px] text-green-600 font-bold mb-3">
                     <span>Diskon</span>
                     <span>- Rp 0</span>
                 </div>
-                <button class="w-full bg-[#ea580c] text-white py-3.5 rounded-xl font-black text-sm flex justify-between px-5 shadow-lg hover:bg-orange-700 transition">
+                <button id="btn-checkout" type="button" class="w-full bg-[#ea580c] text-white py-3.5 rounded-xl font-black text-sm flex justify-between px-5 shadow-lg hover:bg-orange-700 transition>
                     <span>Bayar & Pesan</span>
-                    <span>Rp 16.000</span>
+                    <span id="cart-grand-total">Rp 0</span>
                 </button>
             </div>
         </div>
@@ -661,65 +644,6 @@
 
     <!-- Panggil Script JS yang sudah kita lengkapi nanti -->
     <script src="app.js"></script>
-    <script>
-    // FUNGSI NAVIGASI PERAN YANG AMAN DARI ERROR
-    function switchRoleView(role) {
-        // 1. Sembunyikan semua tampilan utama
-        const viewCustomer = document.getElementById('view-customer');
-        const viewKasir = document.getElementById('view-kasir');
-        const viewOwner = document.getElementById('view-owner');
-        
-        if(viewCustomer) viewCustomer.classList.add('hidden');
-        if(viewKasir) viewKasir.classList.add('hidden');
-        if(viewOwner) viewOwner.classList.add('hidden');
-        
-        // 2. Reset semua tombol navigasi atas ke mode tidak aktif
-        const btnCustomer = document.getElementById('btn-view-customer');
-        const btnKasir = document.getElementById('btn-view-kasir');
-        const btnOwner = document.getElementById('btn-view-owner');
-        
-        if(btnCustomer) {
-            btnCustomer.classList.remove('bg-[#ea580c]', 'text-white', 'shadow-sm');
-            btnCustomer.classList.add('text-gray-500');
-        }
-        if(btnKasir) {
-            btnKasir.classList.remove('bg-[#ea580c]', 'text-white', 'shadow-sm');
-            btnKasir.classList.add('text-gray-500');
-        }
-        if(btnOwner) {
-            btnOwner.classList.remove('bg-[#ea580c]', 'text-white', 'shadow-sm');
-            btnOwner.classList.add('text-gray-500');
-        }
-        
-        // 3. Tampilkan halaman yang diklik dan aktifkan tombolnya
-        const targetView = document.getElementById('view-' + role);
-        const targetBtn = document.getElementById('btn-view-' + role);
-        
-        if(targetView) {
-            targetView.classList.remove('hidden');
-        }
-        if(targetBtn) {
-            targetBtn.classList.remove('text-gray-500');
-            targetBtn.classList.add('bg-[#ea580c]', 'text-white', 'shadow-sm');
-        }
-    }
-
-    // Fungsi Buka Tutup Modal Universal
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openMenuDetail() { openModal('modal-menu-detail'); }
-    function openCartReview() { openModal('modal-cart-review'); }
     
-    // Logika Form Member di Keranjang
-    document.getElementById('check-member')?.addEventListener('change', function(e) {
-        const form = document.getElementById('form-member-inputs');
-        if(e.target.checked) {
-            form.classList.remove('opacity-50', 'pointer-events-none');
-        } else {
-            form.classList.add('opacity-50', 'pointer-events-none');
-        }
-    });
-</script>
-
 </body>
 </html>
