@@ -662,38 +662,64 @@
     <!-- Panggil Script JS yang sudah kita lengkapi nanti -->
     <script src="app.js"></script>
     <script>
-        // Fungsi dasar tab/navigasi & buka tutup modal (agar HTML tidak macet)
-        function switchRoleView(role) {
-            document.getElementById('view-customer').classList.add('hidden');
-            document.getElementById('view-kasir').classList.add('hidden');
-            document.getElementById('view-owner').classList.add('hidden');
-            
-            document.getElementById('btn-view-customer').classList.replace('bg-[#ea580c]', 'bg-gray-100');
-            document.getElementById('btn-view-customer').classList.replace('text-white', 'text-gray-500');
-            document.getElementById('btn-view-kasir').classList.replace('bg-[#ea580c]', 'bg-gray-100');
-            document.getElementById('btn-view-kasir').classList.replace('text-white', 'text-gray-500');
-            document.getElementById('btn-view-owner').classList.replace('bg-[#ea580c]', 'bg-gray-100');
-            document.getElementById('btn-view-owner').classList.replace('text-white', 'text-gray-500');
-
-            document.getElementById('view-' + role).classList.remove('hidden');
-            document.getElementById('btn-view-' + role).classList.replace('bg-gray-100', 'bg-[#ea580c]');
-            document.getElementById('btn-view-' + role).classList.replace('text-gray-500', 'text-white');
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function openMenuDetail() { openModal('modal-menu-detail'); }
-        function openCartReview() { openModal('modal-cart-review'); }
+    // FUNGSI NAVIGASI PERAN YANG AMAN DARI ERROR
+    function switchRoleView(role) {
+        // 1. Sembunyikan semua tampilan utama
+        const viewCustomer = document.getElementById('view-customer');
+        const viewKasir = document.getElementById('view-kasir');
+        const viewOwner = document.getElementById('view-owner');
         
-        // Logika sederhana checkbox member
-        document.getElementById('check-member')?.addEventListener('change', function(e) {
-            const form = document.getElementById('form-member-inputs');
-            if(e.target.checked) {
-                form.classList.remove('opacity-50', 'pointer-events-none');
-            } else {
-                form.classList.add('opacity-50', 'pointer-events-none');
-            }
-        });
-    </script>
+        if(viewCustomer) viewCustomer.classList.add('hidden');
+        if(viewKasir) viewKasir.classList.add('hidden');
+        if(viewOwner) viewOwner.classList.add('hidden');
+        
+        // 2. Reset semua tombol navigasi atas ke mode tidak aktif
+        const btnCustomer = document.getElementById('btn-view-customer');
+        const btnKasir = document.getElementById('btn-view-kasir');
+        const btnOwner = document.getElementById('btn-view-owner');
+        
+        if(btnCustomer) {
+            btnCustomer.classList.remove('bg-[#ea580c]', 'text-white', 'shadow-sm');
+            btnCustomer.classList.add('text-gray-500');
+        }
+        if(btnKasir) {
+            btnKasir.classList.remove('bg-[#ea580c]', 'text-white', 'shadow-sm');
+            btnKasir.classList.add('text-gray-500');
+        }
+        if(btnOwner) {
+            btnOwner.classList.remove('bg-[#ea580c]', 'text-white', 'shadow-sm');
+            btnOwner.classList.add('text-gray-500');
+        }
+        
+        // 3. Tampilkan halaman yang diklik dan aktifkan tombolnya
+        const targetView = document.getElementById('view-' + role);
+        const targetBtn = document.getElementById('btn-view-' + role);
+        
+        if(targetView) {
+            targetView.classList.remove('hidden');
+        }
+        if(targetBtn) {
+            targetBtn.classList.remove('text-gray-500');
+            targetBtn.classList.add('bg-[#ea580c]', 'text-white', 'shadow-sm');
+        }
+    }
+
+    // Fungsi Buka Tutup Modal Universal
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openMenuDetail() { openModal('modal-menu-detail'); }
+    function openCartReview() { openModal('modal-cart-review'); }
+    
+    // Logika Form Member di Keranjang
+    document.getElementById('check-member')?.addEventListener('change', function(e) {
+        const form = document.getElementById('form-member-inputs');
+        if(e.target.checked) {
+            form.classList.remove('opacity-50', 'pointer-events-none');
+        } else {
+            form.classList.add('opacity-50', 'pointer-events-none');
+        }
+    });
+</script>
+
 </body>
 </html>
