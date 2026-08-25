@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mainstay Drink - Minuman Andalanmu</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <!-- Icon Placeholder (Bisa diganti dengan favicon asli) -->
+    <link rel="icon" id="appFavicon" href="https://via.placeholder.com/32/D97706/FFFFFF?text=M">
+</head>
+<body class="mobile-app-container">
+
+    <!-- HEADER APLIKASI -->
+    <header class="app-header">
+        <div class="header-left">
+            <img id="headerLogo" src="https://via.placeholder.com/44/D97706/FFFFFF?text=Mains" alt="Logo" class="brand-logo">
+            <div class="brand-text">
+                <h1 id="headerBrandName">Mainstay Drink</h1>
+                <p id="headerTagline">Minuman Andalanmu</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <span id="storeStatusBadge" class="status-badge closed">
+                <span class="status-dot"></span> <span id="storeStatusText">TUTUP</span>
+            </span>
+            <button class="btn-icon-dark" onclick="openOwnerPinModal()" title="Login Owner">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+        
+        <!-- BANNER PROMO MEMBER -->
+        <section class="promo-section">
+            <div class="promo-banner-image">
+                <p>Dapatkan diskon promo menarik khusus Member Mainstay!</p>
+            </div>
+            <div class="join-member-card">
+                <div class="member-info">
+                    <span class="member-icon">💳</span>
+                    <div>
+                        <strong>Join Member Mainstay Sekarang!</strong>
+                        <p>Dapatkan voucher promo potongan harga & akses info terupdate.</p>
+                    </div>
+                </div>
+                <button class="btn-dark-full mt-2">Daftar Member</button>
+            </div>
+        </section>
+
+        <!-- KATEGORI MENU -->
+        <section class="category-section">
+            <div class="filter-pills-row" id="categoryTabs">
+                <button class="filter-pill active" onclick="filterCatalogCategory('all')">Semua Menu</button>
+                <button class="filter-pill" onclick="filterCatalogCategory('coffee')">Coffee Series</button>
+                <button class="filter-pill" onclick="filterCatalogCategory('non-coffee')">Non-Coffee</button>
+            </div>
+        </section>
+
+        <!-- GRID KATALOG PRODUK -->
+        <section class="product-grid" id="catalogGrid">
+            <!-- Data produk akan di-render melalui JavaScript -->
+        </section>
+
+        <!-- RUANG KOSONG UNTUK SCROLL AGAR TIDAK TERTUTUP CART -->
+        <div style="height: 90px;"></div>
+
+    </main>
+
+    <!-- FLOATING CART BOTTOM BAR -->
+    <div class="floating-cart-wrapper" id="floatingCart" style="display: none;" onclick="openCartModal()">
+        <div class="floating-cart-content">
+            <div class="cart-left">
+                <div class="cart-icon-box">
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    <span class="cart-badge" id="floatingCartCount">0</span>
+                </div>
+                <span class="cart-title">Keranjang Saya</span>
+            </div>
+            <div class="cart-right">
+                <span class="cart-estimate-text">Total Estimasi</span>
+                <strong class="cart-total-price" id="floatingCartTotal">Rp 0</strong>
+            </div>
+        </div>
+    </div>
+    <!-- =================================================================== -->
+    <!-- MODAL 1: DETAIL & KUSTOMISASI PRODUK (BOTTOM SHEET)                 -->
+    <!-- =================================================================== -->
+    <div id="productDetailModal" class="modal-overlay">
+        <div class="modal-card bottom-sheet">
+            <button class="modal-close" onclick="closeModal('productDetailModal')">&times;</button>
+            <img id="modalProductImage" src="" alt="Gambar Menu" class="modal-product-img">
+            
+            <div class="modal-body pb-safe">
+                <h3 id="modalProductName" class="modal-title">Nama Produk</h3>
+                <p id="modalProductPrice" class="modal-price">Rp 0</p>
+                <p id="modalProductDesc" class="modal-description">Deskripsi produk...</p>
+
+                <!-- Pilihan Level Es -->
+                <div class="option-group">
+                    <label class="option-title">Level Es</label>
+                    <div class="pill-selector">
+                        <label class="pill-item"><input type="radio" name="levelEs" value="Normal" checked><span>Normal</span></label>
+                        <label class="pill-item"><input type="radio" name="levelEs" value="Less Ice"><span>Less Ice</span></label>
+                        <label class="pill-item"><input type="radio" name="levelEs" value="No Ice"><span>No Ice</span></label>
+                    </div>
+                </div>
+
+                <!-- Pilihan Level Gula -->
+                <div class="option-group">
+                    <label class="option-title">Level Gula</label>
+                    <div class="pill-selector">
+                        <label class="pill-item"><input type="radio" name="levelGula" value="Normal" checked><span>Normal</span></label>
+                        <label class="pill-item"><input type="radio" name="levelGula" value="Less Sugar"><span>Less Sugar</span></label>
+                        <label class="pill-item"><input type="radio" name="levelGula" value="No Sugar"><span>No Sugar</span></label>
+                    </div>
+                </div>
+
+                <!-- Pilihan Topping Tambahan -->
+                <div class="option-group">
+                    <label class="option-title">Topping Tambahan</label>
+                    <div class="checkbox-list">
+                        <label class="check-card">
+                            <input type="checkbox" name="topping" value="Extra Shot Espresso" data-price="5000" onchange="calcModalPrice()">
+                            <span>Extra Shot Espresso</span> <strong>+Rp 5.000</strong>
+                        </label>
+                        <label class="check-card">
+                            <input type="checkbox" name="topping" value="Boba Creamy" data-price="4000" onchange="calcModalPrice()">
+                            <span>Boba Creamy</span> <strong>+Rp 4.000</strong>
+                        </label>
+                        <label class="check-card">
+                            <input type="checkbox" name="topping" value="Grass Jelly" data-price="3000" onchange="calcModalPrice()">
+                            <span>Grass Jelly</span> <strong>+Rp 3.000</strong>
+                        </label>
+                        <label class="check-card">
+                            <input type="checkbox" name="topping" value="Cheese Foam" data-price="5000" onchange="calcModalPrice()">
+                            <span>Cheese Foam</span> <strong>+Rp 5.000</strong>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Catatan Khusus -->
+                <div class="option-group">
+                    <label class="option-title">Catatan Khusus</label>
+                    <input type="text" id="modalSpecialNotes" placeholder="Contoh: Sedikit es, pisahkan gula" class="form-control">
+                </div>
+
+                <!-- Footer Aksi (Sticky Bottom dalam modal) -->
+                <div class="modal-footer-action">
+                    <div class="qty-counter">
+                        <button class="qty-btn" onclick="adjustQty(-1)">-</button>
+                        <span id="modalQtyValue">1</span>
+                        <button class="qty-btn" onclick="adjustQty(1)">+</button>
+                    </div>
+                    <button class="btn-orange flex-1" onclick="addToCartFromModal()">Tambah Ke Keranjang</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 2: KERANJANG PESANAN & CHECKOUT (BOTTOM SHEET)                -->
+    <!-- =================================================================== -->
+    <div id="cartModal" class="modal-overlay">
+        <div class="modal-card bottom-sheet">
+            <div class="modal-header-sticky">
+                <h3 style="display:flex; align-items:center; gap:8px;">🛒 Keranjang Pesanan</h3>
+                <button class="modal-close" onclick="closeModal('cartModal')">&times;</button>
+            </div>
+            
+            <div class="modal-body pb-safe">
+                <!-- List Item Keranjang -->
+                <div id="cartItemsList" class="cart-items-container">
+                    <p class="text-muted text-center" style="padding:20px 0;">Keranjang masih kosong</p>
+                </div>
+
+                <!-- Input Kode Voucher -->
+                <div class="voucher-box mt-3" style="background:#fff7ed; padding:12px; border-radius:12px; border:1px solid #ffedd5;">
+                    <label style="font-size:0.85rem; font-weight:700; color:var(--primary-orange); display:block; margin-bottom:6px;">Punya Kode Voucher / Promo?</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="cartVoucherInput" class="form-control text-uppercase" placeholder="MASUKKAN KODE VOUCHER">
+                        <button class="btn-orange" onclick="applyCartVoucher()">Gunakan</button>
+                    </div>
+                </div>
+
+                <!-- Form Informasi Pemesan -->
+                <div class="checkout-form mt-4">
+                    <h4 class="form-section-title">Informasi Pemesan</h4>
+                    <input type="text" id="custNameInput" class="form-control mt-2" placeholder="Nama Lengkap *">
+                    <input type="tel" id="custPhoneInput" class="form-control mt-2" placeholder="Nomor WhatsApp (Contoh: 08123456789) *">
+
+                    <h4 class="form-section-title mt-3">Tipe Pemesanan</h4>
+                    <div class="radio-card-group">
+                        <label class="radio-card"><input type="radio" name="orderType" value="Instant (Di Toko)" checked> <span>Instant (Di Toko)</span></label>
+                        <label class="radio-card"><input type="radio" name="orderType" value="Pre-Order (PO)"> <span>Pre-Order (PO)</span></label>
+                    </div>
+
+                    <h4 class="form-section-title mt-3">Metode Pembayaran</h4>
+                    <div class="radio-card-group">
+                        <label class="radio-card"><input type="radio" name="paymentMethod" value="QRIS Resto" checked> <span>QRIS Resto</span></label>
+                        <label class="radio-card"><input type="radio" name="paymentMethod" value="Bayar di Tempat"> <span>Bayar di Tempat</span></label>
+                    </div>
+
+                    <label class="check-card mt-3" style="background:var(--bg-light); justify-content:flex-start; gap:10px;">
+                        <input type="checkbox" id="registerMemberCheck">
+                        <span style="font-size:0.85rem;">Daftarkan nomor saya sebagai <strong>Member Mainstay</strong> untuk promo mendatang.</span>
+                    </label>
+                </div>
+
+                <!-- Rincian Pembayaran -->
+                <div class="payment-summary mt-4">
+                    <div class="calc-row text-muted">
+                        <span>Subtotal Menu</span>
+                        <span id="cartSubtotal">Rp 0</span>
+                    </div>
+                    <div class="calc-row text-green">
+                        <span>Potongan Voucher</span>
+                        <span id="cartDiscount">-Rp 0</span>
+                    </div>
+                    <hr class="divider">
+                    <div class="calc-row total-row" style="margin-top:8px;">
+                        <strong>Total Bayar</strong>
+                        <strong id="cartTotal" style="color:var(--primary-orange); font-size:1.15rem;">Rp 0</strong>
+                    </div>
+                </div>
+
+                <button class="btn-green full-width mt-4" style="padding:14px; font-size:1rem; display:flex; justify-content:center; gap:8px;" onclick="processWhatsAppCheckout()">
+                    💬 Lanjutkan Pembayaran via WA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 3: ABSENSI STAF SHIFT (DENGAN KAMERA)                         -->
+    <!-- =================================================================== -->
+    <div id="staffAbsenceModal" class="modal-overlay">
+        <div class="modal-card center-modal">
+            <div class="modal-header-sticky">
+                <h3 style="text-align:center; width:100%; font-size:1.1rem;">Absensi Staf Shift</h3>
+                <button class="modal-close" onclick="closeModal('staffAbsenceModal')">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="form-group text-left">
+                    <label>Nama Staf</label>
+                    <select id="absentStaffSelect" class="form-control"></select>
+                </div>
+                <div class="form-group text-left mt-3">
+                    <label>Tipe Absen</label>
+                    <select id="absentTypeSelect" class="form-control">
+                        <option value="masuk">Masuk Shift</option>
+                        <option value="pulang">Pulang Shift</option>
+                    </select>
+                </div>
+                <div class="form-group text-left mt-3">
+                    <label>PIN Staf</label>
+                    <input type="password" id="absentPinInput" placeholder="Masukkan PIN" class="form-control text-center text-lg" style="letter-spacing: 4px;">
+                </div>
+                
+                <div class="camera-preview-box mt-3" style="background:#000; border-radius:12px; overflow:hidden; position:relative; height:200px;">
+                    <!-- Gambar placeholder kamera -->
+                    <img id="staffCameraPreview" src="https://via.placeholder.com/320x200/111827/FFFFFF?text=Kamera+Aktif" alt="Camera Preview" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                
+                <button class="btn-green full-width mt-4" style="padding:14px;" onclick="saveStaffAbsence()">Simpan Absen Real-Time</button>
+            </div>
+        </div>
+  </div>
+  
