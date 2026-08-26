@@ -1822,3 +1822,63 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof window.renderAdminMarquee === 'function') window.renderAdminMarquee();
     if (typeof window.renderAdminCarousel === 'function') window.renderAdminCarousel();
 });
+// ============================================================================
+// PERBAIKAN BUG: NAVIGASI STUCK, LOGOUT, EXIT LOGIN, & FOOTER
+// ============================================================================
+
+// 1. Fungsi Exit/Tutup Modal Login (Ini yang bikin layar nge-blank/stuck)
+window.tutupLogin = function() {
+    const modalLogin = document.getElementById('modal-login');
+    if (modalLogin) {
+        modalLogin.classList.add('hidden');
+        modalLogin.classList.remove('flex', 'z-[9999]');
+    }
+};
+
+// 2. Perbaikan Render View & Sembunyikan Footer di Kasir/Owner
+window.renderView = function(role) {
+    // Pindah-pindah tampilan utama
+    ['customer', 'kasir', 'owner'].forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) {
+            if (v === role) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+    });
+
+    // Cari area Footer / Maps / Sosmed (Deteksi otomatis dari tag <footer> atau ID)
+    const elemenFooter = document.querySelector('footer') || document.getElementById('footer') || document.getElementById('footer-area');
+    
+    // Logika Sembunyikan Footer
+    if (elemenFooter) {
+        if (role === 'customer') {
+            elemenFooter.style.display = ''; // Munculkan kembali untuk Publik
+        } else {
+            elemenFooter.style.display = 'none'; // Sembunyikan untuk Kasir & Owner
+        }
+    }
+    
+    // Pastikan modal login juga otomatis tertutup saat ganti view
+    window.tutupLogin();
+};
+
+// 3. Perbaikan Fungsi Logout (Logout Kasir & Kunci Master)
+window.logoutKasir = function() {
+    localStorage.removeItem('sesiMainstay');
+    window.renderView('customer');
+    
+    // Bersihkan sisa-sisa pop up kasir jika ada yang nyangkut
+    const lockOverlay = document.getElementById('kasir-lock-overlay');
+    if (lockOverlay) lockOverlay.classList.add('hidden');
+    
+    alert("Berhasil Logout dari Sistem Kasir.");
+};
+
+window.kunciPanelMaster = function() {
+    localStorage.removeItem('sesiMainstay');
+    window.renderView('customer');
+    alert("Berhasil keluar. Panel Master telah dikunci aman.");
+};
