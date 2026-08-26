@@ -6322,3 +6322,154 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 800);
 
 });
+// ============================================================================
+// 60. COMPACT CLOCK (WITH SECONDS), OWNER PIN LOGIN FIX, & GLOBAL OWNER EDIT
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX JAM: SANGAT KECIL, PADAT, ATAS-BAWAH, + DETIK ---
+    window.updateClock = function() {
+        const now = new Date();
+        const hari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][now.getDay()]; // Hari disingkat agar padat
+        const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()];
+        const tgl = `${hari}, ${String(now.getDate()).padStart(2,'0')} ${bln} ${now.getFullYear()}`;
+        
+        // TAMBAHAN DETIK
+        const jam = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} WIB`;
+
+        const el = document.getElementById('live-clock');
+        if (el) {
+            // Class dibersihkan agar super minimalis
+            el.className = "bg-gray-50 px-2 py-1 rounded border border-gray-200 text-right shrink-0 shadow-sm";
+            el.innerHTML = `
+                <div style="display: block; font-size: 8px; font-weight: bold; color: #6b7280; line-height: 1; margin-bottom: 2px;">${tgl}</div>
+                <div style="display: block; font-size: 11px; font-weight: 900; color: #d97706; line-height: 1;">${jam}</div>
+            `;
+        }
+    };
+    // Panggil agar langsung jalan tanpa jeda
+    window.updateClock();
+
+
+    // --- 2. FIX LOGIN: PIN OWNER LANGSUNG KE KASIR TANPA ABSEN ---
+    // Timpa fungsi login bawaan secara absolut
+    window.prosesLoginKasir = function() {
+        const pin = document.getElementById('login-kasir-pin').value;
+        if (!pin) return alert("Harap masukkan PIN!");
+
+        // Ambil PIN Owner dari sistem, atau gunakan default 888888
+        let pinOwner = '888888';
+        if (window.systemConfig && window.systemConfig.pinOwner) {
+            pinOwner = window.systemConfig.pinOwner;
+        }
+
+        if (pin === pinOwner) {
+            // MODE BOS (OWNER)
+            localStorage.setItem('sesiMainstay', 'owner-kasir'); 
+            
+            // Pindah Layar
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-kasir').classList.remove('hidden');
+            
+            // Panggil Fungsi Kasir
+            if(typeof window.renderListKasir === 'function') window.renderListKasir();
+            if(typeof window.setupHeaderKasir === 'function') window.setupHeaderKasir();
+            
+            // Hapus Gembok Layar (Lockscreen) Paksa!
+            const overlay = document.getElementById('kasir-lock-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }
+            
+            window.playAudio('siap');
+            alert("Selamat datang, Master Owner! Sistem telah menyesuaikan ke mode Owner.");
+
+        } else {
+            // MODE STAF KASIR BIASA
+            const staf = window.dbStaf ? window.dbStaf.find(s => s.pin === pin) : null;
+            if(staf) {
+                localStorage.setItem('sesiMainstay', 'kasir');
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-kasir').classList.remove('hidden');
+                
+                if(typeof window.renderListKasir === 'function') window.renderListKasir();
+                if(typeof window.setupHeaderKasir === 'function') window.setupHeaderKasir();
+                
+                window.playAudio('siap');
+            } else {
+                alert("PIN Salah atau tidak terdaftar di HRD!");
+            }
+        }
+    };
+
+    // --- 3. FIX EDIT OWNER: SUNTIK MODAL KE BODY SECARA GLOBAL ---
+    // Pastikan UI Modal Edit Owner ada di luar jangkauan panel HRD yang sering ke-refresh
+    if (!document.getElementById('modal-form-owner')) {
+        const modalHtml = `
+        <div id="modal-form-owner" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] hidden items-center justify-center fade-in px-4 pb-safe">
+            <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative flex flex-col">
+                <h2 class="text-lg font-black text-amber-500 mb-4 border-b border-gray-700 pb-3"><i class="fa-solid fa-crown"></i> Edit Profil Owner</h2>
+                <div class="space-y-4 mb-4">
+                    <div><label class="text-[10px] font-bold text-gray-400 block mb-1">NAMA OWNER</label><input type="text" id="owner-nama" class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl p-3 text-sm font-bold outline-none focus:border-amber-500"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 block mb-1">NOMOR WA</label><input type="number" id="owner-wa" class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl p-3 text-sm font-bold outline-none focus:border-amber-500"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 block mb-1">REKENING / E-WALLET</label><input type="text" id="owner-rek" class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl p-3 text-sm font-bold outline-none focus:border-amber-500"></div>
+                    <div class="bg-gray-800 p-3 rounded-xl border border-gray-700">
+                        <label class="text-[10px] font-bold text-gray-400 block mb-2">FOTO PROFIL (URL)</label>
+                        <input type="text" id="owner-foto" placeholder="Link URL Foto..." class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-2.5 text-xs outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.tutupFormOwner()" class="flex-1 bg-gray-700 text-white font-black py-3 rounded-xl hover:bg-gray-600 transition text-sm">BATAL</button>
+                    <button onclick="window.simpanFormOwner()" class="flex-1 bg-amber-500 text-gray-900 font-black py-3 rounded-xl hover:bg-amber-600 transition text-sm shadow-md">SIMPAN</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // Fungsi Buka & Tutup
+    window.bukaFormOwner = function() {
+        window.ownerProfile = JSON.parse(localStorage.getItem('ownerProfileMainstay')) || { nama: 'Master Owner', foto: '', wa: '628977099557', rekening: '' };
+        
+        document.getElementById('owner-nama').value = window.ownerProfile.nama;
+        document.getElementById('owner-wa').value = window.ownerProfile.wa;
+        document.getElementById('owner-rek').value = window.ownerProfile.rekening;
+        document.getElementById('owner-foto').value = window.ownerProfile.foto;
+        
+        const modal = document.getElementById('modal-form-owner');
+        if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    };
+
+    window.tutupFormOwner = function() {
+        const modal = document.getElementById('modal-form-owner');
+        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    };
+
+    // Fungsi Simpan yang Aman
+    window.simpanFormOwner = function() {
+        const nama = document.getElementById('owner-nama').value;
+        const wa = document.getElementById('owner-wa').value;
+        const rek = document.getElementById('owner-rek').value;
+        const foto = document.getElementById('owner-foto').value;
+
+        if(!nama) return alert("Nama Owner tidak boleh kosong!");
+
+        window.ownerProfile = { nama, wa, rekening: rek, foto };
+        localStorage.setItem('ownerProfileMainstay', JSON.stringify(window.ownerProfile));
+        
+        // Update langsung di layar jika sedang buka HRD
+        const displayNamaHRD = document.getElementById('owner-nama-display');
+        const displayFotoHRD = document.getElementById('owner-foto-display');
+        if (displayNamaHRD) displayNamaHRD.textContent = nama;
+        if (displayFotoHRD && foto) displayFotoHRD.src = foto;
+
+        // Update sapaan Halo di halaman depan Owner
+        if (typeof window.updateGreetingOwner === 'function') window.updateGreetingOwner();
+
+        window.tutupFormOwner();
+        alert("Profil Owner sukses di-update!");
+    };
+
+});
