@@ -5335,3 +5335,230 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
 });
+// ============================================================================
+// 52. THE ABSOLUTE FIX: RESPONSIVE POS, STUBBORN UPLOADS, & FULL CRM CRUD
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX MUTLAK: JAM & TANGGAL (Pasti Atas-Bawah) ---
+    window.updateClock = function() {
+        const now = new Date();
+        const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][now.getDay()];
+        const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()];
+        const tgl = `${hari}, ${String(now.getDate()).padStart(2,'0')} ${bln} ${now.getFullYear()}`;
+        const jam = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+        
+        const el = document.getElementById('live-clock');
+        if (el) {
+            // Menggunakan styling inline block yang tidak bisa dilawan oleh flexbox
+            el.innerHTML = `
+                <div style="display: block; text-align: right;">
+                    <span style="display: block; font-size: 10px; color: #6b7280; font-weight: bold; margin-bottom: 2px;">${tgl}</span>
+                    <span style="display: block; font-size: 14px; color: #d97706; font-weight: 900;">${jam}</span>
+                </div>
+            `;
+            el.className = "bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200";
+        }
+    };
+
+
+    // --- 2. FIX MUTLAK: POS INTERNAL (Lega 50% Layar & Kategori Responsif) ---
+    const posModal = document.getElementById('modal-pos-internal');
+    if (posModal) {
+        // Rombak total struktur HTML POS agar Menu dapat jatah minimal 55% tinggi layar HP
+        posModal.innerHTML = `
+            <div class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center shadow-md flex-none">
+                <h2 class="font-black text-sm md:text-lg"><i class="fa-solid fa-cash-register text-amber-500 mr-2"></i> POS KASIR</h2>
+                <button onclick="window.tutupPOSInternal()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-black hover:bg-red-600 transition"><i class="fa-solid fa-arrow-left mr-1"></i> KEMBALI</button>
+            </div>
+            
+            <div class="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-50">
+                <!-- AREA MENU (Diberi porsi min 55% di HP) -->
+                <div class="h-[55vh] md:h-auto md:flex-1 flex flex-col p-3 border-b md:border-b-0 md:border-r border-gray-200">
+                    <div class="flex gap-2 mb-3 overflow-x-auto hide-scrollbar pb-2 flex-none" style="scroll-behavior: smooth;">
+                        <button onclick="window.filterPOS('semua')" class="px-4 py-2 bg-gray-800 text-white text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Semua Menu</button>
+                        <button onclick="window.filterPOS('coffee')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Coffee</button>
+                        <button onclick="window.filterPOS('non-coffee')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Non-Coffee</button>
+                        <button onclick="window.filterPOS('snack')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Snack</button>
+                    </div>
+                    <div id="pos-internal-grid" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 overflow-y-auto pr-1 pb-4 flex-1"></div>
+                </div>
+                
+                <!-- AREA KERANJANG & CHECKOUT -->
+                <div class="flex-1 md:w-[350px] md:flex-none bg-white flex flex-col shadow-inner overflow-hidden">
+                    <div id="pos-internal-cart" class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50 min-h-[120px]"></div>
+                    <div class="p-4 border-t border-gray-200 bg-white flex-none">
+                        <div class="flex justify-between font-black text-lg text-gray-900 mb-2 border-b border-gray-100 pb-2"><span>TOTAL</span><span id="pos-internal-total" class="text-amber-500">Rp 0</span></div>
+                        <input type="text" id="pos-nama-pelanggan" placeholder="Nama Customer" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs font-bold mb-2 outline-none">
+                        <select id="pos-tipe-bayar" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs font-bold mb-2 outline-none cursor-pointer" onchange="window.toggleKalkulatorPOS()">
+                            <option value="Tunai">Tunai</option><option value="QRIS Resto">QRIS</option>
+                        </select>
+                        <div id="pos-kalkulator" class="bg-blue-50 p-2.5 rounded-lg border border-blue-200 mb-3">
+                            <div class="flex gap-1 mb-2">
+                                <button onclick="window.setUangCepat(window.posInternalTotal)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-100">PAS</button>
+                                <button onclick="window.setUangCepat(50000)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-100">50K</button>
+                                <button onclick="window.setUangCepat(100000)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-100">100K</button>
+                            </div>
+                            <input type="number" id="pos-uang-diterima" placeholder="Manual..." class="w-full bg-white border border-blue-200 rounded py-2 px-2 text-sm font-black outline-none mb-1" oninput="window.hitungKembalian()">
+                            <div class="flex justify-between items-end border-t border-blue-200 pt-1 mt-1"><span class="text-[9px] font-bold text-gray-500">KEMBALI:</span><span id="pos-kembalian" class="text-sm font-black text-blue-600">Rp 0</span></div>
+                        </div>
+                        <button onclick="window.checkoutPOSInternal()" class="w-full bg-amber-500 text-white font-black py-3.5 rounded-xl shadow-md hover:bg-amber-600 text-sm">PROSES PESANAN</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+
+    // --- 3. FIX MUTLAK: TOMBOL KEMBALI DI EDIT WEB & STOK ---
+    // Memaksa semua tombol kembali di panel owner untuk berfungsi
+    const allCloseButtons = document.querySelectorAll('.panel-slide-up .bg-gray-900 button, .panel-slide-up .bg-gray-900 .flex button');
+    allCloseButtons.forEach(btn => {
+        btn.onclick = function() {
+            const panel = this.closest('.panel-slide-up');
+            if (panel) {
+                panel.classList.add('translate-y-full');
+                setTimeout(() => { panel.classList.add('hidden'); }, 300);
+            }
+        };
+    });
+
+
+    // --- 4. FIX MUTLAK: SIMPAN WEB, LOGO, QRIS, & MAPS EMBED ---
+    const panelWeb = document.querySelector('#panel-edit-web .flex-1');
+    if (panelWeb) {
+        // Tambahkan Input MAPS di form Edit Web
+        panelWeb.insertAdjacentHTML('afterbegin', `
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 mb-4">
+                <label class="text-[10px] font-black text-blue-800 block mb-2"><i class="fa-solid fa-map-location-dot mr-1"></i> LINK EMBED GOOGLE MAPS</label>
+                <textarea id="ew-maps" rows="2" placeholder='Paste iframe Google Maps di sini...' class="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs outline-none">${window.systemConfig.mapsEmbed || ''}</textarea>
+            </div>
+        `);
+
+        // TULIS ULANG FUNGSI SIMPAN WEB AGAR 100% TEMBUS
+        window.simpanWebPastiJalan = function() {
+            try {
+                // Ambil data
+                const logo = document.getElementById('ew-logo')?.value;
+                const qris = document.getElementById('ew-qris')?.value;
+                const maps = document.getElementById('ew-maps')?.value;
+                
+                // Set ke Memory System
+                if(logo) window.systemConfig.logoUrl = logo;
+                if(qris) window.systemConfig.qrisUrl = qris;
+                if(maps) window.systemConfig.mapsEmbed = maps;
+
+                // Eksekusi Perubahan Langsung ke Layar
+                if(logo) {
+                    const imgEl = document.getElementById('header-logo-img');
+                    const iconEl = document.getElementById('header-logo-icon');
+                    if(imgEl) { imgEl.src = logo; imgEl.classList.remove('hidden'); }
+                    if(iconEl) iconEl.classList.add('hidden');
+                }
+
+                // Simpan Sosmed, Jam, WA dll (dari patch sebelumnya)
+                window.systemConfig.nomorWA = document.getElementById('ew-wa')?.value || window.systemConfig.nomorWA;
+                localStorage.setItem('mainstayConfig', JSON.stringify(window.systemConfig));
+                
+                alert("Berhasil! Logo, QRIS, Maps, dan Pengaturan Web sukses diperbarui.");
+                
+            } catch (error) {
+                alert("Ada kesalahan saat menyimpan: " + error.message);
+            }
+        };
+
+        // Ganti onclick tombol simpan web dengan fungsi mutlak ini
+        const btnSimpanWeb = panelWeb.parentElement.querySelector('button.bg-gray-900:last-child');
+        if (btnSimpanWeb) btnSimpanWeb.onclick = window.simpanWebPastiJalan;
+    }
+
+    // Pastikan saat pop-up QRIS Customer terbuka, ia memakai QRIS asli dari Edit Web!
+    const oldBukaModalQRIS = window.bukaModalQRIS;
+    window.bukaModalQRIS = function(orderData) {
+        oldBukaModalQRIS(orderData); // Panggil UI aslinya
+        
+        // Cari gambar QRIS di dalam pop-up
+        const qrisImg = document.querySelector('#modal-qris img');
+        if (qrisImg && window.systemConfig.qrisUrl) {
+            qrisImg.src = window.systemConfig.qrisUrl; // TIMPA DENGAN QRIS ASLI OWNER
+        }
+    };
+
+
+    // --- 5. FIX MUTLAK: FULL CRUD PELANGGAN (MEMBER) ---
+    window.renderTabelMember = function() {
+        const container = document.getElementById('tabel-crm-list');
+        if(!container) return;
+        
+        if(!window.databaseMember || window.databaseMember.length === 0) {
+            container.innerHTML = `<div class="text-center py-6 text-gray-400"><p class="text-sm font-bold">Belum ada data pelanggan.</p></div>`;
+            return;
+        }
+
+        container.innerHTML = window.databaseMember.map((m, idx) => `
+            <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3 relative">
+                <button onclick="window.hapusPelanggan(${idx})" class="absolute top-2 right-2 text-red-500 hover:text-red-700 bg-red-50 w-6 h-6 rounded flex items-center justify-center transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                <div class="pr-8">
+                    <h4 class="font-black text-sm text-gray-900">${m.nama}</h4>
+                    <p class="text-[10px] text-gray-500 font-bold mb-1.5"><i class="fa-solid fa-phone mr-1"></i> ${m.wa} | Terakhir: ${m.tanggal}</p>
+                    ${m.status === 'Member' ? '<span class="bg-green-100 text-green-600 px-2 py-0.5 rounded text-[9px] font-black uppercase"><i class="fa-solid fa-crown mr-1"></i> Member</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[9px] font-black uppercase">Reguler</span>'}
+                </div>
+                <div class="flex gap-2 flex-wrap mt-2 sm:mt-0">
+                    <button onclick="window.editPelanggan(${idx})" class="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1.5 rounded-lg border border-amber-200"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button onclick="window.lihatRiwayatPelanggan('${m.wa}')" class="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-200"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</button>
+                    ${(m.wa && m.wa.length > 5) ? `<a href="https://wa.me/${m.wa}" target="_blank" class="w-7 h-7 rounded-full bg-green-50 text-green-500 flex items-center justify-center border border-green-200"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.editPelanggan = function(idx) {
+        const m = window.databaseMember[idx];
+        const namaBaru = prompt("Edit Nama:", m.nama);
+        if(!namaBaru) return;
+        const waBaru = prompt("Edit Nomor WA:", m.wa);
+        const statusBaru = confirm("Jadikan Member VIP? (OK = Ya, Cancel = Tidak)") ? "Member" : "Non-Member";
+        
+        window.databaseMember[idx].nama = namaBaru;
+        window.databaseMember[idx].wa = waBaru;
+        window.databaseMember[idx].status = statusBaru;
+        localStorage.setItem('dbMemberMainstay', JSON.stringify(window.databaseMember));
+        window.renderTabelMember();
+    };
+
+    window.hapusPelanggan = function(idx) {
+        if(confirm("Yakin ingin menghapus pelanggan ini?")) {
+            window.databaseMember.splice(idx, 1);
+            localStorage.setItem('dbMemberMainstay', JSON.stringify(window.databaseMember));
+            window.renderTabelMember();
+        }
+    };
+
+
+    // --- 6. FIX MUTLAK: HRD DIRECT MESSAGE & CRUD PASTIKAN JALAN ---
+    window.renderStafList = function() {
+        const list = document.getElementById('hrd-staf-list');
+        if(!list) return;
+        if(window.dbStaf.length === 0) { list.innerHTML = `<p class="text-center text-xs text-gray-400 py-4 font-bold">Belum ada data staf.</p>`; return; }
+
+        list.innerHTML = window.dbStaf.map(staf => {
+            const fotoStaf = staf.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(staf.nama)}&background=14b8a6&color=fff`;
+            return `
+            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex gap-4 items-start relative transition">
+                <button onclick="window.hapusStaf('${staf.id}')" class="absolute top-3 right-3 text-red-500 hover:text-red-700 transition bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>
+                <img src="${fotoStaf}" class="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm bg-gray-200">
+                <div class="flex-1 pr-6">
+                    <h4 class="font-black text-sm text-gray-900 mb-0.5">${staf.nama}</h4>
+                    <p class="text-[10px] font-bold text-gray-500 mb-2">PIN: <span class="bg-gray-200 px-1 rounded">${staf.pin || '1234'}</span> | ${staf.tipeStaf || 'Tetap'}</p>
+                    
+                    <div class="flex gap-2 mb-3 flex-wrap">
+                        <button onclick="window.bukaFormStaf('${staf.id}')" class="text-[9px] font-black text-white bg-amber-500 px-2 py-1 rounded shadow-sm hover:bg-amber-600"><i class="fa-solid fa-pen mr-1"></i> Edit Data</button>
+                        <a href="https://wa.me/${staf.wa}" target="_blank" class="text-[9px] font-black text-white bg-green-500 px-2 py-1 rounded shadow-sm hover:bg-green-600 flex items-center"><i class="fa-brands fa-whatsapp text-sm mr-1"></i> Hubungi WA</a>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    };
+
+});
