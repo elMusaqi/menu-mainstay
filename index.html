@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mainstay Drink - Minuman Andalanmu</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f59e0b">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        
+        /* Animasi */
+        .panel-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Marquee */
+        .marquee-container { overflow: hidden; white-space: nowrap; width: 100%; display: flex; align-items: center; }
+        .marquee-content { display: inline-block; animation: marquee 15s linear infinite; }
+        .marquee-content:hover { animation-play-state: paused; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen overflow-y-auto pb-24">
+
+    <!-- ELEMEN AUDIO (Notifikasi Pesanan) -->
+    <audio id="audio-masuk" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3?filename=ding-idea-40142.mp3" preload="auto"></audio>
+    <audio id="audio-siap" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_bb630cc098.mp3?filename=success-1-6297.mp3" preload="auto"></audio>
+    <div id="screen-flash" class="fixed inset-0 bg-amber-500 opacity-0 pointer-events-none z-[200] hidden transition-opacity duration-300"></div>
+
+    <!-- HEADER UTAMA -->
+    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100">
+        <div class="px-4 py-3 flex justify-between items-center max-w-7xl mx-auto w-full">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-md overflow-hidden relative">
+                    <i id="header-logo-icon" class="fa-solid fa-mug-hot text-xl z-10"></i>
+                    <img id="header-logo-img" src="" alt="Logo" class="w-full h-full object-cover absolute inset-0 hidden z-20">
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-gray-900 text-lg leading-none mb-1">Mainstay Drink</h1>
+                    <p class="text-[10px] font-semibold text-gray-500 tracking-wide uppercase">Minuman Andalanmu</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end">
+                <span id="live-clock" class="text-[10px] font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">--/--/---- --:-- WIB</span>
+                <div id="store-status" class="flex items-center gap-1 mt-1 text-[10px] font-extrabold text-green-600">
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> BUKA
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MODAL LOGIN GLOBAL (PIN Kasir & Owner) -->
+    <div id="modal-login" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[150] hidden items-center justify-center fade-in px-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full text-gray-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-xl font-black text-gray-900 mb-1" id="login-title">Akses Keamanan</h2>
+            <p class="text-xs text-gray-500 mb-6" id="login-desc">Masukkan PIN untuk melanjutkan.</p>
+            
+            <div class="relative mb-2">
+                <input type="password" id="login-pin" class="w-full text-center tracking-[0.7em] text-2xl font-black bg-slate-50 border border-gray-200 rounded-2xl py-4 focus:outline-none focus:border-amber-500 transition shadow-inner" placeholder="••••••" inputmode="numeric" maxlength="6">
+                <button type="button" onclick="togglePinVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-amber-500 transition p-2">
+                    <i id="pin-eye-icon" class="fa-solid fa-eye text-lg"></i>
+                </button>
+            </div>
+            <p id="login-error" class="text-xs text-red-500 font-bold mb-4 hidden text-center bg-red-50 py-1 rounded-lg">PIN tidak valid!</p>
+            
+            <button onclick="prosesLogin()" class="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:bg-amber-600 transition text-sm">MASUK SISTEM</button>
+        </div>
+    </div>
+
+    <!-- KONTEN UTAMA -->
+    <main id="main-content" class="w-full">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 1: CUSTOMER (SELF-ORDER)              -->
+        <!-- ========================================== -->
+        <section id="view-customer" class="w-full">
+            
+            <!-- Promo, Marquee & Search -->
+            <div class="bg-white pb-4 shadow-sm border-b border-gray-100">
+                <div class="max-w-7xl mx-auto px-4 pt-4">
+                    <!-- Teks Berjalan -->
+                    <div id="marquee-wrapper" class="bg-amber-50 rounded-lg p-2 mb-3 border border-amber-100 marquee-container text-xs font-bold text-amber-600">
+                        <div id="marquee-content" class="marquee-content cursor-pointer" onclick="openMarqueeLink()">
+                            <i class="fa-solid fa-bullhorn mr-2"></i> Selamat datang di Mainstay Drink! Dapatkan promo spesial khusus member.
+                        </div>
+                    </div>
+
+                    <!-- Carousel Promo -->
+                    <div class="relative w-full h-48 md:h-64 rounded-2xl overflow-hidden bg-gray-200 shadow-inner group">
+                        <img id="carousel-img" src="https://images.unsplash.com/photo-1588644458316-24b94fa8ebc8?w=800&q=80" class="w-full h-full object-cover transition duration-700" alt="Promo">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-6">
+                            <h3 id="carousel-title" class="text-white font-black text-sm md:text-lg mb-1 shadow-sm">Promo Segar</h3>
+                            <button onclick="openCarouselLink()" class="w-max bg-amber-500 text-white text-[10px] md:text-xs font-bold px-4 py-2 rounded-full hover:bg-amber-600 transition shadow-md">
+                                <i class="fa-solid fa-hand-pointer mr-1"></i> Lihat Promo
+                            </button>
+                        </div>
+                        <div class="absolute top-3 right-3 flex gap-1 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-full" id="carousel-indicators">
+                            <!-- Indikator dirender JS -->
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="mt-4 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="search-menu" onkeyup="searchKatalog()" placeholder="Cari minuman, cemilan..." class="w-full bg-slate-50 border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold focus:outline-none focus:border-amber-500 focus:bg-white transition shadow-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Kategori -->
+            <div class="bg-white px-4 py-3 sticky top-[68px] z-30 border-b border-gray-100 shadow-sm">
+                <div class="max-w-7xl mx-auto flex gap-2 overflow-x-auto hide-scrollbar" id="category-tabs">
+                    <button onclick="filterKategori('all')" class="cat-btn active shrink-0 px-5 py-2.5 rounded-full text-xs font-black bg-amber-500 text-white shadow-md transition">Semua Menu</button>
+                    <button onclick="filterKategori('coffee')" class="cat-btn shrink-0 px-5 py-2.5 rounded-full text-xs font-bold bg-slate-100 text-gray-600 hover:bg-slate-200 transition"><i class="fa-solid fa-mug-hot mr-1.5"></i>Coffee</button>
+                    <button onclick="filterKategori('non-coffee')" class="cat-btn shrink-0 px-5 py-2.5 rounded-full text-xs font-bold bg-slate-100 text-gray-600 hover:bg-slate-200 transition"><i class="fa-solid fa-martini-glass mr-1.5"></i>Non-Coffee</button>
+                </div>
+            </div>
+
+            <!-- Grid Menu Dinamis -->
+            <div class="p-4 max-w-7xl mx-auto min-h-[50vh]">
+                <div id="menu-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <!-- Menu Item dirender oleh JavaScript -->
+                </div>
+            </div>
+
+            <!-- Floating Cart Button -->
+            <div id="floating-cart" class="fixed bottom-24 left-4 right-4 md:left-auto md:right-8 md:w-96 z-30 hidden">
+                <button onclick="openCartModal()" class="w-full bg-gray-900 text-white rounded-2xl p-4 shadow-[0_15px_30px_-5px_rgba(0,0,0,0.5)] flex items-center justify-between hover:bg-black transition border-2 border-gray-700 transform hover:-translate-y-1">
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-basket-shopping text-2xl text-amber-500"></i>
+                            <span id="cart-badge" class="absolute -top-2 -right-3 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-900 shadow-sm">0</span>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Total Pesanan</p>
+                            <p id="cart-total-float" class="text-base font-black text-white leading-none">Rp 0</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-black text-gray-900 bg-amber-500 px-4 py-2 rounded-xl shadow-inner">
+                        Checkout <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MODAL PILIH VARIAN & TOPPING               -->
+        <!-- ========================================== -->
+        <div id="modal-menu-detail" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] hidden flex-col justify-end md:justify-center md:items-center fade-in">
+            <div class="bg-white w-full md:w-[450px] md:rounded-3xl rounded-t-[2rem] panel-slide-up flex flex-col max-h-[90vh] shadow-2xl overflow-hidden relative">
+                <div class="relative w-full h-56 bg-slate-100">
+                    <img id="detail-img" src="" class="w-full h-full object-cover" alt="Menu">
+                    <div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent"></div>
+                    <button onclick="closeMenuDetail()" class="absolute top-4 right-4 w-10 h-10 bg-black/40 backdrop-blur-md rounded-full text-white flex items-center justify-center hover:bg-black/60 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="px-6 pt-2 pb-6 overflow-y-auto hide-scrollbar flex-1 relative z-10 -mt-6">
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4 relative">
+                        <h2 id="detail-name" class="text-2xl font-black text-gray-900 leading-tight mb-2">Nama Menu</h2>
+                        <p id="detail-desc" class="text-xs font-medium text-gray-500 leading-relaxed">Deskripsi singkat.</p>
+                    </div>
+                    
+                    <!-- Varian Dinamis dirender JS (Es, Gula, Topping, dll) -->
+                    <div id="detail-variants-container" class="space-y-5"></div>
+                    
+                    <!-- Quantity -->
+                    <div class="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span class="text-sm font-black text-gray-900 block">Jumlah Porsi</span>
+                            <span class="text-[10px] font-bold text-gray-500">Tentukan kuantitas pesanan</span>
+                        </div>
+                        <div class="flex items-center gap-3 bg-white rounded-xl p-1.5 shadow-sm border border-gray-200">
+                            <button onclick="updateQty(-1)" class="w-10 h-10 rounded-lg bg-slate-100 text-gray-700 hover:bg-slate-200 transition"><i class="fa-solid fa-minus"></i></button>
+                            <span id="detail-qty" class="w-8 text-center font-black text-lg text-gray-900">1</span>
+                            <button onclick="updateQty(1)" class="w-10 h-10 rounded-lg bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Button -->
+                <div class="p-4 bg-white border-t border-gray-100 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-20">
+                    <button onclick="addToCart()" class="w-full bg-gray-900 text-white py-4 rounded-2xl shadow-xl hover:bg-black transition flex justify-between px-6 items-center group">
+                        <span class="text-sm font-black group-hover:text-amber-400 transition"><i class="fa-solid fa-cart-plus mr-2"></i> Tambah Pesanan</span>
+                        <span id="detail-total-price" class="text-lg font-black text-amber-500">Rp 0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODAL KERANJANG & CHECKOUT                 -->
+        <!-- ========================================== -->
+        <div id="modal-cart" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] hidden flex-col justify-end md:justify-center md:items-center fade-in">
+            <div class="bg-slate-50 w-full md:w-[500px] md:rounded-3xl rounded-t-[2rem] panel-slide-up flex flex-col h-[90vh] shadow-2xl overflow-hidden relative">
+                
+                <!-- Header Cart -->
+                <div class="px-6 py-5 bg-white border-b border-gray-200 flex justify-between items-center shadow-sm z-20">
+                    <div>
+                        <h2 class="text-xl font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-green-500"></i> Review Pesanan</h2>
+                        <p class="text-[10px] font-bold text-gray-500 mt-1 bg-gray-100 px-2 py-0.5 rounded-md inline-block" id="cart-actor-label">Penginput: Customer</p>
+                    </div>
+                    <button onclick="closeCartModal()" class="w-10 h-10 bg-slate-100 rounded-full text-gray-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                
+                <div class="p-5 overflow-y-auto hide-scrollbar flex-1 space-y-5">
+                    
+                    <!-- List Item Keranjang -->
+                    <div id="cart-items-container" class="space-y-3">
+                        <!-- Render JS -->
+                    </div>
+
+                    <!-- Form Data Pembeli & CRM Member -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-xs font-black text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-user-pen text-amber-500 text-lg"></i> INFORMASI PEMESAN</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[10px] font-black text-gray-500 block mb-1.5 uppercase tracking-wide ml-1">Nama Lengkap / Panggilan</label>
+                                <input type="text" id="co-name" placeholder="Cth: Ihsan" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm font-bold focus:outline-none focus:border-amber-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-gray-500 block mb-1.5 uppercase tracking-wide ml-1">Nomor WhatsApp</label>
+                                <div class="relative">
+                                    <input type="tel" id="co-phone" placeholder="08123456789" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm font-bold focus:outline-none focus:border-amber-500 focus:bg-white transition" inputmode="numeric">
+                                    <p class="text-[9px] font-bold text-blue-500 mt-1.5 ml-1"><i class="fa-solid fa-circle-info mr-1"></i>Sistem otomatis mengubah awalan 0 menjadi 62.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Checkbox Daftar Member -->
+                            <div class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                <label class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" id="co-member" class="mt-0.5 accent-amber-500 w-5 h-5 rounded shrink-0">
+                                    <span class="text-[10px] font-bold text-amber-900 leading-relaxed">
+                                        <b class="block text-xs mb-0.5">Daftar Member & Dapatkan Promo!</b>
+                                        Dengan mencentang ini, Anda bersedia menerima pesan broadcast promosi dan voucher eksklusif via WhatsApp dari Mainstay Drink.
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opsi Pemesanan (Instant / PO) -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-xs font-black text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-motorcycle text-amber-500 text-lg"></i> TIPE PESANAN</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex flex-col items-center justify-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-amber-50 has-[:checked]:border-amber-500 transition group">
+                                <input type="radio" name="co_tipe" value="Instant (Di Toko)" class="hidden" checked>
+                                <i class="fa-solid fa-store text-xl mb-1 text-slate-400 group-has-[:checked]:text-amber-500 transition"></i>
+                                <span class="text-xs font-black text-slate-600 group-has-[:checked]:text-amber-700">Instant / Dine-in</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 transition group">
+                                <input type="radio" name="co_tipe" value="Pre-Order (PO)" class="hidden">
+                                <i class="fa-solid fa-calendar-days text-xl mb-1 text-slate-400 group-has-[:checked]:text-blue-500 transition"></i>
+                                <span class="text-xs font-black text-slate-600 group-has-[:checked]:text-blue-700">Pre-Order (PO)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Metode Pembayaran -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-xs font-black text-gray-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-wallet text-amber-500 text-lg"></i> METODE PEMBAYARAN</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between p-4 border-2 border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 transition">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg shadow-sm border border-slate-100 flex items-center justify-center text-blue-600 text-xl"><i class="fa-solid fa-qrcode"></i></div>
+                                    <div>
+                                        <span class="text-sm font-black text-gray-800 block">QRIS Resto</span>
+                                        <span class="text-[10px] font-bold text-gray-500">Scan & Upload Bukti via WA</span>
+                                    </div>
+                                </div>
+                                <input type="radio" name="co_payment" value="QRIS Resto" class="w-5 h-5 accent-blue-600" checked>
+                            </label>
+                            <label class="flex items-center justify-between p-4 border-2 border-slate-200 rounded-xl cursor-pointer has-[:checked]:bg-green-50 has-[:checked]:border-green-500 transition">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-lg shadow-sm border border-slate-100 flex items-center justify-center text-green-600 text-xl"><i class="fa-solid fa-money-bill-wave"></i></div>
+                                    <div>
+                                        <span class="text-sm font-black text-gray-800 block">Tunai (Cash)</span>
+                                        <span class="text-[10px] font-bold text-gray-500">Bayar langsung di kasir</span>
+                                    </div>
+                                </div>
+                                <input type="radio" name="co_payment" value="Tunai" class="w-5 h-5 accent-green-600">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Input Voucher Promo -->
+                    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex gap-3">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-ticket absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="co-promo" placeholder="Punya Voucher Promo?" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-3 text-xs uppercase font-black focus:outline-none focus:border-amber-500 transition">
+                        </div>
+                        <button onclick="terapkanPromo()" class="bg-gray-800 text-white text-xs font-black px-5 rounded-xl hover:bg-black transition shadow-md">PAKAI</button>
+                    </div>
+
+                    <!-- Rincian Biaya -->
+                    <div class="bg-gray-900 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                        <div class="relative z-10 space-y-2 mb-3 border-b border-gray-700 pb-3">
+                            <div class="flex justify-between text-xs font-bold text-gray-300">
+                                <span>Subtotal Menu</span><span id="cart-subtotal">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold text-amber-400 hidden" id="cart-discount-row">
+                                <span>Diskon Voucher</span><span id="cart-discount-value">- Rp 0</span>
+                            </div>
+                        </div>
+                        <div class="relative z-10 flex justify-between items-end">
+                            <span class="text-sm font-black text-white">TOTAL BAYAR</span>
+                            <span id="cart-grand-total" class="text-2xl font-black text-amber-400">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Proses Final -->
+                <div class="p-5 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-20">
+                    <button onclick="prosesCheckout()" class="w-full bg-amber-500 text-white py-4 rounded-2xl shadow-[0_5px_15px_rgba(245,158,11,0.4)] hover:bg-amber-600 transition flex items-center justify-center gap-2 group">
+                        <span class="font-black text-sm tracking-wide">PROSES PESANAN SEKARANG</span>
+                        <i class="fa-solid fa-paper-plane group-hover:translate-x-1 transition transform"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MODAL QRIS (Tampil Setelah Checkout)       -->
+        <!-- ========================================== -->
+        <div id="modal-qris" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[120] hidden flex-col items-center justify-center fade-in px-4">
+            <div class="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl relative">
+                <button onclick="batalQRIS()" class="absolute top-4 right-4 w-8 h-8 bg-black/20 rounded-full text-white flex items-center justify-center hover:bg-black/40 transition z-10"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="bg-blue-600 px-6 py-8 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    <h2 class="text-white font-black text-2xl relative z-10 mb-1">Scan QRIS</h2>
+                    <p class="text-blue-100 text-[10px] font-bold relative z-10 uppercase tracking-widest bg-black/20 inline-block px-3 py-1 rounded-full">No. Antrean: <span id="qris-antrean" class="text-white">#ORD-000</span></p>
+                </div>
+                
+                <div class="p-6 bg-slate-50 flex flex-col items-center">
+                    <div class="bg-white p-4 rounded-3xl shadow-md border border-slate-100 mb-5 relative -mt-12 z-20">
+                        <img id="qris-img-display" src="" alt="QRIS Mainstay" class="w-52 h-52 object-contain">
+                    </div>
+                    
+                    <p class="text-xs font-black text-gray-500 mb-1 uppercase tracking-wider">Total Tagihan Anda:</p>
+                    <p class="text-3xl font-black text-amber-500 mb-6 drop-shadow-sm" id="qris-total-bayar">Rp 0</p>
+                    
+                    <div class="w-full space-y-3">
+                        <button onclick="unduhQRIS()" class="w-full bg-white border-2 border-slate-200 text-gray-800 font-black py-3.5 rounded-xl hover:bg-slate-100 transition text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-download text-blue-500"></i> Unduh / Simpan QRIS
+                        </button>
+                        <button onclick="kirimBuktiWA()" class="w-full bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(34,197,94,0.4)] hover:bg-green-600 transition text-sm flex items-center justify-center gap-2 group">
+                            <i class="fa-brands fa-whatsapp text-xl group-hover:scale-110 transition"></i> Lanjut Kirim Bukti
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ========================================== -->
+        <!-- VIEW 2: KASIR (RUANG STAF)                 -->
+        <!-- ========================================== -->
+        <section id="view-kasir" class="w-full hidden pb-24">
+            
+            <!-- Header Kasir (Sticky) -->
+            <div class="bg-white p-5 shadow-[0_4px_15px_rgba(0,0,0,0.03)] border-b border-gray-100 flex items-center justify-between sticky top-[68px] z-30">
+                <div>
+                    <h2 class="text-sm font-black text-gray-900 leading-tight flex items-center gap-2"><i class="fa-solid fa-desktop text-amber-500"></i> Dashboard Kasir</h2>
+                    <div class="flex items-center gap-2 mt-1.5">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Staf Aktif:</span>
+                        <!-- Dropdown Pilihan Staf (Penting untuk Cetak Struk/Draft WA) -->
+                        <select id="kasir-staf-dropdown" class="bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer transition shadow-sm">
+                            <option value="Kasir 1">Kasir 1</option>
+                            <option value="Kasir 2">Kasir 2</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openAbsensi()" class="bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-blue-100 transition shadow-sm"><i class="fa-solid fa-camera text-sm"></i> Absen</button>
+                    <button onclick="prosesLogout('kasir')" class="bg-red-50 text-red-600 border border-red-200 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-red-100 transition shadow-sm"><i class="fa-solid fa-power-off text-sm"></i> Keluar</button>
+                </div>
+            </div>
+
+            <!-- Tab Manajemen Pesanan (3 Tab) -->
+            <div class="bg-white px-4 py-3 sticky top-[148px] z-20 border-b border-gray-100 shadow-sm">
+                <div class="flex bg-slate-100 p-1.5 rounded-2xl">
+                    <button onclick="switchKasirTab('konfirmasi')" id="tab-konfirmasi" class="flex-1 py-2.5 text-xs font-black text-slate-500 rounded-xl transition bg-white shadow-sm text-amber-600 relative">
+                        Konfirmasi <span id="badge-konfirmasi" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm hidden">0</span>
+                    </button>
+                    <button onclick="switchKasirTab('dapur')" id="tab-dapur" class="flex-1 py-2.5 text-xs font-black text-slate-500 rounded-xl transition relative hover:text-slate-700">
+                        Proses Dapur <span id="badge-dapur" class="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm hidden">0</span>
+                    </button>
+                    <button onclick="switchKasirTab('selesai')" id="tab-selesai" class="flex-1 py-2.5 text-xs font-black text-slate-500 rounded-xl transition hover:text-slate-700">Selesai</button>
+                </div>
+            </div>
+
+            <!-- List Pesanan (Wadah Dinamis untuk JavaScript) -->
+            <div id="kasir-list-container" class="p-4 space-y-4 max-w-7xl mx-auto min-h-[50vh]">
+                <!-- Tampilan Default Jika Kosong -->
+                <div class="text-center py-16 text-gray-400">
+                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                        <i class="fa-solid fa-clipboard-list text-3xl opacity-50 text-slate-500"></i>
+                    </div>
+                    <p class="text-sm font-black text-slate-500">Belum ada pesanan masuk.</p>
+                    <p class="text-[10px] font-bold text-slate-400 mt-1">Pantau terus tab Konfirmasi.</p>
+                </div>
+            </div>
+            
+            <!-- Tombol Order Manual (Ambil Alih POS) -->
+            <div class="fixed bottom-24 right-4 md:right-8 z-20">
+                <button onclick="bukaPOS('Kasir')" class="bg-amber-500 text-white w-16 h-16 rounded-full shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center text-2xl hover:bg-amber-600 transition border-4 border-white animate-bounce hover:animate-none">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MODAL ABSENSI KAMERA & REVIEW KARYAWAN     -->
+        <!-- ========================================== -->
+        <!-- Modal Kamera -->
+        <div id="modal-absensi" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[130] hidden flex-col items-center justify-center fade-in">
+            <div class="w-full max-w-sm p-5 relative">
+                <button onclick="closeAbsensi()" class="absolute -top-10 right-4 text-white text-3xl opacity-70 hover:opacity-100 transition"><i class="fa-solid fa-xmark"></i></button>
+                <div class="bg-white rounded-[2rem] overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.15)] border border-gray-800">
+                    
+                    <!-- Area Kamera Live -->
+                    <div class="w-full aspect-square bg-gray-900 relative flex items-center justify-center overflow-hidden">
+                        <!-- Video Feed -->
+                        <video id="attendance-video" class="w-full h-full object-cover absolute inset-0 hidden z-10 transform scale-x-[-1]" autoplay playsinline muted></video>
+                        <!-- Loading State -->
+                        <div id="camera-loading" class="text-white text-center z-20 flex flex-col items-center p-6">
+                            <i class="fa-solid fa-circle-notch fa-spin text-5xl mb-4 text-amber-500"></i>
+                            <p class="text-xs font-black bg-black/60 px-4 py-2 rounded-full border border-gray-700 shadow-lg tracking-wide">MENGAKSES KAMERA...</p>
+                        </div>
+                        <!-- Canvas Capture -->
+                        <canvas id="attendance-canvas" class="hidden"></canvas>
+                        
+                        <!-- Overlay Frame Area Wajah -->
+                        <div class="absolute inset-0 z-30 pointer-events-none border-[12px] border-black/20 rounded-[2rem]"></div>
+                        <div class="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+                            <div class="w-48 h-48 border-2 border-dashed border-white/50 rounded-full"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form PIN Absen -->
+                    <div class="p-6 bg-slate-50 relative z-40">
+                        <p class="text-center text-xs font-black text-gray-500 mb-3 uppercase tracking-widest"><i class="fa-solid fa-lock text-amber-500 mr-1"></i> Verifikasi PIN Identitas</p>
+                        <input type="password" id="absen-pin" class="w-full text-center tracking-[0.7em] text-2xl font-black bg-white border-2 border-gray-200 rounded-2xl py-4 focus:outline-none focus:border-amber-500 shadow-inner mb-4 transition" placeholder="••••••" inputmode="numeric" maxlength="6">
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="prosesAbsen('Masuk')" class="bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.3)] hover:bg-blue-700 transition text-sm flex justify-center items-center gap-2"><i class="fa-solid fa-right-to-bracket text-lg"></i> MASUK</button>
+                            <button onclick="prosesAbsen('Keluar')" class="bg-red-500 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:bg-red-600 transition text-sm flex justify-center items-center gap-2"><i class="fa-solid fa-right-from-bracket text-lg"></i> PULANG</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-Up Review 5 Detik (Hasil Absen) -->
+        <div id="modal-absen-review" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[140] hidden items-center justify-center fade-in">
+            <div class="bg-white w-72 rounded-[2rem] p-8 text-center shadow-[0_0_50px_rgba(245,158,11,0.2)] transform scale-100 transition-transform relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-amber-100 to-transparent"></div>
+                
+                <div class="w-32 h-32 mx-auto rounded-full border-4 border-amber-500 overflow-hidden mb-5 relative shadow-[0_10px_25px_rgba(0,0,0,0.1)] z-10 bg-gray-100">
+                    <img id="review-foto" src="" class="w-full h-full object-cover transform scale-x-[-1]">
+                </div>
+                
+                <h3 id="review-nama" class="font-black text-gray-900 text-2xl leading-none mb-2 z-10 relative">Nama Staf</h3>
+                <div class="bg-slate-100 py-1.5 px-3 rounded-lg inline-block mb-4 border border-slate-200 z-10 relative">
+                    <p id="review-jam" class="text-xs text-slate-600 font-bold"><i class="fa-regular fa-clock mr-1"></i> Masuk: 00:00:00 WIB</p>
+                </div>
+                <div class="z-10 relative">
+                    <span id="review-status" class="inline-block px-5 py-2 rounded-full text-xs font-black text-white bg-green-500 shadow-md tracking-wider">TEPAT WAKTU</span>
+                </div>
+                
+                <!-- Countdown Visual -->
+                <div class="mt-6 flex justify-center gap-1 opacity-50" id="review-dots">
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: OWNER MASTER (PUSAT KENDALI)       -->
+        <!-- ========================================== -->
+        <section id="view-owner" class="w-full hidden pb-28">
+            
+            <!-- Header Owner (Data Real-time Firebase) -->
+            <div class="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-5 pt-8 pb-14 rounded-b-[3rem] shadow-[0_15px_30px_-5px_rgba(0,0,0,0.3)] relative z-10 border-b-[6px] border-amber-500 w-full max-w-7xl mx-auto">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <p class="text-amber-400 text-[10px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-sm"></i> Pusat Kendali Master</p>
+                        <h2 class="text-white text-2xl font-black leading-tight">Halo, M. Ihsan!</h2>
+                    </div>
+                    <button onclick="prosesLogout('owner')" class="bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black px-4 py-2 rounded-full hover:bg-red-500/80 transition flex items-center gap-1.5 shadow-sm group"><i class="fa-solid fa-lock text-red-400 group-hover:text-white transition"></i> Kunci</button>
+                </div>
+                
+                <!-- Statistik Pendapatan -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-[2rem] p-6 shadow-inner relative overflow-hidden">
+                    <!-- Ornamen -->
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500 opacity-20 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    
+                    <p class="text-gray-300 text-xs font-bold mb-1 tracking-wide relative z-10">Total Pendapatan (Hari Ini)</p>
+                    <h3 class="text-amber-400 text-4xl font-black mb-5 tracking-tighter relative z-10" id="stat-pendapatan">Rp 0</h3>
+                    
+                    <div class="grid grid-cols-3 gap-3 border-t border-white/10 pt-4 relative z-10">
+                        <div class="text-center bg-black/20 py-2 rounded-xl">
+                            <p class="text-gray-400 text-[10px] font-black uppercase tracking-wider mb-1"><i class="fa-solid fa-bell text-blue-400"></i> Baru</p>
+                            <p class="text-white text-lg font-black leading-none" id="stat-pesanan">0</p>
+                        </div>
+                        <div class="text-center bg-black/20 py-2 rounded-xl">
+                            <p class="text-gray-400 text-[10px] font-black uppercase tracking-wider mb-1"><i class="fa-solid fa-fire-burner text-amber-500"></i> Dapur</p>
+                            <p class="text-white text-lg font-black leading-none" id="stat-dapur">0</p>
+                        </div>
+                        <div class="text-center bg-black/20 py-2 rounded-xl">
+                            <p class="text-gray-400 text-[10px] font-black uppercase tracking-wider mb-1"><i class="fa-solid fa-check-double text-green-500"></i> Selesai</p>
+                            <p class="text-white text-lg font-black leading-none" id="stat-selesai">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tombol Ambil Alih POS -->
+            <div class="px-5 -mt-7 relative z-20 mb-8 max-w-7xl mx-auto">
+                <button onclick="bukaPOS('Owner')" class="w-full bg-amber-500 text-white rounded-3xl p-5 shadow-[0_15px_30px_-5px_rgba(245,158,11,0.5)] flex items-center justify-between hover:bg-amber-600 transition border-[3px] border-white group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-white/20 text-white flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform"><i class="fa-solid fa-cash-register"></i></div>
+                        <div class="text-left">
+                            <p class="text-base font-black">Ambil Alih POS Kasir</p>
+                            <p class="text-[10px] text-amber-100 font-bold leading-tight mt-0.5 tracking-wide">Input order manual dengan akses Master</p>
+                        </div>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                        <i class="fa-solid fa-chevron-right text-white"></i>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Grid 8 Panel Manajemen Master -->
+            <div class="px-5 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-7xl mx-auto">
+                
+                <button onclick="openPanel('panel-edit-web')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-globe"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Edit Web<br><span class="text-gray-400 text-[10px]">Kontak & QRIS</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-promo-banner')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-images"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Promosi<br><span class="text-gray-400 text-[10px]">Banner & Teks</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-katalog')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-book-open"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Katalog<br><span class="text-gray-400 text-[10px]">Menu & Harga</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-stok')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-boxes-stacked"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Stok<br><span class="text-gray-400 text-[10px]">Alat & Bahan</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-member')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-green-50 text-green-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-ticket"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Member<br><span class="text-gray-400 text-[10px]">Voucher & CRM</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-laporan')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-chart-line"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Laporan<br><span class="text-gray-400 text-[10px]">Arus Kas</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-hrd')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-teal-50 text-teal-500 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-users-gear"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">HRD<br><span class="text-gray-400 text-[10px]">PIN & Absensi</span></span>
+                </button>
+                
+                <button onclick="openPanel('panel-sistem')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-left flex flex-col items-center justify-center gap-3 hover:border-amber-500 hover:shadow-lg transition transform hover:-translate-y-1 group">
+                    <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-2xl group-hover:scale-110 transition"><i class="fa-solid fa-server"></i></div>
+                    <span class="text-xs font-black text-gray-800 text-center leading-tight">Sistem<br><span class="text-gray-400 text-[10px]">Printer & JSON</span></span>
+                </button>
+                
+            </div>
+        </section>
+        <!-- ========================================== -->
+        <!-- FOOTER CUSTOMER (MAPS & SOSMED)            -->
+        <!-- ========================================== -->
+        <div id="customer-footer" class="w-full mt-6 pb-32 bg-white border-t border-gray-100 pt-10">
+            <div class="px-5 max-w-7xl mx-auto">
+                <h3 class="text-sm font-black text-gray-900 mb-5 flex items-center gap-2 uppercase tracking-wide"><i class="fa-solid fa-location-dot text-amber-500 text-lg"></i> Lokasi Mainstay Drink</h3>
+                
+                <!-- Embed Google Maps -->
+                <div class="w-full h-64 md:h-80 rounded-[2rem] overflow-hidden shadow-sm border border-gray-200 mb-8 relative z-0">
+                    <iframe id="footer-map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.2974461528615!2d110.4079810757279!3d-6.974191668291689!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e70f4b3ec615569%3A0xc34586bc8eb17112!2sSemarang%2C%20Kota%20Semarang%2C%20Jawa%20Tengah!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                
+                <!-- Icon Sosial Media -->
+                <div class="flex flex-col items-center justify-center">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Temukan Kami di Sosial Media</p>
+                    <div class="flex items-center justify-center gap-5 mb-8" id="footer-sosmed-container">
+                        <a href="#" id="link-wa" class="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-3xl hover:bg-green-500 hover:text-white transition shadow-sm border border-green-100 transform hover:scale-110"><i class="fa-brands fa-whatsapp"></i></a>
+                        <a href="#" id="link-ig" class="w-14 h-14 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center text-3xl hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-500 hover:text-white transition shadow-sm border border-pink-100 transform hover:scale-110"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" id="link-tiktok" class="w-14 h-14 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center text-3xl hover:bg-black hover:text-white transition shadow-sm border border-slate-200 transform hover:scale-110"><i class="fa-brands fa-tiktok"></i></a>
+                    </div>
+                    <p class="text-center text-[10px] text-gray-400 font-bold tracking-wider">© 2026 MAINSTAY DRINK SEMARANG.<br>ALL RIGHTS RESERVED.</p>
+                </div>
+            </div>
+        </div>
+
+    </main> <!-- Penutup <main> -->
+
+    <!-- ========================================== -->
+    <!-- KUMPULAN PANEL MASTER (FULL HTML MENTAH)   -->
+    <!-- ========================================== -->
+
+    <!-- PANEL 1: EDIT WEB & KONTAK -->
+    <div id="panel-edit-web" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-globe text-blue-400"></i> Edit Web & Kontak</h2>
+            <button onclick="closePanel('panel-edit-web')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 space-y-6 max-w-3xl mx-auto w-full">
+            
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Identitas & Kontak Utama</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Nomor WhatsApp Resto (Otomatis ke Keranjang)</label>
+                        <input type="text" id="setting-wa" value="628977099557" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold focus:border-amber-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">URL Logo Toko (Upload / Link Gambar)</label>
+                        <input type="text" id="setting-logo" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Link Instagram & TikTok</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="setting-ig" placeholder="Link IG" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none">
+                            <input type="text" id="setting-tiktok" placeholder="Link TikTok" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Pembayaran & Peta</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Link Gambar Barcode QRIS (Tampil di Popup)</label>
+                        <input type="text" id="setting-qris" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">URL Embed Google Maps (Iframe Src)</label>
+                        <textarea id="setting-maps" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Operasional & Audio (Custom Bunyi)</h3>
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-xl mb-4 bg-gray-50">
+                    <div>
+                        <p class="text-sm font-black text-gray-800">Status Toko Buka</p>
+                        <p class="text-[10px] text-gray-500 font-bold">Matikan sakelar ini jika tutup mendadak</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-buka" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-xl mb-4 bg-gray-50">
+                    <div>
+                        <p class="text-sm font-black text-gray-800">Aktifkan Notifikasi Suara</p>
+                        <p class="text-[10px] text-gray-500 font-bold">Dering Ting! dan Layar Berkedip</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-audio" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Upload/Link Audio "Pesanan Masuk" (.mp3)</label>
+                        <input type="text" id="setting-audio-masuk" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Upload/Link Audio "Pesanan Siap" (.mp3)</label>
+                        <input type="text" id="setting-audio-siap" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition"><i class="fa-solid fa-floppy-disk mr-2"></i> SIMPAN PENGATURAN WEB</button>
+        </div>
+    </div>
+
+    <!-- PANEL 2: PROMOSI (BANNER & MARQUEE) -->
+    <div id="panel-promo-banner" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-images text-pink-400"></i> Promosi & Banner</h2>
+            <button onclick="closePanel('panel-promo-banner')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 space-y-6 max-w-3xl mx-auto w-full">
+            
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Teks Info Berjalan (Marquee)</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Isi Teks Promosi</label>
+                        <textarea rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none" placeholder="Cth: Diskon 50% untuk minuman tertentu..."></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Link Tujuan (Bila Teks Diklik)</label>
+                        <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-amber-500 outline-none" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">Gambar Carousel Promosi</h3>
+                    <button class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-sm"><i class="fa-solid fa-plus"></i> Tambah Slide</button>
+                </div>
+                
+                <!-- Item Slide 1 -->
+                <div class="border border-gray-200 rounded-xl p-4 mb-3 bg-gray-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-black text-gray-700 bg-white px-2 py-1 rounded border border-gray-200">Slide 1</span>
+                        <button class="text-red-500 text-xs font-bold"><i class="fa-solid fa-trash mr-1"></i> Hapus</button>
+                    </div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Upload / URL Gambar</label>
+                    <input type="text" placeholder="https://..." class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs mb-3 outline-none focus:border-pink-500">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block mb-1">Judul Promo</label>
+                            <input type="text" placeholder="Cth: Promo Kopi" class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs outline-none focus:border-pink-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block mb-1">Link Tujuan (URL)</label>
+                            <input type="text" placeholder="https://..." class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs outline-none focus:border-pink-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="w-full bg-pink-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(219,39,119,0.4)] hover:bg-pink-700 transition"><i class="fa-solid fa-floppy-disk mr-2"></i> SIMPAN PROMOSI</button>
+        </div>
+    </div>
+
+    <!-- PANEL 3: KATALOG MENU & HARGA -->
+    <div id="panel-katalog" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-book-open text-amber-500"></i> Katalog & Harga</h2>
+            <button onclick="closePanel('panel-katalog')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 max-w-3xl mx-auto w-full">
+            <div class="flex gap-2 mb-4">
+                <button class="flex-1 bg-amber-500 text-white font-black py-3 rounded-xl text-xs shadow-md"><i class="fa-solid fa-plus mr-1"></i> Tambah Menu</button>
+                <button class="flex-1 bg-gray-800 text-white font-black py-3 rounded-xl text-xs shadow-md"><i class="fa-solid fa-tags mr-1"></i> Kategori Baru</button>
+            </div>
+            
+            <!-- List Katalog Mentah -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=100" class="w-12 h-12 rounded-lg object-cover">
+                    <div>
+                        <h4 class="font-black text-sm text-gray-900">Es Kopi Mainstay</h4>
+                        <p class="text-[10px] font-bold text-amber-500">Rp 16.000 <span class="text-gray-400 line-through ml-1">Rp 20.000</span></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="relative inline-flex items-center cursor-pointer mr-2">
+                        <input type="checkbox" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                        <span class="ml-2 text-[9px] font-black text-gray-500 uppercase">Stok</span>
+                    </label>
+                    <button class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-pen"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 4: STOK & ALAT -->
+    <div id="panel-stok" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-indigo-400"></i> Stok & Inventaris</h2>
+            <button onclick="closePanel('panel-stok')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 max-w-3xl mx-auto w-full">
+            <button class="w-full bg-indigo-500 text-white font-black py-3 rounded-xl text-xs shadow-md mb-4"><i class="fa-solid fa-plus mr-1"></i> Tambah Bahan / Alat</button>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 text-gray-600 font-black uppercase text-[10px]">
+                        <tr>
+                            <th class="px-4 py-3">Nama Barang</th>
+                            <th class="px-4 py-3">Sisa Stok</th>
+                            <th class="px-4 py-3 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 font-bold">
+                        <tr>
+                            <td class="px-4 py-3 text-gray-900">Cup Plastik 16oz</td>
+                            <td class="px-4 py-3 text-indigo-600">450 pcs</td>
+                            <td class="px-4 py-3 text-right"><button class="text-blue-500"><i class="fa-solid fa-pen-to-square"></i></button></td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 text-gray-900">Bubuk Matcha Premium</td>
+                            <td class="px-4 py-3 text-red-500">200 gram (Tipis)</td>
+                            <td class="px-4 py-3 text-right"><button class="text-blue-500"><i class="fa-solid fa-pen-to-square"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 5: PROMO & MEMBER (CRM) -->
+    <div id="panel-member" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-ticket text-green-400"></i> Member & CRM</h2>
+            <button onclick="closePanel('panel-member')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 space-y-6 max-w-3xl mx-auto w-full">
+            
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Link Broadcast WhatsApp</h3>
+                <div class="flex gap-2">
+                    <input type="text" placeholder="https://chat.whatsapp.com/..." class="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-green-500 outline-none">
+                    <button class="bg-green-600 text-white font-black px-4 rounded-xl shadow-md">Simpan</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">Database Member</h3>
+                    <button class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-black"><i class="fa-solid fa-download"></i> Export Data</button>
+                </div>
+                <table class="w-full text-left text-[10px] md:text-xs">
+                    <thead class="bg-slate-100 text-gray-600 font-black uppercase">
+                        <tr>
+                            <th class="p-2">Nama</th>
+                            <th class="p-2">No. WA</th>
+                            <th class="p-2">Bergabung</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 font-bold" id="table-member-body">
+                        <!-- JS Render -->
+                        <tr><td class="p-2 text-center text-gray-400" colspan="3">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <button class="w-full bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(34,197,94,0.4)] hover:bg-green-600 transition"><i class="fa-solid fa-plus mr-2"></i> Buat Kode Voucher Baru</button>
+        </div>
+    </div>
+
+    <!-- PANEL 6: LAPORAN KEUANGAN -->
+    <div id="panel-laporan" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-chart-line text-purple-400"></i> Laporan Keuangan</h2>
+            <button onclick="closePanel('panel-laporan')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 max-w-3xl mx-auto w-full">
+            <div class="bg-purple-600 rounded-2xl p-6 text-white shadow-lg mb-5 relative overflow-hidden">
+                <i class="fa-solid fa-sack-dollar absolute -bottom-5 -right-5 text-8xl opacity-20"></i>
+                <p class="text-xs font-bold text-purple-200 mb-1">Total Pendapatan Bulan Ini</p>
+                <h3 class="text-3xl font-black mb-1">Rp 12.500.000</h3>
+                <p class="text-[10px] font-bold bg-white/20 inline-block px-2 py-1 rounded-lg">Dari 450 Transaksi</p>
+            </div>
+            <button class="w-full bg-white border-2 border-purple-200 text-purple-700 font-black py-4 rounded-xl shadow-sm hover:bg-purple-50 transition mb-4"><i class="fa-solid fa-file-excel text-green-600 mr-2"></i> Download Laporan Lengkap (Excel)</button>
+        </div>
+    </div>
+
+    <!-- PANEL 7: HRD & ABSENSI -->
+    <div id="panel-hrd" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-users-gear text-teal-400"></i> HRD & Absensi</h2>
+            <button onclick="closePanel('panel-hrd')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 space-y-5 max-w-3xl mx-auto w-full">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">Profiling PIN Karyawan</h3>
+                    <button class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg text-[10px] font-black"><i class="fa-solid fa-plus"></i> Tambah Staf</button>
+                </div>
+                <div class="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50 font-bold text-xs mb-2">
+                    <div><span class="text-gray-900">Budi (Kasir 1)</span><br><span class="text-teal-600 text-[10px]">PIN: 123456</span></div>
+                    <button class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50 font-bold text-xs">
+                    <div><span class="text-gray-900">Siti (Kasir 2)</span><br><span class="text-teal-600 text-[10px]">PIN: 654321</span></div>
+                    <button class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Log Absensi Hari Ini</h3>
+                <div class="space-y-3">
+                    <div class="flex gap-3 items-center border border-gray-100 p-2 rounded-xl">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                        <div class="flex-1">
+                            <p class="text-xs font-black text-gray-900">Budi</p>
+                            <p class="text-[9px] font-bold text-gray-500">Masuk: 07:45 WIB</p>
+                        </div>
+                        <span class="text-[9px] font-black text-green-600 bg-green-100 px-2 py-1 rounded">TEPAT</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 8: SISTEM, PRINTER & JSON BACKUP -->
+    <div id="panel-sistem" class="fixed inset-0 bg-slate-50 z-[160] hidden flex-col panel-slide-up pb-safe">
+        <div class="bg-gray-900 text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <h2 class="font-black text-lg flex items-center gap-2"><i class="fa-solid fa-server text-gray-400"></i> Sistem & Database</h2>
+            <button onclick="closePanel('panel-sistem')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 pb-32 space-y-6 max-w-3xl mx-auto w-full">
+            
+            <!-- Draft WA & Struk Thermal -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Format Teks & Printer</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Draf WA QRIS (Kirim Bukti)</label>
+                        <textarea rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-bold outline-none">Halo, ini bukti transfer QRIS saya untuk pesanan nomor: </textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Draf WA Pre-Order (PO)</label>
+                        <textarea rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-bold outline-none">Halo, saya melakukan PO dan akan segera melunasinya. No: </textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 block mb-1">Catatan Kaki Struk Thermal (Bawah)</label>
+                        <textarea rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-bold outline-none">Terima kasih! Password WiFi: mainstay2026</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pusat Database & Backup -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Keamanan & Backup JSON</h3>
+                
+                <a href="https://script.google.com/macros/s/AKfycbzI64IPe7yAuN2ogQJ2Vs0Q8y3rBkwNawUXlpJAOHJ3M8yh-YgKaLBAJFqc8NCXSPOZ/exec" target="_blank" class="w-full bg-green-50 text-green-700 font-black py-3 rounded-xl border border-green-200 flex items-center justify-center gap-2 mb-3 hover:bg-green-100 transition text-sm"><i class="fa-solid fa-table"></i> Buka Google Sheets</a>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <button class="bg-slate-800 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition text-xs flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-download text-xl text-blue-400"></i> Export JSON</button>
+                    <button class="bg-white border-2 border-slate-300 text-slate-700 font-black py-4 rounded-xl hover:bg-slate-50 transition text-xs flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-upload text-xl"></i> Import JSON</button>
+                </div>
+                
+                <button class="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm"><i class="fa-solid fa-rotate"></i> Sinkronisasi Ulang Database</button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM NAVIGATION (Navigasi Bawah Sticky)  -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 pb-safe z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+        <div class="flex justify-around items-center px-2 pt-2 pb-3 max-w-md mx-auto">
+            
+            <button onclick="switchRoleView('customer')" id="nav-customer" class="nav-btn flex flex-col items-center gap-1 p-2 w-20 rounded-xl transition text-amber-500 relative group">
+                <div class="absolute -top-2 w-10 h-1.5 bg-amber-500 rounded-full nav-indicator transition-all shadow-sm"></div>
+                <i class="fa-solid fa-store text-xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Customer</span>
+            </button>
+            
+            <button onclick="switchRoleView('kasir')" id="nav-kasir" class="nav-btn flex flex-col items-center gap-1 p-2 w-20 rounded-xl transition text-gray-400 relative group">
+                <div class="absolute -top-2 w-10 h-1.5 bg-amber-500 rounded-full nav-indicator hidden transition-all shadow-sm"></div>
+                <i class="fa-solid fa-cash-register text-xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Kasir</span>
+            </button>
+            
+            <button onclick="switchRoleView('owner')" id="nav-owner" class="nav-btn flex flex-col items-center gap-1 p-2 w-20 rounded-xl transition text-gray-400 relative group">
+                <div class="absolute -top-2 w-10 h-1.5 bg-amber-500 rounded-full nav-indicator hidden transition-all shadow-sm"></div>
+                <i class="fa-solid fa-shield-halved text-xl mb-0.5 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Owner</span>
+            </button>
+            
+        </div>
+    </nav>
+
+    <!-- Memanggil File Logika Aplikasi dengan MODULE (Wajib untuk Firebase) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
