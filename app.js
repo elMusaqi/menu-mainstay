@@ -4455,3 +4455,51 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+// ============================================================================
+// 48. FIX: POS INTERNAL CATALOG (STRICT BOOLEAN CHECK & SOLD OUT UI)
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // Menimpa fungsi render grid POS Kasir/Owner dengan logika validasi ketat
+    window.bukaPOS = function() {
+        const grid = document.getElementById('pos-internal-grid');
+        if (!grid) return;
+        
+        grid.innerHTML = window.katalogMenu.map(m => {
+            // Validasi Ketat: Cek apakah status benar-benar true atau teks "true"
+            const isHabis = (m.isSoldOut === true || m.isSoldOut === "true");
+            
+            // Logika Klik: Jika habis, munculkan alert. Jika ada, buka pop-up.
+            const aksiKlik = isHabis 
+                ? "alert('Menu ini sedang habis/Sold Out!');" 
+                : `window.isPosKasirActive = true; window.openMenuDetail('${m.id}');`;
+
+            // Tampilan: Jika habis, gambar jadi abu-abu kusam (grayscale) dan kursor dilarang (not-allowed)
+            return `
+            <div class="bg-white p-2 rounded-xl shadow-sm border ${isHabis ? 'border-red-200 cursor-not-allowed' : 'border-gray-200 cursor-pointer hover:border-amber-500 transition'} relative overflow-hidden" onclick="${aksiKlik}">
+                
+                ${isHabis ? `<div class="absolute inset-0 bg-black/60 z-10 flex items-center justify-center backdrop-blur-[1px]"><span class="text-white text-[10px] font-black bg-red-600 px-3 py-1.5 rounded-lg -rotate-12 border-2 border-white shadow-lg tracking-widest">HABIS</span></div>` : ''}
+                
+                <img src="${m.img}" class="w-full aspect-square object-cover rounded-lg mb-2 ${isHabis ? 'opacity-40 grayscale' : ''}">
+                
+                <h4 class="text-xs font-black leading-tight mb-1 ${isHabis ? 'text-gray-400' : 'text-gray-900'} line-clamp-1">${m.nama}</h4>
+                <p class="text-[10px] font-black ${isHabis ? 'text-gray-400' : 'text-amber-500'}">${window.formatRupiah(m.hargaDiskon)}</p>
+                
+            </div>
+            `;
+        }).join('');
+
+        // Pastikan keranjang dan kalkulator ter-render ulang sesuai keadaan terbaru
+        if(typeof window.renderPOSInternalCart === 'function') window.renderPOSInternalCart();
+        if(typeof window.toggleKalkulatorPOS === 'function') window.toggleKalkulatorPOS(); 
+        
+        // Buka Layar POS
+        const modalPOS = document.getElementById('modal-pos-internal');
+        if(modalPOS) {
+            modalPOS.classList.remove('hidden');
+            modalPOS.classList.add('flex');
+        }
+    };
+    
+});
