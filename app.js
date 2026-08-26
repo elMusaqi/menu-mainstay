@@ -4612,3 +4612,334 @@ window.addEventListener('DOMContentLoaded', () => {
 
     console.log("[Grand Patch 49] Seluruh tombol CRUD, POS, dan navigasi berhasil di-reset dan diaktifkan kembali!");
 });
+// ============================================================================
+// 50. THE ENTERPRISE ERP PATCH (CASH FLOW, STOCK AUDIT, MASTER TOPPING & SOSMED)
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX TATA LETAK JAM & TANGGAL (ATAS-BAWAH) ---
+    window.updateClock = function() {
+        const now = new Date();
+        const hariArray = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const bulanArray = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+        const tgl = `${hariArray[now.getDay()]}, ${String(now.getDate()).padStart(2,'0')} ${bulanArray[now.getMonth()]} ${now.getFullYear()}`;
+        const jam = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+        
+        const el = document.getElementById('live-clock');
+        if (el) {
+            el.innerHTML = `<div class="text-amber-600 font-black text-sm leading-none mb-1">${jam}</div><div class="text-gray-500 font-bold text-[9px] leading-none">${tgl}</div>`;
+            el.className = "text-right bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 flex flex-col justify-center";
+        }
+    };
+
+    // --- 2. DATABASE BARU (SOSMED, TOPPING, LOG STOK, ARUS KAS) ---
+    window.dbSosmed = JSON.parse(localStorage.getItem('sosmedMainstay')) || [
+        { id: 1, ikon: 'fa-brands fa-instagram', link: 'https://instagram.com', nama: 'Instagram' }
+    ];
+    window.opsiTambahan.topping = JSON.parse(localStorage.getItem('toppingMainstay')) || [
+        { nama: 'Pearl Boba', harga: 4000 }, { nama: 'Cheese Foam', harga: 5000 }
+    ];
+    window.stokLogDB = JSON.parse(localStorage.getItem('stokLogMainstay')) || [];
+    window.arusKasDB = JSON.parse(localStorage.getItem('arusKasMainstay')) || [];
+
+    // --- 3. REVOLUSI PANEL EDIT WEB (JAM OPERASIONAL, LOGO, SOSMED DINAMIS) ---
+    const panelWeb = document.querySelector('#panel-edit-web .flex-1');
+    if (panelWeb) {
+        window.renderPanelWeb = function() {
+            panelWeb.innerHTML = `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 space-y-4">
+                    <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2"><i class="fa-solid fa-store text-amber-500 mr-2"></i> Info Utama & Jam Buka</h3>
+                    
+                    <div><label class="text-[10px] font-bold text-gray-500 block mb-1">Nomor WA Resto</label><input type="number" id="ew-wa" value="${window.systemConfig.nomorWA || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none"></div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="text-[10px] font-bold text-gray-500 block mb-1">Jam Buka</label><input type="time" id="ew-buka" value="${window.systemConfig.jamBuka || '08:00'}" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none"></div>
+                        <div><label class="text-[10px] font-bold text-gray-500 block mb-1">Jam Tutup</label><input type="time" id="ew-tutup" value="${window.systemConfig.jamTutup || '22:00'}" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none"></div>
+                    </div>
+
+                    <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                        <label class="text-[10px] font-black text-amber-800 block mb-2">LOGO RESTO (URL / UPLOAD)</label>
+                        <input type="text" id="ew-logo" placeholder="URL Foto..." value="${window.systemConfig.logoUrl || ''}" class="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-xs outline-none mb-2">
+                        <input type="file" accept="image/*" class="w-full text-xs" onchange="window.handleImageUpload(this, 'ew-logo', 'header-logo-img')">
+                    </div>
+
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                        <label class="text-[10px] font-black text-blue-800 block mb-2">BARCODE QRIS (URL / UPLOAD)</label>
+                        <input type="text" id="ew-qris" placeholder="URL QRIS..." value="${window.systemConfig.qrisUrl || ''}" class="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs outline-none mb-2">
+                        <input type="file" accept="image/*" class="w-full text-xs" onchange="window.handleImageUpload(this, 'ew-qris')">
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                        <h3 class="text-sm font-black text-gray-900"><i class="fa-solid fa-share-nodes text-pink-500 mr-2"></i> Sosial Media</h3>
+                        <button onclick="window.tambahSosmed()" class="bg-pink-100 text-pink-600 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-pink-200 transition"><i class="fa-solid fa-plus"></i> Tambah</button>
+                    </div>
+                    <div class="space-y-3" id="ew-sosmed-list">
+                        ${window.dbSosmed.map((s, idx) => `
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl relative pr-10">
+                                <button onclick="window.hapusSosmed(${idx})" class="absolute top-3 right-3 text-red-500 hover:text-red-700 transition"><i class="fa-solid fa-trash"></i></button>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="text" id="sos-nama-${idx}" value="${s.nama}" placeholder="Nama (Misal: TikTok)" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none">
+                                    <input type="text" id="sos-ikon-${idx}" value="${s.ikon}" placeholder="Class Ikon (fa-brands fa-tiktok)" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none font-mono">
+                                </div>
+                                <input type="text" id="sos-link-${idx}" value="${s.link}" placeholder="https://..." class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none text-blue-600">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <button onclick="window.simpanPengaturanWebBaru()" class="w-full bg-gray-900 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition text-sm">SIMPAN PENGATURAN</button>
+            `;
+        };
+        window.renderPanelWeb();
+    }
+
+    // Fungsi Logika Edit Web & Sosmed
+    window.tambahSosmed = function() { window.dbSosmed.push({ id: Date.now(), ikon: 'fa-solid fa-link', link: '', nama: 'Website' }); window.renderPanelWeb(); };
+    window.hapusSosmed = function(idx) { window.dbSosmed.splice(idx, 1); window.renderPanelWeb(); };
+    
+    // MENGHANCURKAN BUG API FIREBASE SAAT SIMPAN:
+    window.simpanPengaturanWebBaru = function() {
+        window.systemConfig.nomorWA = document.getElementById('ew-wa').value;
+        window.systemConfig.jamBuka = document.getElementById('ew-buka').value;
+        window.systemConfig.jamTutup = document.getElementById('ew-tutup').value;
+        
+        const logo = document.getElementById('ew-logo').value;
+        if(logo) { window.systemConfig.logoUrl = logo; document.getElementById('header-logo-img').src = logo; document.getElementById('header-logo-icon').classList.add('hidden'); document.getElementById('header-logo-img').classList.remove('hidden'); }
+        
+        const qris = document.getElementById('ew-qris').value;
+        if(qris) window.systemConfig.qrisUrl = qris;
+
+        window.dbSosmed = window.dbSosmed.map((_, idx) => ({
+            nama: document.getElementById(`sos-nama-${idx}`).value,
+            ikon: document.getElementById(`sos-ikon-${idx}`).value,
+            link: document.getElementById(`sos-link-${idx}`).value
+        }));
+
+        localStorage.setItem('mainstayConfig', JSON.stringify(window.systemConfig));
+        localStorage.setItem('sosmedMainstay', JSON.stringify(window.dbSosmed));
+        alert("Berhasil! Semua konfigurasi Web & Sosmed tersimpan aman di lokal.");
+    };
+
+
+    // --- 4. MASTER TOPPING (CRUD GLOBAL TOPPING DI PANEL KATALOG) ---
+    const panelKatalog = document.querySelector('#panel-katalog .flex-1');
+    if (panelKatalog) {
+        // Sisipkan UI Master Topping di atas Manajemen Menu
+        panelKatalog.insertAdjacentHTML('afterbegin', `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                    <h3 class="text-sm font-black text-gray-900"><i class="fa-solid fa-cookie-bite text-amber-700 mr-2"></i> Master Topping</h3>
+                    <button onclick="window.tambahToppingGlobal()" class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-amber-200 transition"><i class="fa-solid fa-plus"></i> Tambah</button>
+                </div>
+                <div class="space-y-2" id="master-topping-list"></div>
+                <button onclick="window.simpanToppingGlobal()" class="w-full mt-4 bg-slate-800 text-white font-black py-3 rounded-xl hover:bg-black transition text-xs shadow-sm">SIMPAN MASTER TOPPING</button>
+            </div>
+        `);
+    }
+
+    window.renderToppingGlobal = function() {
+        const list = document.getElementById('master-topping-list');
+        if(!list) return;
+        list.innerHTML = window.opsiTambahan.topping.map((t, idx) => `
+            <div class="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                <button onclick="window.hapusToppingGlobal(${idx})" class="w-8 h-8 rounded bg-red-100 text-red-500 flex-shrink-0 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                <input type="text" id="top-nama-${idx}" value="${t.nama}" placeholder="Nama Topping" class="w-full bg-white border border-slate-200 rounded p-2 text-xs font-bold outline-none">
+                <input type="number" id="top-harga-${idx}" value="${t.harga}" placeholder="Harga" class="w-24 bg-white border border-slate-200 rounded p-2 text-xs font-black outline-none text-amber-600">
+            </div>
+        `).join('');
+    };
+    // Render awal
+    setTimeout(() => window.renderToppingGlobal(), 1000);
+
+    window.tambahToppingGlobal = function() { window.opsiTambahan.topping.push({ nama: 'Topping Baru', harga: 0 }); window.renderToppingGlobal(); };
+    window.hapusToppingGlobal = function(idx) { window.opsiTambahan.topping.splice(idx, 1); window.renderToppingGlobal(); };
+    window.simpanToppingGlobal = function() {
+        window.opsiTambahan.topping = window.opsiTambahan.topping.map((_, idx) => ({
+            nama: document.getElementById(`top-nama-${idx}`).value,
+            harga: parseInt(document.getElementById(`top-harga-${idx}`).value) || 0
+        }));
+        localStorage.setItem('toppingMainstay', JSON.stringify(window.opsiTambahan.topping));
+        alert("Master Topping Tersimpan! Sekarang Anda bisa men-ceklisnya di form Edit Menu.");
+    };
+
+
+    // --- 5. LOG AUDIT STOK KASIR (RIWAYAT INPUT) ---
+    // Override Modal Stok Kasir
+    const stockModal = document.getElementById('modal-stok-kasir');
+    if(stockModal) {
+        stockModal.innerHTML = `
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative flex flex-col max-h-[85vh]">
+            <button onclick="window.closeStokKasir()" class="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full text-gray-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-xl font-black text-gray-900 mb-1"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-2"></i> Stok & Riwayat</h2>
+            
+            <!-- Tab Navigasi -->
+            <div class="flex gap-2 border-b border-gray-100 pb-3 mb-3">
+                <button onclick="document.getElementById('stok-view-update').classList.remove('hidden'); document.getElementById('stok-view-log').classList.add('hidden');" class="flex-1 bg-indigo-50 text-indigo-700 font-black text-[10px] py-2 rounded-lg">Update Stok</button>
+                <button onclick="window.renderStokLog(); document.getElementById('stok-view-log').classList.remove('hidden'); document.getElementById('stok-view-update').classList.add('hidden');" class="flex-1 bg-slate-100 text-slate-600 font-black text-[10px] py-2 rounded-lg">Riwayat Log</button>
+            </div>
+
+            <!-- View Update -->
+            <div id="stok-view-update" class="flex-1 overflow-y-auto flex flex-col hide-scrollbar pr-2">
+                <div id="stok-kasir-list" class="space-y-3 mb-4"></div>
+                <button onclick="window.simpanStokKasirLog()" class="w-full bg-indigo-500 text-white font-black py-4 rounded-xl shadow-md hover:bg-indigo-600 transition text-sm mt-auto"><i class="fa-solid fa-floppy-disk mr-2"></i> SIMPAN STOK</button>
+            </div>
+
+            <!-- View Log Riwayat -->
+            <div id="stok-view-log" class="hidden flex-1 overflow-y-auto hide-scrollbar pr-2 space-y-3"></div>
+        </div>`;
+    }
+
+    // Fungsi Simpan Stok + Catat Log
+    window.simpanStokKasirLog = function() {
+        const stafDropdown = document.getElementById('kasir-staf-dropdown');
+        const aktor = stafDropdown && stafDropdown.value ? stafDropdown.value : (localStorage.getItem('sesiMainstay') === 'owner' ? 'Master Owner' : 'Kasir Offline');
+        
+        let detailPerubahan = [];
+        window.stokBarangDB.forEach((item, idx) => {
+            const newVal = parseInt(document.getElementById(`stok-val-${idx}`).value) || 0;
+            if (newVal !== item.jumlah) {
+                detailPerubahan.push(`${item.nama} (${item.jumlah} ➔ ${newVal})`);
+                item.jumlah = newVal;
+            }
+        });
+
+        if (detailPerubahan.length > 0) {
+            // Catat ke Log
+            window.stokLogDB.unshift({
+                waktu: new Date().toLocaleString('id-ID'),
+                aktor: aktor,
+                perubahan: detailPerubahan.join(', ')
+            });
+            localStorage.setItem('stokLogMainstay', JSON.stringify(window.stokLogDB));
+        }
+
+        localStorage.setItem('stokBarangMainstay', JSON.stringify(window.stokBarangDB));
+        alert("Berhasil! Stok disimpan dan aktivitas Anda tercatat di Log Riwayat.");
+        if(typeof window.renderStokOwner === 'function') window.renderStokOwner();
+    };
+
+    window.renderStokLog = function() {
+        const logView = document.getElementById('stok-view-log');
+        if(!logView) return;
+        if(window.stokLogDB.length === 0) { logView.innerHTML = `<p class="text-center text-xs text-gray-400 mt-5">Belum ada riwayat update stok.</p>`; return; }
+        
+        logView.innerHTML = window.stokLogDB.map(log => `
+            <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                <p class="text-[9px] font-black text-indigo-600 mb-1"><i class="fa-solid fa-clock mr-1"></i> ${log.waktu}</p>
+                <p class="text-xs font-black text-gray-900 mb-1">${log.aktor}</p>
+                <p class="text-[10px] text-gray-600 font-bold leading-tight">Update: ${log.perubahan}</p>
+            </div>
+        `).join('');
+    };
+
+
+    // --- 6. LAPORAN ARUS KAS (CASH FLOW & EXPORT EXCEL/CSV) ---
+    const panelLaporan = document.querySelector('#panel-laporan .flex-1');
+    if (panelLaporan) {
+        panelLaporan.innerHTML = `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-3 mb-4"><i class="fa-solid fa-chart-line text-green-500 mr-2"></i> Real-time Hari Ini</h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-green-50 border border-green-200 p-4 rounded-xl">
+                        <p class="text-[10px] font-black text-green-700 uppercase mb-1">Total Pendapatan</p>
+                        <h4 class="text-lg font-black text-green-600" id="lap-real-uang">Rp 0</h4>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                        <p class="text-[10px] font-black text-blue-700 uppercase mb-1">Pesanan Sukses</p>
+                        <h4 class="text-lg font-black text-blue-600" id="lap-real-order">0 Order</h4>
+                    </div>
+                </div>
+                <button onclick="window.tutupBukuHariIni()" class="w-full bg-slate-800 text-white font-black py-3 rounded-xl text-xs hover:bg-black transition shadow-sm"><i class="fa-solid fa-book-journal-whills mr-2"></i> TUTUP BUKU & SIMPAN KE ARUS KAS</button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                    <h3 class="text-sm font-black text-gray-900"><i class="fa-solid fa-file-invoice-dollar text-amber-500 mr-2"></i> Rekap Arus Kas</h3>
+                    <button onclick="window.exportLaporanCSV()" class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-green-600 transition shadow-sm"><i class="fa-solid fa-file-csv mr-1"></i> EXPORT CSV</button>
+                </div>
+                <div class="space-y-3" id="lap-aruskas-list"></div>
+            </div>
+        `;
+    }
+
+    window.renderLaporanPanel = function() {
+        // Render Real-Time
+        let total = 0;
+        window.pesananSelesaiDB.forEach(o => total += o.totalBayar);
+        const elUang = document.getElementById('lap-real-uang');
+        const elOrder = document.getElementById('lap-real-order');
+        if(elUang) elUang.textContent = window.formatRupiah(total);
+        if(elOrder) elOrder.textContent = window.pesananSelesaiDB.length + " Order";
+
+        // Render Arus Kas
+        const listKas = document.getElementById('lap-aruskas-list');
+        if(!listKas) return;
+        if(window.arusKasDB.length === 0) {
+            listKas.innerHTML = `<p class="text-center text-xs text-gray-400 py-4">Belum ada riwayat tutup buku.</p>`;
+            return;
+        }
+
+        listKas.innerHTML = window.arusKasDB.map(kas => `
+            <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex justify-between items-center">
+                <div>
+                    <p class="text-xs font-black text-gray-900 mb-0.5">${kas.tanggal}</p>
+                    <p class="text-[9px] font-bold text-gray-500">${kas.jumlahOrder} Order Diselesaikan</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-black text-green-600">${window.formatRupiah(kas.totalPendapatan)}</p>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    window.tutupBukuHariIni = function() {
+        if(window.pesananSelesaiDB.length === 0) return alert("Belum ada pesanan yang selesai hari ini.");
+        if(confirm("Yakin ingin Tutup Buku hari ini?\n\nData pesanan selesai akan direkap ke Arus Kas, dan layar pesanan hari ini akan di-reset (dikosongkan).")) {
+            
+            let total = 0;
+            window.pesananSelesaiDB.forEach(o => total += o.totalBayar);
+            
+            window.arusKasDB.unshift({
+                tanggal: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}),
+                jumlahOrder: window.pesananSelesaiDB.length,
+                totalPendapatan: total
+            });
+            localStorage.setItem('arusKasMainstay', JSON.stringify(window.arusKasDB));
+
+            // Kosongkan pesanan hari ini
+            window.pesananSelesaiDB = [];
+            window.pesananMasukDB = [];
+            window.pesananDapurDB = [];
+            window.nomorAntreanHariIni = 1;
+            
+            window.simpanDatabaseKasir();
+            localStorage.setItem('antreanMainstay', 1);
+            
+            window.renderLaporanPanel();
+            if(typeof window.updateStatistikOwner === 'function') window.updateStatistikOwner();
+            alert("Berhasil Tutup Buku! Data telah masuk ke Arus Kas.");
+        }
+    };
+
+    window.exportLaporanCSV = function() {
+        if(window.arusKasDB.length === 0) return alert("Data arus kas kosong!");
+        let csvContent = "data:text/csv;charset=utf-8,TANGGAL,JUMLAH ORDER,TOTAL PENDAPATAN (Rp)\n";
+        window.arusKasDB.forEach(row => {
+            csvContent += `${row.tanggal},${row.jumlahOrder},${row.totalPendapatan}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "ArusKas_Mainstay.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Muat data UI Laporan setelah web terbuka
+    setTimeout(() => { if(typeof window.renderLaporanPanel === 'function') window.renderLaporanPanel(); }, 1000);
+
+});
