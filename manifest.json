@@ -1,0 +1,25 @@
+{
+  "name": "Mainstay Drink E-Menu & POS",
+  "short_name": "Mainstay",
+  "description": "Sistem Pemesanan Mandiri, Kasir, dan Pusat Kendali Restoran Mainstay Drink",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "business"]
+}
