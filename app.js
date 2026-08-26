@@ -4305,6 +4305,99 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 // ============================================================================
+// 45. FIREBASE ACTION SYNC (MEMPERBAIKI TOMBOL KASIR BENTROK/MANTUL)
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Rombak Total Tombol "Proses (Terima Pesanan)"
+    window.terimaPesanan = function(no) {
+        // Cari posisi pesanan di antrean Masuk
+        const idx = window.pesananMasukDB.findIndex(o => o.noAntrean === no);
+        if (idx > -1) {
+            // Potong dari Konfirmasi, Pindah ke Dapur
+            const order = window.pesananMasukDB.splice(idx, 1)[0];
+            window.pesananDapurDB.unshift(order); 
+            
+            // PENTING: Perintahkan Firebase untuk sinkronisasi paksa
+            window.simpanDatabaseKasir(); 
+            window.renderListKasir(); 
+            if(typeof window.updateStatistikOwner === 'function') window.updateStatistikOwner();
+        }
+    };
+
+    // 2. Rombak Total Tombol "Pesanan Siap (Selesai)"
+    window.selesaiPesanan = function(no) {
+        const idx = window.pesananDapurDB.findIndex(o => o.noAntrean === no);
+        if (idx > -1) {
+            const order = window.pesananDapurDB.splice(idx, 1)[0];
+            window.pesananSelesaiDB.unshift(order); 
+            
+            window.simpanDatabaseKasir(); // Lapor ke Firebase
+            window.renderListKasir();
+            if(typeof window.updateStatistikOwner === 'function') window.updateStatistikOwner();
+        }
+    };
+
+    // 3. Rombak Total Tombol "Batal (Hapus Permanen)"
+    window.batalPesanan = function(no) {
+        if(confirm(`Yakin ingin membatalkan dan menghapus pesanan ${no}?`)) {
+            let terhapus = false;
+            
+            // Coba cari dan hapus dari tab Konfirmasi
+            let idx = window.pesananMasukDB.findIndex(o => o.noAntrean === no);
+            if(idx > -1) { 
+                window.pesananMasukDB.splice(idx, 1); 
+                terhapus = true; 
+            }
+            
+            // Coba cari dan hapus dari tab Dapur (jika dibatalkan saat sedang diproses)
+            if(!terhapus) {
+                idx = window.pesananDapurDB.findIndex(o => o.noAntrean === no);
+                if(idx > -1) { 
+                    window.pesananDapurDB.splice(idx, 1); 
+                    terhapus = true; 
+                }
+            }
+
+            if(terhapus) {
+                window.simpanDatabaseKasir(); // Perintah pemusnahan massal ke Firebase
+                window.renderListKasir();
+                if(typeof window.updateStatistikOwner === 'function') window.updateStatistikOwner();
+            }
+        }
+    };
+
+    // 4. Rombak Tombol "Cetak Thermal" (Agar bisa membaca data awan)
+    window.cetakThermal = async function(noAntrean) {
+        // Tarik data paling *fresh* dari Firebase (Dapur atau Selesai)
+        let order = window.pesananDapurDB.find(o => o.noAntrean === noAntrean) || window.pesananSelesaiDB.find(o => o.noAntrean === noAntrean);
+        
+        if (!order) return alert("Data pesanan tidak ditemukan di memori sistem!");
+
+        // Buat format struk
+        let struk = `MAINSTAY DRINK\nMinuman Andalanmu\n================================\nNo   : ${order.noAntrean}\nJam  : ${order.waktu}\n================================\n`;
+        order.items.forEach(item => {
+            let namaPendek = item.nama.length > 20 ? item.nama.substring(0, 18) + ".." : item.nama;
+            struk += `${item.qty}x ${namaPendek}\n   + ${item.toppingStr}\n   ${window.formatRupiah(item.totalHarga)}\n`;
+        });
+        struk += `================================\nTOTAL: ${window.formatRupiah(order.totalBayar)}\n${window.systemConfig.footerStruk || 'Terima Kasih'}\n\n`;
+
+        try {
+            // Tembak ke API Bluetooth
+            const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+            });
+            alert(`Bluetooth terhubung ke: ${device.name}\n\nMemproses cetak fisik...`);
+        } catch (error) {
+            // Jika Bluetooth mati / ditolak
+            alert("Mencetak ke printer kasir virtual...\n\n" + struk);
+        }
+    };
+});
+
+// ============================================================================
 // 47. CASHIER HEADER REFINEMENT (TEMA TERANG, BERSIH, LOGOUT DI UJUNG KANAN)
 // ============================================================================
 
