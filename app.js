@@ -6089,3 +6089,236 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
 });
+// ============================================================================
+// 58. ABSOLUTE REVISION: CACHE BUSTER, BLOCK CLOCK, 10K/20K POS, OWNER-KASIR MERGE
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX MUTLAK JAM: BEDA DIVISI (ATAS BAWAH STRICT) ---
+    window.updateClock = function() {
+        const now = new Date();
+        const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][now.getDay()];
+        const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()];
+        const tgl = `${hari}, ${String(now.getDate()).padStart(2,'0')} ${bln} ${now.getFullYear()}`;
+        const jam = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+
+        const el = document.getElementById('live-clock');
+        if (el) {
+            // Hapus semua class flex yang memaksa sebaris
+            el.className = "bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 text-right";
+            // Gunakan display: block mutlak (Beda Divisi) agar tidak mungkin sejajar
+            el.innerHTML = `
+                <div style="display: block; font-size: 10px; font-weight: bold; color: #6b7280; line-height: 1.2;">${tgl}</div>
+                <div style="display: block; font-size: 14px; font-weight: 900; color: #d97706; line-height: 1.2; margin-top: 2px;">${jam}</div>
+            `;
+        }
+    };
+    window.updateClock();
+
+
+    // --- 2. FIX GAMBAR BANDEL (BYPASS CACHE BROWSER) ---
+    // Browser HP sering menyimpan gambar lama, kita paksa muat baru dengan trik "?v=waktu"
+    const ts = new Date().getTime();
+    const logoBaru = 'logo-512.png?v=' + ts;
+    const qrisBaru = 'qris-mainstay.png?v=' + ts;
+
+    const elImg = document.getElementById('header-logo-img');
+    const elIkon = document.getElementById('header-logo-icon');
+    if(elImg) { elImg.src = logoBaru; elImg.classList.remove('hidden'); }
+    if(elIkon) elIkon.classList.add('hidden');
+
+    // Override QRIS Customer agar pakai gambar lokal yang baru
+    const oldBukaModalQRIS = window.bukaModalQRIS;
+    window.bukaModalQRIS = function(orderData) {
+        oldBukaModalQRIS(orderData);
+        const qrisImg = document.querySelector('#modal-qris img');
+        if (qrisImg) qrisImg.src = qrisBaru;
+    };
+
+
+    // --- 3. HAPUS POS DARI OWNER & ATUR MODE KASIR-OWNER ---
+    // Sembunyikan tombol POS di panel Owner
+    const ownerButtons = document.querySelectorAll('#view-owner button');
+    ownerButtons.forEach(btn => {
+        if (btn.innerText.toLowerCase().includes('pos') || btn.getAttribute('onclick')?.includes('bukaPOS')) {
+            btn.style.display = 'none';
+        }
+    });
+
+    // Pastikan Header Kasir menyembunyikan Absen jika yang login adalah Owner
+    window.setupHeaderKasir = function() {
+        const sesi = localStorage.getItem('sesiMainstay');
+        const btnAbsen = document.querySelector('#view-kasir button[onclick="window.bukaAbsensi()"]');
+        const dropdownStaf = document.getElementById('kasir-staf-dropdown');
+
+        if (sesi === 'owner-kasir' || sesi === 'owner') {
+            if (btnAbsen) btnAbsen.style.display = 'none'; // BOS TIDAK PERLU ABSEN
+            if (dropdownStaf) {
+                const namaOwner = window.ownerProfile ? window.ownerProfile.nama : 'Master Owner';
+                dropdownStaf.innerHTML = `<option value="OWNER">${namaOwner} (Owner)</option>`;
+                dropdownStaf.disabled = true; // Kunci Dropdown
+                dropdownStaf.className = "bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none";
+            }
+        } else {
+            if (btnAbsen) btnAbsen.style.display = 'flex';
+            if (dropdownStaf) {
+                dropdownStaf.disabled = false;
+                dropdownStaf.className = "bg-slate-50 text-gray-700 border border-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none cursor-pointer max-w-[140px] truncate shadow-sm";
+                if(typeof window.updateDropdownKasir === 'function') window.updateDropdownKasir();
+            }
+        }
+    };
+    setTimeout(() => window.setupHeaderKasir(), 500);
+
+
+    // --- 4. FIX TOMBOL UANG CEPAT (10K & 20K MUNCUL MUTLAK) ---
+    const kalkulatorHTML = `
+        <label class="text-[10px] font-black text-blue-800 block mb-2">PILIH UANG DITERIMA</label>
+        <div class="grid grid-cols-5 gap-1 mb-2">
+            <button onclick="window.setUangCepat(window.posInternalTotal)" class="bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">PAS</button>
+            <button onclick="window.setUangCepat(10000)" class="bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">10K</button>
+            <button onclick="window.setUangCepat(20000)" class="bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">20K</button>
+            <button onclick="window.setUangCepat(50000)" class="bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">50K</button>
+            <button onclick="window.setUangCepat(100000)" class="bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">100K</button>
+        </div>
+        <input type="number" id="pos-uang-diterima" placeholder="Atau ketik manual..." class="w-full bg-white border border-blue-200 rounded-lg p-3 text-sm font-black outline-none mb-2 focus:border-blue-500" oninput="window.hitungKembalian()">
+        <div class="flex justify-between items-end border-t border-blue-200 pt-2 mt-1">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">KEMBALIAN:</span>
+            <span id="pos-kembalian" class="text-lg font-black text-blue-600 leading-none">Rp 0</span>
+        </div>
+    `;
+
+    // Timpa saat buka POS
+    const superOldBukaPOS = window.bukaPOS;
+    window.bukaPOS = function() {
+        if(typeof superOldBukaPOS === 'function') superOldBukaPOS();
+        
+        const kalkulatorArea = document.getElementById('pos-kalkulator');
+        if (kalkulatorArea) {
+            kalkulatorArea.innerHTML = kalkulatorHTML;
+        }
+    };
+
+    // Timpa juga saat metode bayar diubah (agar tidak kerefresh jadi hilang lagi)
+    window.toggleKalkulatorPOS = function() {
+        const tipe = document.getElementById('pos-tipe-bayar')?.value;
+        const kal = document.getElementById('pos-kalkulator');
+        if(kal) {
+            if(tipe === 'Tunai') {
+                kal.style.display = 'block';
+                kal.innerHTML = kalkulatorHTML; // RE-INJECT PAKSA
+                window.hitungKembalian(); 
+            } else {
+                kal.style.display = 'none';
+            }
+        }
+    };
+
+});
+// ============================================================================
+// 59. PROFESSIONAL POS LOCKSCREEN (WAJIB ABSEN & KUNCI OTOMATIS)
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FUNGSI OVERLAY KUNCI KASIR (TAMPILAN PROFESIONAL) ---
+    window.cekKunciKasir = function() {
+        const kasirView = document.getElementById('view-kasir');
+        if(!kasirView) return;
+
+        let overlay = document.getElementById('kasir-lock-overlay');
+        if(!overlay) {
+            // Mengambil tinggi header agar overlay tidak menutupi tombol absen di atas
+            const kasirHeader = kasirView.querySelector('div:first-child');
+            const headerHeight = kasirHeader ? kasirHeader.offsetHeight : 65;
+            
+            overlay = document.createElement('div');
+            overlay.id = 'kasir-lock-overlay';
+            // Efek Kaca Buram (Backdrop Blur) menutupi area kerja kasir
+            overlay.className = "absolute inset-x-0 bottom-0 z-[200] bg-slate-900/50 backdrop-blur-md flex flex-col items-center justify-center transition-all duration-300";
+            overlay.style.top = headerHeight + 'px';
+            overlay.innerHTML = `
+                <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl border border-red-100 text-center max-w-sm mx-4 transform transition-all mt-[-50px]">
+                    <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border-4 border-white shadow-md">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-gray-900 mb-2">Sistem Terkunci</h3>
+                    <p class="text-xs font-bold text-gray-500 mb-6 leading-relaxed">Anda belum melakukan Absen Masuk. Seluruh fitur pesanan dinonaktifkan.<br>Silakan klik tombol <b class="text-blue-500"><i class="fa-solid fa-camera"></i> Absen</b> di menu atas.</p>
+                    <button onclick="window.bukaAbsensi()" class="w-full bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition text-sm flex items-center justify-center gap-2">
+                        BUKA KUNCI (ABSEN MASUK)
+                    </button>
+                </div>
+            `;
+            // Pastikan view-kasir relative agar overlay-nya presisi
+            kasirView.classList.add('relative');
+            kasirView.appendChild(overlay);
+        }
+
+        const sesi = localStorage.getItem('sesiMainstay');
+        // Jika yang Login adalah Owner, langsung HANCURKAN gemboknya!
+        if (sesi === 'owner-kasir' || sesi === 'owner') {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        } else {
+            // Jika Kasir, cek database kehadiran staf
+            const adaHadir = window.dbStaf && window.dbStaf.some(s => s.statusHadir);
+            if (adaHadir) {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex'); // Buka Kunci
+            } else {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex'); // Kunci Rapat
+            }
+        }
+    };
+
+
+    // --- 2. OVERRIDE DROPDOWN KASIR (HAPUS OPSI KOSONG & TAMPILKAN STATUS) ---
+    window.updateDropdownKasir = function() {
+        const dp = document.getElementById('kasir-staf-dropdown');
+        if(!dp) return;
+        
+        const sesi = localStorage.getItem('sesiMainstay');
+        if(sesi === 'owner-kasir' || sesi === 'owner') {
+            // Logika Owner sudah di-handle di setupHeaderKasir (Patch 58), lewati saja.
+            return;
+        }
+
+        const hadir = window.dbStaf ? window.dbStaf.filter(s => s.statusHadir) : [];
+        if(hadir.length > 0) {
+            dp.disabled = false;
+            // Hanya menampilkan nama staf yang sudah online. TIDAK ADA opsi kosong!
+            dp.innerHTML = hadir.map(s => `<option value="${s.nama}">${s.nama} (Online)</option>`).join('');
+            dp.className = "bg-slate-50 text-gray-700 border border-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none cursor-pointer max-w-[140px] md:max-w-[180px] truncate shadow-sm";
+        } else {
+            dp.disabled = true;
+            // Tampilan Peringatan Merah
+            dp.innerHTML = `<option value="">-- WAJIB ABSEN --</option>`;
+            dp.className = "bg-red-50 text-red-600 border border-red-200 text-[10px] md:text-xs font-black rounded-lg px-2.5 py-1.5 outline-none max-w-[140px] md:max-w-[180px] truncate shadow-sm cursor-not-allowed";
+        }
+        
+        // Panggil fungsi gembok layar setiap kali dropdown diupdate
+        if(typeof window.cekKunciKasir === 'function') window.cekKunciKasir();
+    };
+
+
+    // --- 3. MENGHUBUNGKAN PROSES ABSEN DENGAN PEMBUKAAN GEMBOK ---
+    const backupProsesAbsen59 = window.prosesAbsen;
+    window.prosesAbsen = function(jenis) {
+        if(typeof backupProsesAbsen59 === 'function') {
+            backupProsesAbsen59(jenis); // Jalankan sistem foto & simpan data asli
+        }
+        
+        // Setelah absen sukses, trigger refresh dropdown dan buka gembok layar seketika
+        setTimeout(() => {
+            if(typeof window.updateDropdownKasir === 'function') window.updateDropdownKasir();
+        }, 400);
+    };
+
+    // Trigger awal saat aplikasi pertama kali dimuat
+    setTimeout(() => {
+        if(typeof window.updateDropdownKasir === 'function') window.updateDropdownKasir();
+    }, 800);
+
+});
