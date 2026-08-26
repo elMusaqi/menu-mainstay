@@ -4233,3 +4233,74 @@ window.addEventListener('DOMContentLoaded', () => {
         btnKembaliWeb.onclick = () => window.closePanel('panel-edit-web');
     }
 });
+// ============================================================================
+// 44. AWAKEN THE CLOUD: FIREBASE REAL-TIME SYNC (KONEKSI ANTAR HP)
+// ============================================================================
+
+let previousOrderCount = 0; // Untuk mendeteksi pesanan baru masuk
+
+// 1. Override Fungsi Simpan Lokal Menjadi Simpan ke Cloud
+const backupSimpanDatabaseKasir = window.simpanDatabaseKasir;
+window.simpanDatabaseKasir = function() {
+    // Tetap simpan di HP (Sebagai Backup jika internet mati)
+    backupSimpanDatabaseKasir();
+
+    // Tembak Data ke Awan (Firebase) agar HP Kasir / Owner bisa menangkapnya
+    if (typeof db !== 'undefined') {
+        set(ref(db, 'mainstay/pesanan'), {
+            masuk: window.pesananMasukDB,
+            dapur: window.pesananDapurDB,
+            selesai: window.pesananSelesaiDB,
+            antrean: window.nomorAntreanHariIni
+        }).catch(err => console.error("Koneksi Firebase Terhalang:", err));
+    }
+};
+
+// 2. Pasang "Telinga" Firebase untuk mendengarkan perubahan dari HP Lain
+window.addEventListener('DOMContentLoaded', () => {
+    if (typeof db !== 'undefined') {
+        const pesananRef = ref(db, 'mainstay/pesanan');
+        
+        // Fungsi onValue akan bereaksi OTOMATIS setiap ada HP lain yang mengirim pesanan
+        onValue(pesananRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Tarik data dari awan dan timpa memori HP lokal
+                window.pesananMasukDB = data.masuk || [];
+                window.pesananDapurDB = data.dapur || [];
+                window.pesananSelesaiDB = data.selesai || [];
+                window.nomorAntreanHariIni = data.antrean || 1;
+
+                // Deteksi pesanan masuk baru untuk bunyikan Notifikasi Kasir
+                const currentSession = localStorage.getItem('sesiMainstay') || 'customer';
+                if (currentSession === 'kasir' || currentSession === 'owner') {
+                    if (window.pesananMasukDB.length > previousOrderCount) {
+                        window.playAudio('masuk'); // Bunyi TING! Otomatis di HP Kasir
+                    }
+                }
+                previousOrderCount = window.pesananMasukDB.length;
+
+                // Refresh Layar Kasir secara Instan (Tanpa perlu refresh web)
+                if (window.kasirTabAktif && typeof window.renderListKasir === 'function') {
+                    window.renderListKasir();
+                }
+
+                // Refresh Statistik Layar Owner secara Instan
+                const statPendapatan = document.getElementById('stat-pendapatan');
+                if (statPendapatan && currentSession === 'owner') {
+                    let total = 0;
+                    window.pesananSelesaiDB.forEach(o => total += o.totalBayar);
+                    statPendapatan.textContent = window.formatRupiah(total);
+                    
+                    const pMasuk = document.getElementById('stat-pesanan');
+                    const pDapur = document.getElementById('stat-dapur');
+                    const pSelesai = document.getElementById('stat-selesai');
+                    
+                    if(pMasuk) pMasuk.textContent = window.pesananMasukDB.length;
+                    if(pDapur) pDapur.textContent = window.pesananDapurDB.length;
+                    if(pSelesai) pSelesai.textContent = window.pesananSelesaiDB.length;
+                }
+            }
+        });
+    }
+});
