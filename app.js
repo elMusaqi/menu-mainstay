@@ -3893,3 +3893,343 @@ window.addEventListener('DOMContentLoaded', () => {
         window.closePanel('panel-promo-banner');
     };
 });
+// ============================================================================
+// 42. RESPONSIVE FIXES, Z-INDEX PATCH, & OWNER STOCK INTEGRATION
+// ============================================================================
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- A. FIX: Z-INDEX MODAL MENU (Agar bisa diklik di POS Kasir/Owner) ---
+    const modalMenu = document.getElementById('modal-menu-detail');
+    if (modalMenu) {
+        // Mengangkat pop-up menu ke lapisan tertinggi (menembus layar POS)
+        modalMenu.classList.remove('z-[100]');
+        modalMenu.classList.add('z-[400]'); 
+    }
+
+    // --- B. FIX: RESPONSIVITAS HEADER KASIR ---
+    const kasirHeader = document.querySelector('#view-kasir > div:first-child');
+    if (kasirHeader) {
+        // Mengubah susunan agar tombol bisa turun ke baris baru saat di HP
+        kasirHeader.classList.remove('flex', 'items-center', 'justify-between');
+        kasirHeader.classList.add('flex', 'flex-col', 'md:flex-row', 'items-start', 'md:items-center', 'gap-4', 'justify-between');
+        
+        const kasirButtons = kasirHeader.querySelector('.flex.gap-2');
+        if (kasirButtons) {
+            kasirButtons.classList.add('w-full', 'flex-wrap', 'justify-start', 'md:justify-end');
+        }
+    }
+
+    // --- C. INTEGRASI CRUD STOK BARANG DI PANEL OWNER ---
+    const panelStok = document.querySelector('#panel-stok .flex-1');
+    if (panelStok) {
+        panelStok.innerHTML = `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                    <h3 class="text-sm font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-indigo-500"></i> Manajemen Stok</h3>
+                    <button onclick="window.tambahBarangOwner()" class="bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-black shadow-md hover:bg-indigo-600 transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Item</button>
+                </div>
+                <div id="owner-stok-list" class="space-y-3"></div>
+            </div>
+        `;
+    }
+
+    window.renderStokOwner = function() {
+        const list = document.getElementById('owner-stok-list');
+        if(!list) return;
+        
+        if(!window.stokBarangDB || window.stokBarangDB.length === 0) {
+            list.innerHTML = `<p class="text-center text-xs text-gray-400 py-4 font-bold">Belum ada barang diinventaris.</p>`;
+            return;
+        }
+
+        list.innerHTML = window.stokBarangDB.map((item, idx) => `
+            <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex justify-between items-center relative transition hover:border-indigo-300">
+                <button onclick="window.hapusBarangOwner(${idx})" class="absolute top-2 right-2 text-red-500 hover:text-red-700 bg-red-50 w-6 h-6 rounded flex items-center justify-center transition"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                <div class="pr-8">
+                    <p class="text-xs font-black text-gray-800 mb-1">${item.nama}</p>
+                    <p class="text-[10px] font-bold text-gray-500">Kondisi Stok: <span class="text-indigo-600 font-black text-sm">${item.jumlah}</span></p>
+                </div>
+                <button onclick="window.editBarangOwner(${idx})" class="text-[10px] font-black text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-500 px-3 py-2 rounded-lg transition border border-indigo-200 shadow-sm"><i class="fa-solid fa-pen mr-1"></i> Edit Data</button>
+            </div>
+        `).join('');
+    };
+
+    // Jeda sejenak agar Database Stok terbaca sempurna
+    setTimeout(() => window.renderStokOwner(), 500);
+
+    window.tambahBarangOwner = function() {
+        const namaBaru = prompt("Masukkan NAMA barang/inventaris baru:");
+        if(!namaBaru) return;
+        const jumlahAwal = prompt("Masukkan JUMLAH stok awal:", "0");
+        
+        if(!window.stokBarangDB) window.stokBarangDB = [];
+        window.stokBarangDB.push({ id: 's_' + Date.now(), nama: namaBaru, jumlah: parseInt(jumlahAwal) || 0 });
+        
+        localStorage.setItem('stokBarangMainstay', JSON.stringify(window.stokBarangDB));
+        window.renderStokOwner();
+        if(typeof window.renderStokKasir === 'function') window.renderStokKasir(); // Otomatis tembus ke layar kasir
+        alert("Barang berhasil ditambahkan ke sistem inventaris!");
+    };
+
+    window.editBarangOwner = function(idx) {
+        const item = window.stokBarangDB[idx];
+        const namaBaru = prompt("Edit NAMA barang:", item.nama);
+        if(!namaBaru) return;
+        const jumlahBaru = prompt("Edit JUMLAH stok (Terakhir diisi oleh Kasir):", item.jumlah);
+        
+        window.stokBarangDB[idx].nama = namaBaru;
+        window.stokBarangDB[idx].jumlah = parseInt(jumlahBaru) || 0;
+        
+        localStorage.setItem('stokBarangMainstay', JSON.stringify(window.stokBarangDB));
+        window.renderStokOwner();
+        if(typeof window.renderStokKasir === 'function') window.renderStokKasir();
+    };
+
+    window.hapusBarangOwner = function(idx) {
+        if(confirm("PERINGATAN: Yakin ingin menghapus item stok ini dari inventaris?")) {
+            window.stokBarangDB.splice(idx, 1);
+            localStorage.setItem('stokBarangMainstay', JSON.stringify(window.stokBarangDB));
+            window.renderStokOwner();
+            if(typeof window.renderStokKasir === 'function') window.renderStokKasir();
+        }
+    };
+
+    // --- D. OVERRIDE QRIS MODAL (Dua Tombol Interaktif) ---
+    const oldBukaModalQRIS = window.bukaModalQRIS;
+    window.bukaModalQRIS = function(orderData) {
+        
+        // Panggil kerangka UI aslinya
+        oldBukaModalQRIS(orderData);
+        
+        // Ubah tombol di bawah barcode QRIS menjadi DUA OPSI (Kirim WA & Tunjuk Kasir)
+        const qrisContainer = document.querySelector('#modal-qris .p-6.bg-slate-50 .w-full.space-y-3');
+        if (qrisContainer) {
+            qrisContainer.innerHTML = `
+                <button onclick="window.unduhQRIS()" class="w-full bg-white border-2 border-slate-200 text-gray-800 font-black py-3 rounded-xl hover:bg-slate-100 transition text-sm flex items-center justify-center gap-2 shadow-sm mb-3">
+                    <i class="fa-solid fa-download text-blue-500"></i> Simpan / Download QRIS
+                </button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="window.kirimBuktiWA()" class="bg-green-500 text-white font-black py-3 rounded-xl shadow-[0_4px_15px_rgba(34,197,94,0.4)] hover:bg-green-600 transition text-[10px] flex flex-col items-center justify-center gap-1 group">
+                        <i class="fa-brands fa-whatsapp text-lg group-hover:scale-110 transition"></i> Kirim ke WA Resto
+                    </button>
+                    <button onclick="window.tunjukkanQRISKeKasir()" class="bg-amber-500 text-gray-900 font-black py-3 rounded-xl shadow-[0_4px_15px_rgba(245,158,11,0.4)] hover:bg-amber-600 transition text-[10px] flex flex-col items-center justify-center gap-1 group">
+                        <i class="fa-solid fa-mobile-screen text-lg group-hover:scale-110 transition"></i> Tunjukkan ke Kasir
+                    </button>
+                </div>
+            `;
+        }
+    };
+
+    // Logika ketika pelanggan menekan "Tunjukkan ke Kasir" di pop-up QRIS
+    window.tunjukkanQRISKeKasir = function() {
+        if(!window.pesananAktif) return;
+        const o = window.pesananAktif;
+
+        // 1. Amankan data pesanan ke database kasir agar masuk ke daftar tunggu
+        const isExist = window.pesananMasukDB.find(x => x.noAntrean === o.noAntrean);
+        if(!isExist) {
+            window.pesananMasukDB.unshift(o);
+            if (typeof window.renderListKasir === 'function') window.renderListKasir();
+            if (typeof window.simpanDatabaseKasir === 'function') window.simpanDatabaseKasir();
+            if (typeof window.updateStatistikOwner === 'function') window.updateStatistikOwner();
+        }
+
+        // 2. Tutup QRIS Modal & Keranjang
+        const modalQris = document.getElementById('modal-qris');
+        if(modalQris) { modalQris.classList.add('hidden'); modalQris.classList.remove('flex'); }
+        if(typeof window.closeCartModal === 'function') window.closeCartModal();
+
+        // 3. Bersihkan Keranjang
+        window.currentCart = [];
+        localStorage.setItem('cartMainstay', JSON.stringify(window.currentCart));
+        if(typeof window.updateCartFloat === 'function') window.updateCartFloat();
+
+        // 4. Siapkan Modal Struk Layar dengan Peringatan Khusus QRIS
+        document.getElementById('receipt-no').textContent = o.noAntrean;
+        document.getElementById('receipt-total').textContent = window.formatRupiah(o.totalBayar);
+        
+        // Ganti teks instruksi jadi warna merah untuk memberi tanda belum bayar
+        document.getElementById('receipt-instruction').innerHTML = `
+            <span class="bg-red-500 text-white px-2 py-0.5 rounded text-[10px] shadow-sm mb-1 inline-block">PERLU VERIFIKASI QRIS</span><br>
+            Tunjukkan layar ini <b class="text-white">serta BUKTI TRANSFER QRIS</b> Anda ke Kasir.
+        `;
+
+        // Cetak daftar rincian pesanan ke struk layar
+        document.getElementById('receipt-items').innerHTML = o.items.map(item => `
+            <div class="flex justify-between items-start border-b border-gray-100 pb-2 last:border-0">
+                <div>
+                    <p class="text-xs font-black text-gray-800">${item.qty}x ${item.nama}</p>
+                    ${item.levelEs !== '-' ? `<p class="text-[9px] text-gray-500 font-bold">${item.levelEs}, ${item.levelGula}</p>` : ''}
+                    ${item.toppingStr !== 'Tanpa Ekstra Topping' ? `<p class="text-[9px] text-amber-600 font-bold">+ ${item.toppingStr}</p>` : ''}
+                </div>
+                <p class="text-xs font-black text-gray-800">${window.formatRupiah(item.totalHarga)}</p>
+            </div>
+        `).join('');
+
+        // Buka Struk Layar
+        const modalReceipt = document.getElementById('modal-receipt-customer');
+        if(modalReceipt) {
+            modalReceipt.classList.remove('hidden'); 
+            modalReceipt.classList.add('flex');
+        }
+    };
+});
+// ============================================================================
+// 43. MEMORY FIX, WEB EDIT DUAL UPLOAD, & PRE-ORDER DATE PICKER
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- A. FIX NOMOR ANTREAN (Agar Melanjutkan, Tidak Reset ke 1) ---
+    // Mengambil nomor antrean terakhir dari memori (Jika tidak ada, mulai dari 1)
+    window.nomorAntreanHariIni = parseInt(localStorage.getItem('antreanMainstay')) || 1;
+
+    // Menimpa fungsi Checkout Customer agar menyimpan Nomor Antrean ke memori
+    const oldProsesCheckout = window.prosesCheckout;
+    window.prosesCheckout = function() {
+        // Cek jika Tipe adalah PO, pastikan tanggal sudah diisi
+        const tipeRadio = document.querySelector('input[name="co_tipe"]:checked').value;
+        let tglPO = '';
+        if (tipeRadio.includes('Pre-Order')) {
+            const inputDate = document.getElementById('co-po-date');
+            if (!inputDate || !inputDate.value) {
+                return alert("Harap pilih Tanggal Pengambilan Pre-Order (PO) Anda!");
+            }
+            // Ubah format tanggal jadi format lokal Indonesia
+            const d = new Date(inputDate.value);
+            tglPO = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        // Lanjutkan checkout bawaan
+        oldProsesCheckout();
+
+        // Jika berhasil, tambahkan teks tanggal ke tipe order
+        if (window.pesananAktif && tipeRadio.includes('Pre-Order')) {
+            window.pesananAktif.tipeOrder = `Pre-Order (PO) utk ${tglPO}`;
+            // Update Array
+            window.pesananMasukDB[0] = window.pesananAktif;
+            if(typeof window.simpanDatabaseKasir === 'function') window.simpanDatabaseKasir();
+        }
+
+        // Simpan nomor antrean selanjutnya ke memori
+        localStorage.setItem('antreanMainstay', window.nomorAntreanHariIni);
+    };
+
+    // Menimpa fungsi Checkout Internal Kasir agar juga menyimpan Nomor Antrean
+    if(typeof window.checkoutPOSInternal !== 'undefined') {
+        const oldCheckoutKasir = window.checkoutPOSInternal;
+        window.checkoutPOSInternal = function() {
+            oldCheckoutKasir();
+            localStorage.setItem('antreanMainstay', window.nomorAntreanHariIni);
+        };
+    }
+
+
+    // --- B. FIX PESANAN BATAL (Agar terhapus dari memori selamanya) ---
+    window.batalPesanan = function(no) {
+        if(confirm(`Yakin ingin membatalkan dan menghapus pesanan ${no}?`)) {
+            const orderIdx = window.pesananMasukDB.findIndex(o => o.noAntrean === no);
+            if(orderIdx > -1) {
+                window.pesananMasukDB.splice(orderIdx, 1); // Hapus dari Array
+                window.simpanDatabaseKasir(); // LANGSUNG SIMPAN KE MEMORI!
+                window.renderListKasir();
+                window.updateStatistikOwner();
+            }
+        }
+    };
+
+
+    // --- C. FIX PRE-ORDER (PO) DATE PICKER (Min Besok, Max 7 Hari) ---
+    // 1. Suntik Elemen Input Tanggal
+    const tipeOrderContainer = document.querySelector('input[name="co_tipe"]').closest('.grid');
+    if (tipeOrderContainer && !document.getElementById('po-date-container')) {
+        tipeOrderContainer.insertAdjacentHTML('afterend', `
+            <div id="po-date-container" class="mt-3 hidden bg-blue-50 p-3 rounded-xl border border-blue-200 transition-all">
+                <label class="text-[10px] font-black text-blue-800 block mb-1"><i class="fa-solid fa-calendar-check mr-1"></i> TANGGAL PENGAMBILAN (PRE-ORDER)</label>
+                <input type="date" id="co-po-date" class="w-full bg-white border border-blue-200 rounded-lg p-2.5 text-sm font-bold text-gray-700 outline-none focus:border-blue-500 cursor-pointer">
+                <p class="text-[9px] text-blue-600 mt-1 font-bold">*PO hanya bisa diambil minimal BESOK hingga 7 HARI ke depan.</p>
+            </div>
+        `);
+    }
+
+    // 2. Set Batas Tanggal (Min & Max)
+    const inputPODate = document.getElementById('co-po-date');
+    if (inputPODate) {
+        const besok = new Date();
+        besok.setDate(besok.getDate() + 1);
+        
+        const mingguDepan = new Date();
+        mingguDepan.setDate(mingguDepan.getDate() + 7);
+
+        // Format YYYY-MM-DD
+        inputPODate.min = besok.toISOString().split('T')[0];
+        inputPODate.max = mingguDepan.toISOString().split('T')[0];
+    }
+
+    // 3. Logika Memunculkan Kalender Jika PO Diklik
+    document.querySelectorAll('input[name="co_tipe"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const poContainer = document.getElementById('po-date-container');
+            if (e.target.value.includes('Pre-Order')) {
+                poContainer.classList.remove('hidden');
+                poContainer.classList.add('block');
+            } else {
+                poContainer.classList.add('hidden');
+                poContainer.classList.remove('block');
+                inputPODate.value = ''; // Reset nilai tanggal
+            }
+        });
+    });
+
+
+    // --- D. FIX PANEL EDIT WEB (QRIS DUAL UPLOAD & TOMBOL KEMBALI) ---
+    const panelWebContent = document.querySelector('#panel-edit-web .space-y-4');
+    if (panelWebContent) {
+        // Rombak total isi Panel Web
+        panelWebContent.innerHTML = `
+            <div>
+                <label class="text-[10px] font-bold text-gray-500 block mb-1">Nomor WA Resto (Otomatis)</label>
+                <input type="number" id="setting-wa" value="${window.systemConfig.nomorWA || '628977099557'}" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold focus:border-amber-500 outline-none">
+            </div>
+            
+            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                <label class="text-[10px] font-black text-amber-800 block mb-2 uppercase"><i class="fa-solid fa-mug-hot mr-1"></i> Logo Restoran (Dual Input)</label>
+                <input type="text" id="setting-logo" placeholder="Paste Link Gambar URL..." value="${window.systemConfig.logoUrl || ''}" class="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-xs focus:border-amber-500 outline-none mb-2">
+                <input type="file" accept="image/*" class="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs" onchange="window.handleImageUpload(this, 'setting-logo', 'header-logo-img')">
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                <label class="text-[10px] font-black text-blue-800 block mb-2 uppercase"><i class="fa-solid fa-qrcode mr-1"></i> Barcode QRIS Pembayaran</label>
+                <input type="text" id="setting-qris" placeholder="Paste Link Gambar QRIS..." value="${window.systemConfig.qrisUrl || ''}" class="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs focus:border-blue-500 outline-none mb-2">
+                <input type="file" accept="image/*" class="w-full bg-white border border-blue-300 rounded-xl p-2 text-xs" onchange="window.handleImageUpload(this, 'setting-qris')">
+            </div>
+        `;
+    }
+
+    // Perbaiki Logika Simpan Web
+    window.simpanPengaturanWeb = function() {
+        const wa = document.getElementById('setting-wa').value;
+        const logo = document.getElementById('setting-logo').value;
+        const qris = document.getElementById('setting-qris').value;
+
+        if (wa) window.systemConfig.nomorWA = wa;
+        if (qris) window.systemConfig.qrisUrl = qris;
+        if (logo) {
+            window.systemConfig.logoUrl = logo;
+            const icon = document.getElementById('header-logo-icon');
+            const img = document.getElementById('header-logo-img');
+            if(icon) icon.classList.add('hidden');
+            if(img) { img.src = logo; img.classList.remove('hidden'); }
+        }
+
+        localStorage.setItem('mainstayConfig', JSON.stringify(window.systemConfig));
+        alert("Berhasil! Nomor WA, Logo, dan QRIS telah tersimpan.");
+        window.closePanel('panel-edit-web'); // Tutup otomatis setelah simpan
+    };
+
+    // Pastikan tombol KEMBALI di Panel Web berfungsi
+    const btnKembaliWeb = document.querySelector('#panel-edit-web .bg-gray-900 button');
+    if(btnKembaliWeb) {
+        btnKembaliWeb.onclick = () => window.closePanel('panel-edit-web');
+    }
+});
