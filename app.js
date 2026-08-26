@@ -4304,3 +4304,61 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+// ============================================================================
+// 47. CASHIER HEADER REFINEMENT (TEMA TERANG, BERSIH, LOGOUT DI UJUNG KANAN)
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+    
+    const kasirView = document.getElementById('view-kasir');
+    if (kasirView) {
+        const kasirHeader = kasirView.querySelector('div:first-child');
+        
+        if (kasirHeader) {
+            // Kembalikan ke tema terang (bg-white) dengan tata letak Flexbox yang solid
+            kasirHeader.className = "bg-white px-4 py-3 md:py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 shadow-sm border-b border-gray-100 w-full relative z-40";
+            
+            kasirHeader.innerHTML = `
+                <!-- BAGIAN KIRI: Judul & Dropdown Staf -->
+                <div class="flex items-center justify-between w-full md:w-auto gap-3">
+                    <h2 class="text-gray-900 font-black text-sm md:text-base flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-cash-register text-amber-500"></i> Kasir
+                    </h2>
+                    <select id="kasir-staf-dropdown" class="bg-slate-50 text-gray-700 border border-slate-200 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none cursor-pointer max-w-[140px] md:max-w-[180px] truncate shadow-sm">
+                        <option value="">Memuat staf...</option>
+                    </select>
+                </div>
+
+                <!-- BAGIAN KANAN: Tombol Aksi (Logout dipaksa ke kanan dengan ml-auto) -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:ml-auto">
+                    
+                    <!-- Tombol DM Master -->
+                    <button onclick="window.open('https://wa.me/' + (window.ownerProfile ? window.ownerProfile.wa : '${window.systemConfig.nomorWA}') + '?text=Halo%20Master%20Owner,%20ada%20laporan%20dari%20kasir.', '_blank')" class="bg-green-50 text-green-600 border border-green-200 text-[10px] md:text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 hover:bg-green-100 transition shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> <span class="hidden sm:inline">Master</span>
+                    </button>
+                    
+                    <!-- Tombol Stok -->
+                    <button onclick="window.openStokKasir()" class="bg-indigo-50 text-indigo-600 border border-indigo-200 text-[10px] md:text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 hover:bg-indigo-100 transition shadow-sm">
+                        <i class="fa-solid fa-box-open text-sm"></i> Stok
+                    </button>
+                    
+                    <!-- Tombol Absen -->
+                    <button onclick="window.bukaAbsensi()" class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 hover:bg-blue-100 transition shadow-sm">
+                        <i class="fa-solid fa-camera text-sm"></i> Absen
+                    </button>
+                    
+                    <!-- Tombol Logout (Kunci di Ujung Kanan) -->
+                    <button onclick="window.prosesLogout('kasir')" class="bg-red-500 text-white text-[10px] md:text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 hover:bg-red-600 transition shadow-md ml-auto">
+                        <i class="fa-solid fa-power-off text-sm"></i> Logout
+                    </button>
+                    
+                </div>
+            `;
+            
+            // Panggil ulang pengisi dropdown agar nama staf muncul
+            if(typeof window.updateDropdownKasir === 'function') {
+                window.updateDropdownKasir();
+            }
+        }
+    }
+});
