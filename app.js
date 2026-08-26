@@ -5562,3 +5562,308 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
 });
+// ============================================================================
+// 54. ULTIMATE RECOVERY PATCH: POS RESPONSIVE, PERMANENT CRM, & VOUCHER ENGINE
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX MUTLAK: CRM PELANGGAN (DATA PERMANEN & VOUCHER ENGINE) ---
+    
+    // TARIK DATA DARI MEMORI SEBELUM APAPUN TERJADI (Agar tidak hilang saat refresh)
+    window.databaseMember = JSON.parse(localStorage.getItem('dbMemberMainstay')) || [];
+    window.dbVoucher = JSON.parse(localStorage.getItem('dbVoucherMainstay')) || [];
+
+    const panelMember = document.querySelector('#panel-member .flex-1');
+    if (panelMember) {
+        // ROMBAK TOTAL PANEL PELANGGAN UNTUK MENAMPUNG MESIN VOUCHER
+        panelMember.innerHTML = `
+            <!-- ENGINE VOUCHER -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-5 rounded-2xl shadow-sm mb-6 border border-orange-400 text-white">
+                <h3 class="text-sm font-black mb-3 flex items-center gap-2"><i class="fa-solid fa-ticket-simple"></i> Buat Voucher Promo</h3>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-orange-100 block mb-1">Kode Voucher</label>
+                        <input type="text" id="v-kode" placeholder="Cth: KOPIGRATIS" class="w-full text-gray-900 px-3 py-2 rounded-lg font-black text-xs uppercase outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-orange-100 block mb-1">Nominal Diskon (Rp)</label>
+                        <input type="number" id="v-nilai" placeholder="Cth: 5000" class="w-full text-gray-900 px-3 py-2 rounded-lg font-black text-xs outline-none">
+                    </div>
+                </div>
+                <label class="text-[10px] font-bold text-orange-100 block mb-1">Target Penerima Voucher</label>
+                <select id="v-target" class="w-full text-gray-900 bg-white px-3 py-2 rounded-lg font-black text-xs mb-3 outline-none cursor-pointer" onchange="window.toggleTargetKhusus()">
+                    <option value="semua">Berlaku untuk Semua Orang</option>
+                    <option value="member">Hanya Member VIP</option>
+                    <option value="non-member">Hanya Non-Member / Reguler</option>
+                    <option value="khusus">Pilih Pelanggan Tertentu (Spesifik)</option>
+                </select>
+                
+                <!-- List Pelanggan Spesifik (Sembunyi by Default) -->
+                <div id="v-khusus-list" class="hidden bg-black/20 p-3 rounded-lg mb-3 max-h-32 overflow-y-auto space-y-2 border border-white/20 hide-scrollbar"></div>
+                
+                <button onclick="window.simpanVoucherBaru()" class="w-full bg-gray-900 text-white font-black py-3 rounded-xl shadow hover:bg-black transition text-sm shadow-lg">SIMPAN & AKTIFKAN VOUCHER</button>
+            </div>
+
+            <!-- TABEL PELANGGAN (CRM) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                    <h3 class="text-sm font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-users text-green-500"></i> Database Pelanggan</h3>
+                    <button onclick="window.tambahPelangganManual()" class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-green-200 transition"><i class="fa-solid fa-plus"></i> Tambah</button>
+                </div>
+                <div class="space-y-3" id="tabel-crm-list"></div>
+            </div>
+        `;
+    }
+
+    window.toggleTargetKhusus = function() {
+        const val = document.getElementById('v-target').value;
+        const listContainer = document.getElementById('v-khusus-list');
+        if(val === 'khusus') {
+            listContainer.classList.remove('hidden');
+            if(window.databaseMember.length === 0) {
+                listContainer.innerHTML = `<p class="text-[10px] text-white">Data pelanggan kosong.</p>`;
+            } else {
+                listContainer.innerHTML = window.databaseMember.map((m, idx) => `
+                    <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                        <input type="checkbox" class="target-spesifik-checkbox w-4 h-4" value="${m.wa}">
+                        ${m.nama} (${m.wa})
+                    </label>
+                `).join('');
+            }
+        } else {
+            listContainer.classList.add('hidden');
+        }
+    };
+
+    window.simpanVoucherBaru = function() {
+        const kode = document.getElementById('v-kode').value.toUpperCase();
+        const nilai = parseInt(document.getElementById('v-nilai').value) || 0;
+        const target = document.getElementById('v-target').value;
+        
+        if(!kode || nilai <= 0) return alert("Kode dan Nominal Diskon wajib diisi!");
+        
+        let targetSpesifik = [];
+        if(target === 'khusus') {
+            document.querySelectorAll('.target-spesifik-checkbox:checked').forEach(cb => targetSpesifik.push(cb.value));
+            if(targetSpesifik.length === 0) return alert("Pilih minimal 1 pelanggan spesifik!");
+        }
+
+        window.dbVoucher.push({ id: Date.now(), kode, nilai, target, targetSpesifik });
+        localStorage.setItem('dbVoucherMainstay', JSON.stringify(window.dbVoucher));
+        alert(`Voucher ${kode} berhasil diaktifkan!`);
+        document.getElementById('v-kode').value = '';
+        document.getElementById('v-nilai').value = '';
+    };
+
+    // Panggil render tabel agar data pelanggan yang ditarik dari memori langsung muncul
+    if(typeof window.renderTabelMember === 'function') window.renderTabelMember();
+
+
+    // --- 2. FIX MUTLAK: PROFIL OWNER (Membuka Paksa Modal yang Macet) ---
+    window.bukaFormOwner = function() {
+        // Ambil data terbaru dari memori
+        window.ownerProfile = JSON.parse(localStorage.getItem('ownerProfileMainstay')) || { nama: 'Master Owner', foto: '', wa: '628977099557', rekening: '' };
+        
+        document.getElementById('owner-nama').value = window.ownerProfile.nama;
+        document.getElementById('owner-wa').value = window.ownerProfile.wa;
+        document.getElementById('owner-rek').value = window.ownerProfile.rekening;
+        document.getElementById('owner-foto').value = window.ownerProfile.foto;
+        
+        // Memastikan Z-Index paling tinggi agar tidak tenggelam
+        const modal = document.getElementById('modal-form-owner');
+        if(modal) {
+            modal.className = "fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center fade-in px-4 pb-safe";
+        }
+    };
+
+
+    // --- 3. FIX MUTLAK: POS INTERNAL (TIDAK MELAR & KERANJANG SCROLLABLE) ---
+    const posModal = document.getElementById('modal-pos-internal');
+    if (posModal) {
+        // Menggunakan alur natural dokumen: di HP, scroll atas-bawah biasa. Di Laptop, kiri-kanan.
+        posModal.className = "fixed inset-0 bg-slate-50 z-[200] hidden flex-col md:flex-row h-[100dvh] w-screen overflow-y-auto md:overflow-hidden";
+        
+        posModal.innerHTML = `
+            <!-- HEADER (Di HP melayang di atas, di PC ikut aliran) -->
+            <div class="sticky top-0 md:relative bg-gray-900 text-white px-4 py-3 flex justify-between items-center shadow-md z-50 md:hidden flex-none">
+                <h2 class="font-black text-sm"><i class="fa-solid fa-cash-register text-amber-500 mr-2"></i> POS KASIR</h2>
+                <button onclick="window.tutupPOSInternal()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-black hover:bg-red-600 transition">TUTUP</button>
+            </div>
+            
+            <!-- AREA KIRI (Katalog Menu) -->
+            <div class="flex-1 flex flex-col p-3 md:p-4 min-h-[50vh] md:overflow-y-auto border-b md:border-b-0 md:border-r border-gray-200">
+                
+                <div class="hidden md:flex justify-between items-center mb-4">
+                    <h2 class="font-black text-lg text-gray-900"><i class="fa-solid fa-cash-register text-amber-500 mr-2"></i> POS INTERNAL</h2>
+                    <button onclick="window.tutupPOSInternal()" class="bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-red-600 transition">KEMBALI / TUTUP</button>
+                </div>
+
+                <div class="flex gap-2 mb-3 overflow-x-auto hide-scrollbar pb-1 flex-none sticky top-12 md:top-0 z-40 bg-slate-50 pt-2">
+                    <button onclick="window.filterPOS('semua')" class="px-4 py-2 bg-gray-800 text-white text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Semua</button>
+                    <button onclick="window.filterPOS('coffee')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Coffee</button>
+                    <button onclick="window.filterPOS('non-coffee')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Non-Coffee</button>
+                    <button onclick="window.filterPOS('snack')" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg whitespace-nowrap shadow-sm">Snack</button>
+                </div>
+                
+                <!-- RAHASIA ANTI MELAR: content-start -->
+                <div id="pos-internal-grid" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 content-start pb-10"></div>
+            </div>
+            
+            <!-- AREA KANAN (Keranjang & Pembayaran) -->
+            <div class="w-full md:w-[360px] bg-white flex flex-col shadow-[0_-5px_20px_rgba(0,0,0,0.05)] md:shadow-inner flex-none h-auto md:h-full md:overflow-y-auto z-10 relative">
+                <div class="bg-amber-50 p-3 border-b border-amber-100 flex-none">
+                    <h3 class="font-black text-amber-800 text-sm"><i class="fa-solid fa-basket-shopping mr-2"></i> Keranjang Transaksi</h3>
+                </div>
+                <div id="pos-internal-cart" class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50 min-h-[150px]"></div>
+                
+                <!-- Form Input (Pasti Terlihat) -->
+                <div class="p-4 border-t border-gray-200 bg-white flex-none">
+                    <div class="flex justify-between items-end mb-3 border-b border-gray-100 pb-2">
+                        <span class="text-xs font-black text-gray-500 uppercase tracking-widest">TOTAL</span>
+                        <span id="pos-internal-total" class="text-2xl font-black text-amber-500 leading-none">Rp 0</span>
+                    </div>
+                    
+                    <input type="text" id="pos-nama-pelanggan" placeholder="Nama Customer (Wajib)" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm font-bold mb-3 outline-none focus:border-amber-500">
+                    
+                    <select id="pos-tipe-bayar" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm font-bold mb-3 outline-none cursor-pointer focus:border-amber-500" onchange="window.toggleKalkulatorPOS()">
+                        <option value="Tunai">Tunai (Cash)</option>
+                        <option value="QRIS Resto">QRIS</option>
+                    </select>
+                    
+                    <div id="pos-kalkulator" class="bg-blue-50 p-3 rounded-xl border border-blue-200 mb-4 transition-all">
+                        <label class="text-[10px] font-black text-blue-800 block mb-2">PILIH ATAU KETIK UANG DITERIMA</label>
+                        <div class="flex gap-2 mb-2">
+                            <button onclick="window.setUangCepat(window.posInternalTotal)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2.5 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-sm">UANG PAS</button>
+                            <button onclick="window.setUangCepat(50000)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2.5 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-sm">50.000</button>
+                            <button onclick="window.setUangCepat(100000)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-black py-2.5 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-sm">100.000</button>
+                        </div>
+                        <input type="number" id="pos-uang-diterima" placeholder="Atau ketik manual di sini..." class="w-full bg-white border border-blue-200 rounded-lg p-3 text-sm font-black outline-none mb-2 focus:border-blue-500" oninput="window.hitungKembalian()">
+                        <div class="flex justify-between items-end border-t border-blue-200 pt-2 mt-1">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">KEMBALIAN:</span>
+                            <span id="pos-kembalian" class="text-lg font-black text-blue-600 leading-none">Rp 0</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.checkoutPOSInternal()" class="w-full bg-amber-500 text-white font-black py-4 rounded-xl shadow-md hover:bg-amber-600 transition text-sm">PROSES & SIMPAN PESANAN</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Pastikan tombol klik kategori berfungsi dengan render ulang
+    window.renderPosGrid = function() {
+        const grid = document.getElementById('pos-internal-grid');
+        if (!grid) return;
+        const filteredMenu = window.posKategoriAktif === 'semua' ? window.katalogMenu : window.katalogMenu.filter(m => m.kategori === window.posKategoriAktif);
+        grid.innerHTML = filteredMenu.map(m => {
+            const isHabis = (m.isSoldOut === true || m.isSoldOut === "true");
+            return `
+            <div class="bg-white p-2 rounded-xl shadow-sm border ${isHabis ? 'border-red-200 cursor-not-allowed opacity-50 grayscale' : 'border-gray-200 cursor-pointer hover:border-amber-500 transition'} relative" onclick="${isHabis ? "alert('Habis!');" : `window.isPosKasirActive = true; window.openMenuDetail('${m.id}');`}">
+                ${isHabis ? `<span class="absolute top-2 right-2 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded z-10 tracking-widest">HABIS</span>` : ''}
+                <img src="${m.img}" class="w-full aspect-square object-cover rounded-lg mb-1.5">
+                <h4 class="text-[11px] font-black leading-tight text-gray-900 line-clamp-1 mb-0.5">${m.nama}</h4>
+                <p class="text-[10px] font-black text-amber-600">${window.formatRupiah(m.hargaDiskon)}</p>
+            </div>`;
+        }).join('');
+    };
+
+
+    // --- 4. FIX MUTLAK: EDIT WEB & PENYEBAB TOMBOL MATI ---
+    const panelWebEdit = document.querySelector('#panel-edit-web .flex-1');
+    if (panelWebEdit) {
+        
+        // Render Ulang Panel Web untuk memindahkan MAPS di atas SOSMED
+        panelWebEdit.innerHTML = `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 space-y-4">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2"><i class="fa-solid fa-store text-amber-500 mr-2"></i> Pengaturan Toko Utama</h3>
+                
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <input type="checkbox" id="ew-toko-buka" class="w-5 h-5 accent-amber-500" ${window.systemConfig.tokoBuka ? 'checked' : ''}>
+                        <span class="text-xs font-bold text-gray-700">Toko Buka</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <input type="checkbox" id="ew-audio" class="w-5 h-5 accent-blue-500" ${window.systemConfig.audioAktif ? 'checked' : ''}>
+                        <span class="text-xs font-bold text-gray-700">Audio Kasir</span>
+                    </label>
+                </div>
+
+                <div><label class="text-[10px] font-bold text-gray-500 block mb-1">Nomor WA Resto (Otomatis Struk)</label><input type="number" id="ew-wa" value="${window.systemConfig.nomorWA || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:border-amber-500"></div>
+                
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                    <label class="text-[10px] font-black text-amber-800 block mb-2">LOGO RESTO (URL / UPLOAD)</label>
+                    <input type="text" id="ew-logo" value="${window.systemConfig.logoUrl || ''}" placeholder="Pilih file atau paste URL" class="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-xs outline-none mb-2">
+                    <input type="file" accept="image/*" class="w-full text-[10px]" onchange="window.handleImageUpload(this, 'ew-logo')">
+                </div>
+
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                    <label class="text-[10px] font-black text-blue-800 block mb-2">GAMBAR QRIS (URL / UPLOAD)</label>
+                    <input type="text" id="ew-qris" value="${window.systemConfig.qrisUrl || ''}" placeholder="Pilih file atau paste URL" class="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs outline-none mb-2">
+                    <input type="file" accept="image/*" class="w-full text-[10px]" onchange="window.handleImageUpload(this, 'ew-qris')">
+                </div>
+            </div>
+
+            <!-- GOOGLE MAPS PINDAH KE SINI (DI ATAS SOSMED) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2 mb-3"><i class="fa-solid fa-map-location-dot text-indigo-500 mr-2"></i> Lokasi Google Maps</h3>
+                <textarea id="ew-maps" rows="3" placeholder='Paste iframe code Google Maps dari tab "Sematkan Peta"...' class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-indigo-500">${window.systemConfig.mapsEmbed || ''}</textarea>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2 mb-3"><i class="fa-solid fa-link text-pink-500 mr-2"></i> Link Sosial Media</h3>
+                <div class="space-y-3">
+                    <div><label class="text-[10px] font-bold text-pink-600 block mb-1"><i class="fa-brands fa-instagram mr-1"></i> Instagram Link</label><input type="text" id="ew-ig" value="${window.systemConfig.linkIG || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-pink-500"></div>
+                    <div><label class="text-[10px] font-bold text-blue-600 block mb-1"><i class="fa-brands fa-facebook mr-1"></i> Facebook Link</label><input type="text" id="ew-fb" value="${window.systemConfig.linkFB || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-500"></div>
+                    <div><label class="text-[10px] font-bold text-gray-900 block mb-1"><i class="fa-brands fa-tiktok mr-1"></i> TikTok / X Link</label><input type="text" id="ew-tt" value="${window.systemConfig.linkTT || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-gray-500"></div>
+                </div>
+            </div>
+            
+            <button onclick="window.simpanWebSafe()" class="w-full bg-gray-900 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition text-sm">SIMPAN PENGATURAN</button>
+        `;
+
+        // SAFE SAVE FUNCTION (Menghindari javascript crash yang menyebabkan tombol lain mati)
+        window.simpanWebSafe = function() {
+            try {
+                if(!window.systemConfig) window.systemConfig = {};
+                
+                // Ambil Nilai
+                window.systemConfig.tokoBuka = document.getElementById('ew-toko-buka').checked;
+                window.systemConfig.audioAktif = document.getElementById('ew-audio').checked;
+                window.systemConfig.nomorWA = document.getElementById('ew-wa').value;
+                window.systemConfig.mapsEmbed = document.getElementById('ew-maps').value;
+                window.systemConfig.linkIG = document.getElementById('ew-ig').value;
+                window.systemConfig.linkFB = document.getElementById('ew-fb').value;
+                window.systemConfig.linkTT = document.getElementById('ew-tt').value;
+                
+                const logoInput = document.getElementById('ew-logo').value;
+                if (logoInput) {
+                    window.systemConfig.logoUrl = logoInput;
+                    const elImg = document.getElementById('header-logo-img');
+                    const elIkon = document.getElementById('header-logo-icon');
+                    if(elImg) { elImg.src = logoInput; elImg.classList.remove('hidden'); }
+                    if(elIkon) elIkon.classList.add('hidden');
+                }
+
+                const qrisInput = document.getElementById('ew-qris').value;
+                if (qrisInput) window.systemConfig.qrisUrl = qrisInput;
+                
+                // Simpan!
+                localStorage.setItem('mainstayConfig', JSON.stringify(window.systemConfig));
+                
+                alert("SUKSES! Semua pengaturan berhasil disimpan secara permanen.");
+                
+            } catch (error) {
+                alert("Peringatan: Gagal menyimpan data karena memori penuh atau cache bermasalah.");
+                console.error(error);
+            }
+        };
+
+        // Ganti fungsi klik tombol simpan bawaan agar tidak memanggil fungsi lama yang rusak
+        const panelWebBtn = document.querySelector('#panel-edit-web .bg-gray-900 button:last-child');
+        if (panelWebBtn) {
+            panelWebBtn.removeAttribute('onclick');
+            panelWebBtn.addEventListener('click', window.simpanWebSafe);
+        }
+    }
+});
