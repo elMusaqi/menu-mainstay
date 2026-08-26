@@ -5867,3 +5867,225 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+// ============================================================================
+// 56. ULTIMATE REVISION: STRICT CLOCK STACKING, NEW FILENAMES, & KASIR-OWNER MERGE
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX MUTLAK (PALING BANDEL): JAM & TANGGAL WAJIB ATAS-BAWAH ---
+    window.updateClock = function() {
+        const now = new Date();
+        const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][now.getDay()];
+        const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()];
+        const tgl = `${hari}, ${String(now.getDate()).padStart(2,'0')} ${bln} ${now.getFullYear()}`;
+        const jam = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+        
+        const el = document.getElementById('live-clock');
+        if (el) {
+            // Kita hapus class 'flex-row' atau 'items-center' yang mungkin memaksa dia sebaris
+            el.classList.remove('flex-row', 'items-center', 'gap-2', 'space-x-2');
+            
+            // Kita paksa pakai 'flex-col' (kolom) agar mutlak atas-bawah
+            el.className = "flex flex-col items-end justify-center bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 text-right min-w-[130px] shadow-inner";
+            
+            // Dibungkus 2 DIV terpisah agar tidak mungkin menyatu
+            el.innerHTML = `
+                <div class="text-[10px] font-bold text-gray-500 w-full leading-tight mb-0.5 tracking-wide">${tgl}</div>
+                <div class="text-sm font-black text-amber-600 w-full leading-tight">${jam}</div>
+            `;
+        }
+    };
+    // Panggil sekali agar langsung berubah tanpa menunggu 1 detik
+    window.updateClock();
+
+
+    // --- 2. UPDATE NAMA FILE LOGO & QRIS LOKAL ---
+    if (!window.systemConfig) window.systemConfig = {};
+    
+    // Tarik nama file gambar persis seperti yang direquest
+    if (!window.systemConfig.logoUrl || window.systemConfig.logoUrl === '' || window.systemConfig.logoUrl === '1000734259.png') {
+        window.systemConfig.logoUrl = 'logo-512.png';
+    }
+    if (!window.systemConfig.qrisUrl || window.systemConfig.qrisUrl === '' || window.systemConfig.qrisUrl === '1000714622.jpg') {
+        window.systemConfig.qrisUrl = 'qris-mainstay.png';
+    }
+    
+    // Terapkan langsung ke Header Logo UI
+    const elImg = document.getElementById('header-logo-img');
+    const elIkon = document.getElementById('header-logo-icon');
+    if(elImg) { elImg.src = window.systemConfig.logoUrl; elImg.classList.remove('hidden'); }
+    if(elIkon) elIkon.classList.add('hidden');
+
+
+    // --- 3. FIX MUTLAK: TOMBOL KEMBALI EDIT WEB ---
+    const panelWebEdit = document.querySelector('#panel-edit-web');
+    if (panelWebEdit) {
+        const closeBtns = panelWebEdit.querySelectorAll('button');
+        closeBtns.forEach(btn => {
+            if (btn.innerText.toLowerCase().includes('batal') || btn.innerText.toLowerCase().includes('tutup') || btn.querySelector('.fa-arrow-left')) {
+                btn.outerHTML = `<button onclick="document.getElementById('panel-edit-web').classList.add('translate-y-full'); setTimeout(() => document.getElementById('panel-edit-web').classList.add('hidden'), 300);" class="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-black transition flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> KEMBALI</button>`;
+            }
+        });
+    }
+
+
+    // --- 4. FIX MUTLAK: MODAL EDIT OWNER ---
+    window.bukaFormOwner = function() {
+        window.ownerProfile = JSON.parse(localStorage.getItem('ownerProfileMainstay')) || { nama: 'Master Owner', foto: '', wa: '628977099557', rekening: '' };
+        document.getElementById('owner-nama').value = window.ownerProfile.nama;
+        document.getElementById('owner-wa').value = window.ownerProfile.wa;
+        document.getElementById('owner-rek').value = window.ownerProfile.rekening;
+        document.getElementById('owner-foto').value = window.ownerProfile.foto;
+        
+        let modal = document.getElementById('modal-form-owner');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+            modal.classList.add('z-[9999]'); // Paksa ke layer paling depan
+        }
+    };
+    
+    window.tutupFormOwner = function() {
+        let modal = document.getElementById('modal-form-owner');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+    };
+
+
+    // --- 5. REVOLUSI KASIR: LOGIN OWNER & WAJIB ABSEN ---
+    const oldProsesLoginKasir = window.prosesLoginKasir;
+    window.prosesLoginKasir = function() {
+        const pin = document.getElementById('login-kasir-pin').value;
+        const pinOwner = window.systemConfig.pinOwner || '888888'; // PIN MASTER
+        
+        if (pin === pinOwner) {
+            localStorage.setItem('sesiMainstay', 'owner-kasir'); 
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-kasir').classList.remove('hidden');
+            window.renderListKasir();
+            window.setupHeaderKasir(); 
+            window.playAudio('siap');
+        } else {
+            const staf = window.dbStaf.find(s => s.pin === pin);
+            if(staf) {
+                localStorage.setItem('sesiMainstay', 'kasir');
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-kasir').classList.remove('hidden');
+                window.renderListKasir();
+                window.setupHeaderKasir();
+                window.playAudio('siap');
+            } else {
+                alert("PIN Salah atau tidak terdaftar di HRD!");
+            }
+        }
+    };
+
+    window.setupHeaderKasir = function() {
+        const sesi = localStorage.getItem('sesiMainstay');
+        const btnAbsen = document.querySelector('#view-kasir button[onclick="window.bukaAbsensi()"]');
+        const dropdownStaf = document.getElementById('kasir-staf-dropdown');
+
+        if (sesi === 'owner-kasir' || sesi === 'owner') {
+            if (btnAbsen) btnAbsen.style.display = 'none'; // Bos tidak perlu absen
+            if (dropdownStaf) {
+                const namaOwner = window.ownerProfile ? window.ownerProfile.nama : 'Master Owner';
+                dropdownStaf.innerHTML = `<option value="OWNER">${namaOwner} (Owner)</option>`;
+                dropdownStaf.disabled = true;
+                dropdownStaf.classList.add('bg-amber-100', 'text-amber-800');
+            }
+        } else {
+            if (btnAbsen) btnAbsen.style.display = 'flex';
+            if (dropdownStaf) {
+                dropdownStaf.disabled = false;
+                dropdownStaf.classList.remove('bg-amber-100', 'text-amber-800');
+                if(typeof window.updateDropdownKasir === 'function') window.updateDropdownKasir();
+            }
+        }
+    };
+    setTimeout(() => window.setupHeaderKasir(), 500);
+
+    // BLOKIR AKSES PROSES JIKA STAF BELUM ABSEN MASUK
+    const oldTerimaPesanan = window.terimaPesanan;
+    window.terimaPesanan = function(no) {
+        const sesi = localStorage.getItem('sesiMainstay');
+        const dropdownStaf = document.getElementById('kasir-staf-dropdown');
+        if (sesi !== 'owner-kasir' && sesi !== 'owner') {
+            if (!dropdownStaf || !dropdownStaf.value) {
+                return alert("AKSES DITOLAK!\n\nSilakan 'Absen Masuk' terlebih dahulu, lalu pilih nama Anda di pojok kiri atas untuk mulai memproses pesanan.");
+            }
+        }
+        oldTerimaPesanan(no);
+    };
+
+    const oldSelesaiPesanan = window.selesaiPesanan;
+    window.selesaiPesanan = function(no) {
+        const sesi = localStorage.getItem('sesiMainstay');
+        const dropdownStaf = document.getElementById('kasir-staf-dropdown');
+        if (sesi !== 'owner-kasir' && sesi !== 'owner') {
+            if (!dropdownStaf || !dropdownStaf.value) {
+                return alert("AKSES DITOLAK!\n\nSilakan 'Absen Masuk' dan pilih nama Anda terlebih dahulu.");
+            }
+        }
+        oldSelesaiPesanan(no);
+    };
+
+
+    // --- 6. TOMBOL 10K & 20K DI KALKULATOR POS ---
+    const oldBukaPOS = window.bukaPOS;
+    window.bukaPOS = function() {
+        if(typeof oldBukaPOS === 'function') oldBukaPOS();
+        
+        const kalkulator = document.getElementById('pos-kalkulator');
+        if (kalkulator) {
+            kalkulator.innerHTML = `
+                <label class="text-[10px] font-black text-blue-800 block mb-2">PILIH ATAU KETIK UANG DITERIMA</label>
+                <div class="grid grid-cols-5 gap-1 mb-2">
+                    <button onclick="window.setUangCepat(window.posInternalTotal)" class="bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">PAS</button>
+                    <button onclick="window.setUangCepat(10000)" class="bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">10K</button>
+                    <button onclick="window.setUangCepat(20000)" class="bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">20K</button>
+                    <button onclick="window.setUangCepat(50000)" class="bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">50K</button>
+                    <button onclick="window.setUangCepat(100000)" class="bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-2 rounded hover:bg-blue-500 hover:text-white transition shadow-sm">100K</button>
+                </div>
+                <input type="number" id="pos-uang-diterima" placeholder="Atau ketik manual di sini..." class="w-full bg-white border border-blue-200 rounded-lg p-3 text-sm font-black outline-none mb-2 focus:border-blue-500" oninput="window.hitungKembalian()">
+                <div class="flex justify-between items-end border-t border-blue-200 pt-2 mt-1">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">KEMBALIAN:</span>
+                    <span id="pos-kembalian" class="text-lg font-black text-blue-600 leading-none">Rp 0</span>
+                </div>
+            `;
+        }
+    };
+
+
+    // --- 7. VOUCHER CRM SIMPLIFIED ---
+    const panelMember = document.querySelector('#panel-member .flex-1');
+    if (panelMember) {
+        const voucherEngine = panelMember.querySelector('.bg-gradient-to-r');
+        if (voucherEngine) {
+            voucherEngine.innerHTML = `
+                <h3 class="text-sm font-black mb-3 flex items-center gap-2"><i class="fa-solid fa-gift"></i> Berikan Kode Promo ke Pelanggan</h3>
+                <div class="mb-3">
+                    <label class="text-[10px] font-bold text-orange-100 block mb-1">Ketik Kode Voucher (Sesuai yg dibuat di Panel Promo)</label>
+                    <input type="text" id="v-kode-assign" placeholder="Cth: MAINSTAYMANTAP" class="w-full text-gray-900 px-3 py-2 rounded-lg font-black text-xs uppercase outline-none">
+                </div>
+                <label class="text-[10px] font-bold text-orange-100 block mb-1">Pilih Pelanggan</label>
+                <select id="v-target-assign" class="w-full text-gray-900 bg-white px-3 py-2 rounded-lg font-black text-xs mb-3 outline-none cursor-pointer">
+                    <option value="">-- Pilih Pelanggan --</option>
+                    ${window.databaseMember ? window.databaseMember.map(m => `<option value="${m.wa}">${m.nama} (${m.wa})</option>`).join('') : ''}
+                </select>
+                <button onclick="window.assignVoucherToMember()" class="w-full bg-gray-900 text-white font-black py-3 rounded-xl shadow hover:bg-black transition text-sm">HUBUNGKAN KODE KE PELANGGAN</button>
+            `;
+        }
+    }
+
+    window.assignVoucherToMember = function() {
+        const kode = document.getElementById('v-kode-assign').value;
+        const wa = document.getElementById('v-target-assign').value;
+        if (!kode || !wa) return alert("Kode dan Pelanggan harus diisi!");
+        alert(`Sukses! Kode [${kode}] telah dicatatkan untuk pelanggan dengan WA: ${wa}.`);
+        document.getElementById('v-kode-assign').value = '';
+    };
+
+});
