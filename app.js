@@ -4943,3 +4943,395 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { if(typeof window.renderLaporanPanel === 'function') window.renderLaporanPanel(); }, 1000);
 
 });
+// ============================================================================
+// 51. MEGA PATCH: STACKING FIX, POS CATEGORY, QUICK CASH, CRM HISTORY, & WEB EDIT
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX: PESANAN BERTUMPUK & KODE ORDER (ORD vs POS) ---
+    // Memastikan counter tidak bentrok dengan mengambil yang paling update
+    const getNextAntrean = (prefix) => {
+        let current = parseInt(localStorage.getItem('antreanMainstay')) || 1;
+        let no = `${prefix}-${String(current).padStart(3, '0')}`;
+        localStorage.setItem('antreanMainstay', current + 1);
+        window.nomorAntreanHariIni = current + 1;
+        return no;
+    };
+
+    // Override Checkout Customer (Kode: ORD)
+    const oldProsesCheckout = window.prosesCheckout;
+    window.prosesCheckout = function() {
+        if (window.currentCart.length === 0) return;
+        
+        // Simpan pesanan customer dengan kode ORD
+        const backupAntrean = window.nomorAntreanHariIni; 
+        window.nomorAntreanHariIni = backupAntrean; // Bypass bug sementara
+        
+        // Panggil fungsi asli untuk setup dasar
+        oldProsesCheckout(); 
+
+        // Modifikasi paksa ID setelah fungsi asli berjalan
+        if (window.pesananAktif) {
+            window.pesananAktif.noAntrean = getNextAntrean('ORD');
+            // Fix penumpukan: Pastikan kita push ke array terbaru
+            const existingIdx = window.pesananMasukDB.findIndex(x => x.noAntrean === window.pesananAktif.noAntrean);
+            if(existingIdx === -1) {
+                window.pesananMasukDB.unshift(window.pesananAktif);
+            }
+            if(typeof window.simpanDatabaseKasir === 'function') window.simpanDatabaseKasir();
+        }
+    };
+
+    // Override Checkout POS Internal (Kode: POS)
+    window.checkoutPOSInternal = function() {
+        if(window.kasirCart.length === 0) return alert("Keranjang kosong!");
+        const bayar = document.getElementById('pos-tipe-bayar').value;
+        const uangDiterima = parseInt(document.getElementById('pos-uang-diterima').value) || 0;
+        
+        if(bayar === 'Tunai' && uangDiterima > 0 && uangDiterima < window.posInternalTotal) {
+            return alert("Uang kurang!");
+        }
+
+        let aktorPenginput = localStorage.getItem('sesiMainstay') === 'owner' ? 'Master Owner' : ('Kasir - ' + (document.getElementById('kasir-staf-dropdown')?.value || 'Offline'));
+        const noAntrean = getNextAntrean('POS');
+
+        const pesananBaru = {
+            noAntrean: noAntrean,
+            nama: document.getElementById('pos-nama-pelanggan').value || 'Customer POS',
+            phone: '-',
+            tipeOrder: 'Instant (Di Toko)',
+            metodeBayar: bayar,
+            totalBayar: window.posInternalTotal,
+            items: JSON.parse(JSON.stringify(window.kasirCart)),
+            actor: aktorPenginput,
+            isMember: false,
+            waktu: new Date().toLocaleString('id-ID')
+        };
+
+        // Fix Penumpukan
+        window.pesananMasukDB.unshift(pesananBaru);
+        window.simpanDatabaseKasir();
+        if (typeof window.renderListKasir === 'function') window.renderListKasir();
+
+        window.kasirCart = [];
+        window.renderPOSInternalCart();
+        document.getElementById('pos-nama-pelanggan').value = '';
+        document.getElementById('pos-uang-diterima').value = '';
+        window.tutupPOSInternal();
+        window.playAudio('masuk');
+        alert(`Pesanan ${noAntrean} berhasil diproses!`);
+    };
+
+    // --- 2. POS INTERNAL: KATEGORI MENU & TOMBOL UANG CEPAT ---
+    window.posKategoriAktif = 'semua';
+    window.setUangCepat = function(nominal) {
+        document.getElementById('pos-uang-diterima').value = nominal;
+        window.hitungKembalian();
+    };
+
+    window.filterPOS = function(kategori) {
+        window.posKategoriAktif = kategori;
+        window.renderPosGrid();
+    };
+
+    window.renderPosGrid = function() {
+        const grid = document.getElementById('pos-internal-grid');
+        if (!grid) return;
+        
+        const filteredMenu = window.posKategoriAktif === 'semua' 
+            ? window.katalogMenu 
+            : window.katalogMenu.filter(m => m.kategori === window.posKategoriAktif);
+
+        grid.innerHTML = filteredMenu.map(m => {
+            const isHabis = (m.isSoldOut === true || m.isSoldOut === "true");
+            return `
+            <div class="bg-white p-2 rounded-xl shadow-sm border ${isHabis ? 'border-red-200 cursor-not-allowed opacity-50 grayscale' : 'border-gray-200 cursor-pointer hover:border-amber-500 transition'} relative" onclick="${isHabis ? "alert('Habis!');" : `window.isPosKasirActive = true; window.openMenuDetail('${m.id}');`}">
+                ${isHabis ? `<span class="absolute top-2 right-2 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded z-10">HABIS</span>` : ''}
+                <img src="${m.img}" class="w-full aspect-square object-cover rounded-lg mb-1">
+                <h4 class="text-[10px] font-black leading-tight text-gray-900 line-clamp-1">${m.nama}</h4>
+                <p class="text-[9px] font-black text-amber-600">${window.formatRupiah(m.hargaDiskon)}</p>
+            </div>`;
+        }).join('');
+    };
+
+    // Modifikasi ulang struktur HTML POS Internal
+    const posCheckoutArea = document.querySelector('#modal-pos-internal .flex-1.flex.flex-col');
+    if (posCheckoutArea) {
+        posCheckoutArea.innerHTML = `
+            <div class="flex-1 overflow-hidden flex flex-col p-3">
+                <div class="flex gap-2 mb-3 overflow-x-auto hide-scrollbar pb-1">
+                    <button onclick="window.filterPOS('semua')" class="px-3 py-1.5 bg-gray-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap">Semua</button>
+                    <button onclick="window.filterPOS('coffee')" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-[10px] font-bold rounded-lg whitespace-nowrap">Coffee</button>
+                    <button onclick="window.filterPOS('non-coffee')" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-[10px] font-bold rounded-lg whitespace-nowrap">Non-Coffee</button>
+                    <button onclick="window.filterPOS('snack')" class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-[10px] font-bold rounded-lg whitespace-nowrap">Snack</button>
+                </div>
+                <div id="pos-internal-grid" class="grid grid-cols-3 md:grid-cols-4 gap-2 overflow-y-auto pr-1 pb-10"></div>
+            </div>
+            
+            <div class="w-full md:w-80 bg-white border-t md:border-l border-gray-200 flex flex-col shadow-inner">
+                <div id="pos-internal-cart" class="flex-1 overflow-y-auto p-3 space-y-2 min-h-[150px]"></div>
+                
+                <div class="p-4 border-t border-gray-200 bg-white shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
+                    <div class="flex justify-between font-black text-lg text-gray-900 mb-2"><span>TOTAL</span><span id="pos-internal-total" class="text-amber-500">Rp 0</span></div>
+                    
+                    <input type="text" id="pos-nama-pelanggan" placeholder="Nama Cust..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold mb-2 outline-none">
+                    <select id="pos-tipe-bayar" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold mb-2 outline-none" onchange="window.toggleKalkulatorPOS()">
+                        <option value="Tunai">Tunai</option>
+                        <option value="QRIS Resto">QRIS</option>
+                    </select>
+                    
+                    <div id="pos-kalkulator" class="bg-blue-50 p-2.5 rounded-lg border border-blue-200 mb-3 transition-all">
+                        <label class="text-[9px] font-black text-blue-800 block mb-1">UANG DITERIMA</label>
+                        <div class="flex gap-1 mb-2">
+                            <button onclick="window.setUangCepat(window.posInternalTotal)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-1.5 rounded shadow-sm hover:bg-blue-100">Uang Pas</button>
+                            <button onclick="window.setUangCepat(50000)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-1.5 rounded shadow-sm hover:bg-blue-100">50K</button>
+                            <button onclick="window.setUangCepat(100000)" class="flex-1 bg-white border border-blue-200 text-blue-700 text-[9px] font-black py-1.5 rounded shadow-sm hover:bg-blue-100">100K</button>
+                        </div>
+                        <input type="number" id="pos-uang-diterima" placeholder="Manual..." class="w-full bg-white border border-blue-200 rounded py-1.5 px-2 text-xs font-black outline-none mb-1" oninput="window.hitungKembalian()">
+                        <div class="flex justify-between items-end border-t border-blue-200 pt-1 mt-1">
+                            <span class="text-[9px] font-bold text-gray-500 uppercase">Kembali:</span>
+                            <span id="pos-kembalian" class="text-xs font-black text-blue-600">Rp 0</span>
+                        </div>
+                    </div>
+                    <button onclick="window.checkoutPOSInternal()" class="w-full bg-amber-500 text-white font-black py-3 rounded-xl shadow-md hover:bg-amber-600 text-xs">PROSES PESANAN</button>
+                </div>
+            </div>
+        `;
+    }
+
+    window.bukaPOS = function() {
+        window.filterPOS('semua');
+        if(typeof window.renderPOSInternalCart === 'function') window.renderPOSInternalCart();
+        if(typeof window.toggleKalkulatorPOS === 'function') window.toggleKalkulatorPOS(); 
+        document.getElementById('modal-pos-internal').classList.remove('hidden');
+        document.getElementById('modal-pos-internal').classList.add('flex');
+    };
+
+
+    // --- 3. FIX EDIT WEB (LOGO, TOGGLE, 3 SOSMED) ---
+    const panelWeb = document.querySelector('#panel-edit-web .flex-1');
+    if (panelWeb) {
+        panelWeb.innerHTML = `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 space-y-4">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2"><i class="fa-solid fa-store text-amber-500 mr-2"></i> Pengaturan Toko</h3>
+                
+                <!-- Saklar Toko & Audio (Dikembalikan) -->
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <input type="checkbox" id="ew-toko-buka" class="w-5 h-5 accent-amber-500" ${window.systemConfig.tokoBuka ? 'checked' : ''}>
+                        <span class="text-xs font-bold text-gray-700">Toko Buka</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <input type="checkbox" id="ew-audio" class="w-5 h-5 accent-blue-500" ${window.systemConfig.audioAktif ? 'checked' : ''}>
+                        <span class="text-xs font-bold text-gray-700">Audio Kasir</span>
+                    </label>
+                </div>
+
+                <div><label class="text-[10px] font-bold text-gray-500 block mb-1">Nomor WA Resto</label><input type="number" id="ew-wa" value="${window.systemConfig.nomorWA || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none"></div>
+                
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                    <label class="text-[10px] font-black text-amber-800 block mb-2">LOGO RESTO (URL / UPLOAD)</label>
+                    <input type="text" id="ew-logo" value="${window.systemConfig.logoUrl || ''}" class="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-xs outline-none mb-2">
+                    <input type="file" accept="image/*" class="w-full text-[10px]" onchange="window.handleImageUpload(this, 'ew-logo')">
+                </div>
+
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                    <label class="text-[10px] font-black text-blue-800 block mb-2">GAMBAR QRIS (URL / UPLOAD)</label>
+                    <input type="text" id="ew-qris" value="${window.systemConfig.qrisUrl || ''}" class="w-full bg-white border border-blue-300 rounded-xl p-2.5 text-xs outline-none mb-2">
+                    <input type="file" accept="image/*" class="w-full text-[10px]" onchange="window.handleImageUpload(this, 'ew-qris')">
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2 mb-3"><i class="fa-solid fa-link text-pink-500 mr-2"></i> Link Sosial Media</h3>
+                <div class="space-y-3">
+                    <div><label class="text-[10px] font-bold text-pink-600 block mb-1"><i class="fa-brands fa-instagram mr-1"></i> Instagram Link</label><input type="text" id="ew-ig" value="${window.systemConfig.linkIG || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-pink-500"></div>
+                    <div><label class="text-[10px] font-bold text-blue-600 block mb-1"><i class="fa-brands fa-facebook mr-1"></i> Facebook Link</label><input type="text" id="ew-fb" value="${window.systemConfig.linkFB || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-500"></div>
+                    <div><label class="text-[10px] font-bold text-gray-900 block mb-1"><i class="fa-brands fa-tiktok mr-1"></i> TikTok / X Link</label><input type="text" id="ew-tt" value="${window.systemConfig.linkTT || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-gray-500"></div>
+                </div>
+            </div>
+            <button onclick="window.simpanWebPastiJalan()" class="w-full bg-gray-900 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition text-sm">SIMPAN PENGATURAN</button>
+        `;
+    }
+
+    // Fungsi Simpan Mutlak (Memperbarui DOM secara langsung)
+    window.simpanWebPastiJalan = function() {
+        window.systemConfig.tokoBuka = document.getElementById('ew-toko-buka').checked;
+        window.systemConfig.audioAktif = document.getElementById('ew-audio').checked;
+        window.systemConfig.nomorWA = document.getElementById('ew-wa').value;
+        window.systemConfig.linkIG = document.getElementById('ew-ig').value;
+        window.systemConfig.linkFB = document.getElementById('ew-fb').value;
+        window.systemConfig.linkTT = document.getElementById('ew-tt').value;
+        
+        const logo = document.getElementById('ew-logo').value;
+        if(logo) { 
+            window.systemConfig.logoUrl = logo; 
+            const imgEl = document.getElementById('header-logo-img');
+            if(imgEl) { imgEl.src = logo; imgEl.classList.remove('hidden'); }
+            const iconEl = document.getElementById('header-logo-icon');
+            if(iconEl) iconEl.classList.add('hidden');
+        }
+        
+        const qris = document.getElementById('ew-qris').value;
+        if(qris) window.systemConfig.qrisUrl = qris; // QRIS akan otomatis ditarik saat modal QRIS dibuka
+
+        // Update status toko di UI Customer
+        const statusEl = document.getElementById('store-status');
+        if(statusEl) {
+            statusEl.innerHTML = window.systemConfig.tokoBuka 
+                ? `<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> BUKA` 
+                : `<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> TUTUP`;
+            statusEl.className = window.systemConfig.tokoBuka ? "flex items-center gap-1 mt-1 text-[10px] font-extrabold text-green-600" : "flex items-center gap-1 mt-1 text-[10px] font-extrabold text-red-600";
+        }
+
+        localStorage.setItem('mainstayConfig', JSON.stringify(window.systemConfig));
+        alert("Berhasil! Konfigurasi Web tersimpan dan langsung diterapkan.");
+    };
+
+
+    // --- 4. MASTER STOK (TAMBAH SATUAN & LOG AUDIT DI OWNER) ---
+    // Update fungsi Tambah/Edit Barang Owner agar mencakup Satuan
+    window.tambahBarangOwner = function() {
+        const namaBaru = prompt("Masukkan NAMA barang baru:");
+        if(!namaBaru) return;
+        const satuan = prompt("Masukkan SATUAN (Misal: cup, gram, kg, pcs):", "pcs");
+        const jumlahAwal = prompt("Masukkan JUMLAH stok awal:", "0");
+        
+        if(!window.stokBarangDB) window.stokBarangDB = [];
+        window.stokBarangDB.push({ id: 's_' + Date.now(), nama: namaBaru, satuan: satuan || 'pcs', jumlah: parseInt(jumlahAwal) || 0 });
+        
+        localStorage.setItem('stokBarangMainstay', JSON.stringify(window.stokBarangDB));
+        window.renderStokOwner();
+    };
+
+    window.renderStokOwner = function() {
+        const list = document.getElementById('owner-stok-list');
+        const logArea = document.getElementById('owner-stok-log-area'); // Area log
+        if(!list) return;
+
+        // Render List Barang
+        if(!window.stokBarangDB || window.stokBarangDB.length === 0) {
+            list.innerHTML = `<p class="text-center text-xs text-gray-400 py-4 font-bold">Belum ada barang.</p>`;
+        } else {
+            list.innerHTML = window.stokBarangDB.map((item, idx) => `
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex justify-between items-center">
+                    <button onclick="window.hapusBarangOwner(${idx})" class="text-red-500 hover:text-red-700 bg-red-50 w-6 h-6 rounded flex items-center justify-center mr-3"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                    <div class="flex-1">
+                        <p class="text-xs font-black text-gray-800 mb-0.5">${item.nama}</p>
+                        <p class="text-[10px] font-bold text-gray-500">Stok: <span class="text-indigo-600 font-black">${item.jumlah} ${item.satuan || 'pcs'}</span></p>
+                    </div>
+                    <button onclick="window.editBarangOwner(${idx})" class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200">Edit</button>
+                </div>
+            `).join('');
+        }
+
+        // Render Log Audit (Sama dengan Kasir, tapi di layar Owner)
+        if(logArea) {
+            if(!window.stokLogDB || window.stokLogDB.length === 0) {
+                logArea.innerHTML = `<p class="text-[10px] text-gray-400">Belum ada riwayat update stok.</p>`;
+            } else {
+                logArea.innerHTML = window.stokLogDB.map(log => `
+                    <div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-lg mb-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[9px] font-black text-indigo-800">${log.aktor}</span>
+                            <span class="text-[8px] font-bold text-gray-500">${log.waktu}</span>
+                        </div>
+                        <p class="text-[9px] text-gray-700 font-bold">${log.perubahan}</p>
+                    </div>
+                `).join('');
+            }
+        }
+    };
+
+    // Tambahkan HTML Log Area ke Panel Stok Owner jika belum ada
+    const panelStok = document.querySelector('#panel-stok .flex-1');
+    if(panelStok && !document.getElementById('owner-stok-log-area')) {
+        panelStok.insertAdjacentHTML('beforeend', `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm font-black text-gray-900 border-b border-gray-100 pb-2 mb-3"><i class="fa-solid fa-clock-rotate-left text-indigo-500 mr-2"></i> Riwayat Audit Stok</h3>
+                <div id="owner-stok-log-area" class="max-h-[300px] overflow-y-auto hide-scrollbar"></div>
+            </div>
+        `);
+    }
+
+
+    // --- 5. CRM: TAMBAH PELANGGAN MANUAL & RIWAYAT ---
+    const panelMember = document.querySelector('#panel-member .flex-1');
+    if (panelMember && !document.getElementById('btn-tambah-pelanggan')) {
+        // Rombak Header Member untuk Tambah Tombol
+        panelMember.innerHTML = `
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
+                    <h3 class="text-sm font-black text-gray-900 flex items-center gap-2"><i class="fa-solid fa-users text-green-500"></i> Database Pelanggan</h3>
+                    <button id="btn-tambah-pelanggan" onclick="window.tambahPelangganManual()" class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-green-200 transition"><i class="fa-solid fa-plus"></i> Tambah</button>
+                </div>
+                <div class="space-y-3" id="tabel-crm-list"></div>
+            </div>
+        `;
+    }
+
+    window.tambahPelangganManual = function() {
+        const nama = prompt("Masukkan Nama Pelanggan:");
+        if(!nama) return;
+        const wa = prompt("Masukkan Nomor WA (Gunakan 628...):", "62");
+        const status = confirm("Jadikan sebagai Member VIP?") ? "Member" : "Non-Member";
+        
+        if(!window.databaseMember) window.databaseMember = [];
+        window.databaseMember.push({
+            nama: nama,
+            wa: wa || "Tidak mencantumkan WA",
+            tanggal: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
+            status: status
+        });
+        localStorage.setItem('dbMemberMainstay', JSON.stringify(window.databaseMember));
+        window.renderTabelMember();
+        alert("Berhasil menambahkan pelanggan!");
+    };
+
+    // Override Render Tabel Member dengan Tombol Riwayat
+    window.renderTabelMember = function() {
+        const container = document.getElementById('tabel-crm-list');
+        if(!container) return;
+        
+        if(!window.databaseMember || window.databaseMember.length === 0) {
+            container.innerHTML = `<div class="text-center py-6 text-gray-400"><p class="text-sm font-bold">Belum ada data pelanggan.</p></div>`;
+            return;
+        }
+
+        container.innerHTML = window.databaseMember.map(m => `
+            <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                    <h4 class="font-black text-sm text-gray-900">${m.nama}</h4>
+                    <p class="text-[10px] text-gray-500 font-bold mb-1.5"><i class="fa-solid fa-phone mr-1"></i> ${m.wa} | Terakhir: ${m.tanggal}</p>
+                    ${m.status === 'Member' ? '<span class="bg-green-100 text-green-600 px-2 py-0.5 rounded text-[9px] font-black uppercase"><i class="fa-solid fa-crown mr-1"></i> Member</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[9px] font-black uppercase">Reguler</span>'}
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.lihatRiwayatPelanggan('${m.wa}')" class="text-[9px] font-black text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-500 hover:text-white transition"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Cek Riwayat</button>
+                    ${(m.wa && m.wa.length > 5) ? `<a href="https://wa.me/${m.wa}" target="_blank" class="w-8 h-8 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition border border-green-200"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+                </div>
+            </div>
+        `).join('');
+    };
+
+    // Fungsi Melihat Riwayat Pembelian dari Database (Pencarian sederhana berdasar Nomor WA)
+    window.lihatRiwayatPelanggan = function(waTarget) {
+        if(waTarget === 'Tidak mencantumkan WA' || waTarget === '-') return alert("Pelanggan ini tidak memiliki histori WA.");
+        
+        // Cari di pesanan masuk, dapur, dan selesai
+        const gabunganOrder = [...window.pesananMasukDB, ...window.pesananDapurDB, ...window.pesananSelesaiDB];
+        const histori = gabunganOrder.filter(o => o.phone === waTarget);
+
+        if(histori.length === 0) {
+            alert("Belum ada riwayat transaksi yang tercatat hari ini untuk pelanggan ini.");
+        } else {
+            let info = `RIWAYAT PESANAN (HARI INI)\nWa: ${waTarget}\n--------------------------\n`;
+            histori.forEach(h => {
+                info += `> ${h.noAntrean} | Total: ${window.formatRupiah(h.totalBayar)}\n`;
+                h.items.forEach(i => { info += `   - ${i.qty}x ${i.nama}\n`; });
+            });
+            alert(info);
+        }
+    };
+
+});
