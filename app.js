@@ -6473,3 +6473,168 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
 });
+// ============================================================================
+// 61. FIX: ULTRA-COMPACT CLOCK, UNIVERSAL OWNER PIN, & Z-INDEX ABSENSI
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+
+    // --- 1. FIX JAM: SUPER MINIMALIS, MURNI TEKS, TANPA KOTAK BACKGROUND ---
+    window.updateClock = function() {
+        const now = new Date();
+        const hari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][now.getDay()];
+        const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()];
+        const tgl = `${hari}, ${String(now.getDate()).padStart(2,'0')} ${bln} ${now.getFullYear()}`;
+        const jam = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} WIB`;
+
+        const el = document.getElementById('live-clock');
+        if (el) {
+            // HAPUS semua background, border, dan padding yang bikin bengkak!
+            el.className = "text-right ml-auto flex flex-col justify-center shrink-0";
+            
+            // Suntik teks murni dengan ukuran yang sangat kecil (9px dan 11px)
+            el.innerHTML = `
+                <span style="font-size: 9px; font-weight: 700; color: #6b7280; line-height: 1;">${tgl}</span>
+                <span style="font-size: 11px; font-weight: 900; color: #d97706; line-height: 1; margin-top: 2px;">${jam}</span>
+            `;
+        }
+    };
+    window.updateClock();
+
+
+    // --- 2. FIX POP-UP ABSENSI (AGAR TIDAK TENGGELAM DI BELAKANG BLUR) ---
+    const originalBukaAbsensi = window.bukaAbsensi;
+    window.bukaAbsensi = function() {
+        if(typeof originalBukaAbsensi === 'function') originalBukaAbsensi(); // Panggil fungsi aslinya
+        
+        const modalAbsen = document.getElementById('modal-absensi');
+        if (modalAbsen) {
+            // PAKSA pop-up kamera melompat ke lapisan paling depan (z-[9999]) menembus gembok blur
+            modalAbsen.classList.remove('z-50', 'z-[100]', 'z-40');
+            modalAbsen.classList.add('z-[9999]');
+        }
+    };
+
+
+    // --- 3. FIX PROFIL OWNER: TAMBAH KOLOM PIN & SATUKAN LOGIKA LOGIN ---
+    
+    // Tulis ulang bentuk Modal Form Owner agar ada kolom PIN
+    const modalFormOwner = document.getElementById('modal-form-owner');
+    if (modalFormOwner) {
+        modalFormOwner.innerHTML = `
+        <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative flex flex-col">
+            <h2 class="text-lg font-black text-amber-500 mb-4 border-b border-gray-700 pb-3"><i class="fa-solid fa-crown"></i> Edit Profil Owner</h2>
+            <div class="space-y-3 mb-4">
+                <div><label class="text-[10px] font-bold text-gray-400 block mb-1">NAMA OWNER</label><input type="text" id="owner-nama" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 text-xs font-bold outline-none focus:border-amber-500"></div>
+                <div><label class="text-[10px] font-bold text-amber-500 block mb-1">PIN LOGIN (UNTUK PANEL & KASIR)</label><input type="text" id="owner-pin" class="w-full bg-gray-800 border border-amber-500/50 text-white rounded-lg p-2.5 text-xs font-bold outline-none focus:border-amber-500 tracking-widest"></div>
+                <div><label class="text-[10px] font-bold text-gray-400 block mb-1">NOMOR WA</label><input type="number" id="owner-wa" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 text-xs font-bold outline-none focus:border-amber-500"></div>
+                <div><label class="text-[10px] font-bold text-gray-400 block mb-1">REKENING / E-WALLET</label><input type="text" id="owner-rek" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 text-xs font-bold outline-none focus:border-amber-500"></div>
+                <div><label class="text-[10px] font-bold text-gray-400 block mb-1">FOTO PROFIL (URL)</label><input type="text" id="owner-foto" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 text-xs outline-none focus:border-amber-500"></div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="window.tutupFormOwner()" class="flex-1 bg-gray-700 text-white font-black py-3 rounded-xl hover:bg-gray-600 transition text-sm">BATAL</button>
+                <button onclick="window.simpanFormOwnerMutlak()" class="flex-1 bg-amber-500 text-gray-900 font-black py-3 rounded-xl hover:bg-amber-600 transition text-sm">SIMPAN</button>
+            </div>
+        </div>`;
+    }
+
+    // Buka Modal dengan data PIN
+    window.bukaFormOwner = function() {
+        window.ownerProfile = JSON.parse(localStorage.getItem('ownerProfileMainstay')) || { nama: 'Master Owner', pin: '888888', foto: '', wa: '628977099557', rekening: '' };
+        document.getElementById('owner-nama').value = window.ownerProfile.nama || '';
+        document.getElementById('owner-pin').value = window.ownerProfile.pin || '888888';
+        document.getElementById('owner-wa').value = window.ownerProfile.wa || '';
+        document.getElementById('owner-rek').value = window.ownerProfile.rekening || '';
+        document.getElementById('owner-foto').value = window.ownerProfile.foto || '';
+        
+        const modal = document.getElementById('modal-form-owner');
+        if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex', 'z-[9999]'); }
+    };
+
+    // Simpan Modal beserta PIN Baru
+    window.simpanFormOwnerMutlak = function() {
+        const nama = document.getElementById('owner-nama').value;
+        const pin = document.getElementById('owner-pin').value;
+        const wa = document.getElementById('owner-wa').value;
+        const rek = document.getElementById('owner-rek').value;
+        const foto = document.getElementById('owner-foto').value;
+
+        if(!nama || !pin) return alert("Nama dan PIN tidak boleh kosong!");
+
+        window.ownerProfile = { nama, pin, wa, rekening: rek, foto };
+        localStorage.setItem('ownerProfileMainstay', JSON.stringify(window.ownerProfile));
+        
+        const displayNamaHRD = document.getElementById('owner-nama-display');
+        const displayFotoHRD = document.getElementById('owner-foto-display');
+        if (displayNamaHRD) displayNamaHRD.textContent = nama;
+        if (displayFotoHRD && foto) displayFotoHRD.src = foto;
+        if (typeof window.updateGreetingOwner === 'function') window.updateGreetingOwner();
+
+        window.tutupFormOwner();
+        alert("Profil dan PIN Owner sukses di-update! Gunakan PIN ini untuk Login Panel dan Login Kasir.");
+    };
+
+
+    // --- 4. PENYATUAN LOGIN (PIN SAMA UNTUK PANEL MASTER & KASIR) ---
+    
+    // A. Login Panel Master (Owner)
+    window.prosesLogin = function() {
+        const pinInput = document.getElementById('login-pin');
+        if(!pinInput) return;
+        const pin = pinInput.value;
+        
+        // Cek PIN dari data Profil Owner (Default: 888888)
+        const ownerData = JSON.parse(localStorage.getItem('ownerProfileMainstay')) || {};
+        const pinBos = ownerData.pin || '888888'; 
+
+        if (pin === pinBos) {
+            localStorage.setItem('sesiMainstay', 'owner');
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-owner').classList.remove('hidden');
+            window.playAudio('siap');
+            if (typeof window.updateStatistikOwner === 'function') window.updateStatistikOwner();
+        } else {
+            alert("PIN Master Salah!");
+        }
+    };
+
+    // B. Login Kasir (Deteksi jika Owner yang masuk)
+    window.prosesLoginKasir = function() {
+        const pin = document.getElementById('login-kasir-pin').value;
+        if (!pin) return alert("Harap masukkan PIN!");
+
+        // Cek PIN dari data Profil Owner yang SAMA persis
+        const ownerData = JSON.parse(localStorage.getItem('ownerProfileMainstay')) || {};
+        const pinBos = ownerData.pin || '888888'; 
+
+        if (pin === pinBos) {
+            // JIKA BOS YANG MASUK KASIR
+            localStorage.setItem('sesiMainstay', 'owner-kasir'); 
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-kasir').classList.remove('hidden');
+            
+            if(typeof window.renderListKasir === 'function') window.renderListKasir();
+            if(typeof window.setupHeaderKasir === 'function') window.setupHeaderKasir();
+            
+            // HANCURKAN GEMBOK ABSENSI
+            const overlay = document.getElementById('kasir-lock-overlay');
+            if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+            
+            window.playAudio('siap');
+        } else {
+            // JIKA STAF YANG MASUK
+            const staf = window.dbStaf ? window.dbStaf.find(s => s.pin === pin) : null;
+            if(staf) {
+                localStorage.setItem('sesiMainstay', 'kasir');
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-kasir').classList.remove('hidden');
+                if(typeof window.renderListKasir === 'function') window.renderListKasir();
+                if(typeof window.setupHeaderKasir === 'function') window.setupHeaderKasir();
+                window.playAudio('siap');
+            } else {
+                alert("PIN Salah atau tidak terdaftar di HRD!");
+            }
+        }
+    };
+
+});
