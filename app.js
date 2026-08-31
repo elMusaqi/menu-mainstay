@@ -2377,3 +2377,124 @@ window.closeLoginModal = function() {
     const pinInput = document.getElementById('login-pin') || document.querySelector('input[type="password"]');
     if (pinInput) pinInput.value = ''; // Kosongkan saat ditutup
 };
+// ============================================================================
+// PATCH GERBANG KEAMANAN (SECURITY GATE & AUTHENTICATION LOCK)
+// ============================================================================
+
+// 1. STATUS GEMBOK UTAMA
+window.isAuthenticated = false;
+
+// Simpan fungsi pindah layar yang asli
+if (!window.switchLayarAsliTanpaGembok) {
+    window.switchLayarAsliTanpaGembok = window.switchRoleView;
+}
+
+// 2. FUNGSI CEGAT (MENCEGAH TEROBOSAN DARI TOMBOL HTML)
+window.switchRoleView = function(role) {
+    // Jika ada yang mencoba masuk ke Owner atau Kasir TAPI status gembok belum dibuka...
+    if ((role === 'owner' || role === 'kasir') && window.isAuthenticated === false) {
+        
+        // Tetapkan target login
+        window.targetLoginRole = role; 
+        
+        // Paksa buka Pop-Up Login
+        const modal = document.getElementById('modal-login');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            const pinInput = document.getElementById('login-pin') || document.querySelector('input[type="password"]');
+            if (pinInput) pinInput.value = ''; // Kosongkan input
+            
+            const errorEl = document.getElementById('login-error');
+            if (errorEl) errorEl.classList.add('hidden');
+        } else {
+            alert("Sistem Keamanan Aktif: Harap buat elemen 'modal-login' di HTML Anda.");
+        }
+        
+        // HENTIKAN PROSES PINDAH LAYAR DI SINI! (Hacker/Tombol di-blokir)
+        return; 
+    }
+
+    // Jika user menekan tombol "Kembali ke Customer / Keluar"
+    if (role === 'customer') {
+        window.isAuthenticated = false; // Kunci kembali gemboknya
+        window.isKasirMode = false;
+        localStorage.removeItem('isOwnerInKasir');
+    }
+
+    // Jika sudah lewat login (Gembok Terbuka), izinkan pindah layar
+    window.switchLayarAsliTanpaGembok(role);
+};
+
+// 3. FUNGSI LOGIN (YANG MEMBERIKAN KUNCI JIKA PIN BENAR)
+window.prosesLogin = function() {
+    const pinInput = document.getElementById('login-pin') || document.querySelector('input[type="password"]');
+    const pin = pinInput ? pinInput.value : '';
+    const errorEl = document.getElementById('login-error');
+
+    if (!pin) {
+        if (errorEl) { errorEl.classList.remove('hidden'); errorEl.innerText = "Harap masukkan PIN!"; }
+        return;
+    }
+
+    // Backup jika memori kosong
+    if (!window.profilOwner || !window.profilOwner.pin) {
+        window.profilOwner = { nama: "Master Owner", pin: "888888" };
+    }
+
+    // JALUR SUPER ADMIN DARURAT
+    if (pin === '999999') {
+         window.profilOwner.pin = '888888';
+         localStorage.setItem('mainstay_dbOwner', JSON.stringify(window.profilOwner));
+         window.closeLoginModal();
+         window.isAuthenticated = true; // BUKA GEMBOK!
+         window.switchRoleView('owner');
+         alert("SISTEM RESCUE AKTIF!\nPIN Master Owner telah di-reset menjadi: 888888");
+         return;
+    }
+
+    const staf = window.databaseStaf ? window.databaseStaf.find(s => s.pin === pin) : null;
+
+    // JIKA PIN BENAR
+    if (pin === window.profilOwner.pin) {
+        window.closeLoginModal();
+        window.isAuthenticated = true; // BUKA GEMBOK!
+        
+        if (window.targetLoginRole === 'kasir') {
+            localStorage.setItem('isOwnerInKasir', 'true');
+            window.isKasirMode = true; 
+            window.switchRoleView('kasir');
+            document.getElementById('kasir-blocker')?.classList.add('hidden');
+        } else {
+            window.switchRoleView('owner');
+        }
+    } else if (staf && window.targetLoginRole === 'kasir') {
+        window.closeLoginModal();
+        window.isAuthenticated = true; // BUKA GEMBOK!
+        
+        localStorage.setItem('isOwnerInKasir', 'false');
+        window.isKasirMode = true; 
+        window.switchRoleView('kasir');
+        
+        let stafHadir = JSON.parse(localStorage.getItem('stafHadirMainstay')) || [];
+        if (stafHadir.length > 0) document.getElementById('kasir-blocker')?.classList.add('hidden');
+        else document.getElementById('kasir-blocker')?.classList.remove('hidden');
+    } else {
+        // JIKA PIN SALAH
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+            errorEl.innerText = "PIN Salah atau Akses Ditolak!";
+        } else {
+            alert("PIN Salah atau Tidak Terdaftar!");
+        }
+    }
+};
+
+window.closeLoginModal = function() {
+    const modal = document.getElementById('modal-login');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+};
