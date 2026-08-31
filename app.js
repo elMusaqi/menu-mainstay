@@ -3202,3 +3202,301 @@ window.updateCartFloat = function() {
     if(typeof originalUpdateCartFloatLama === 'function') originalUpdateCartFloatLama();
     window.updatePOSCartSummary(); // Segarkan tampilan footer kasir juga
 };
+// ============================================================================
+// PATCH PENYELAMAT: INJEKSI MODAL LOGIN, ABSENSI & DUMMY MENU
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. INJEKSI MODAL LOGIN (Wujud Pop-Up Masukkan PIN)
+    if (!document.getElementById('modal-login')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div id="modal-login" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] hidden items-center justify-center p-4">
+            <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col transform transition-all">
+                <div class="px-6 py-4 bg-gray-900 flex justify-between items-center text-white">
+                    <h2 class="font-black text-lg"><i class="fa-solid fa-lock text-amber-500 mr-2"></i> Otorisasi Sistem</h2>
+                    <button onclick="window.closeLoginModal()" class="w-8 h-8 bg-gray-800 rounded-full hover:bg-red-500 transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="p-6 bg-slate-50">
+                    <p class="text-xs font-bold text-gray-500 mb-4 text-center">Masukkan PIN untuk melanjutkan</p>
+                    <input type="password" id="login-pin" class="w-full bg-white border-2 border-gray-200 rounded-2xl p-4 text-center text-2xl font-black tracking-widest focus:border-amber-500 mb-2 shadow-sm" placeholder="******" maxlength="6" inputmode="numeric">
+                    <p id="login-error" class="text-xs font-black text-red-500 text-center hidden mb-4 bg-red-50 py-2 rounded-lg">PIN Salah!</p>
+                    <button onclick="window.prosesLogin()" class="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-amber-600 transition">MASUK</button>
+                </div>
+            </div>
+        </div>
+        `);
+    }
+
+    // 2. INJEKSI MODAL ABSENSI KAMERA (Wujud Pop-Up Verifikasi Wajah)
+    if (!document.getElementById('modal-absensi')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div id="modal-absensi" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[999] hidden flex-col items-center justify-center p-4">
+            <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-black text-lg text-gray-900"><i class="fa-solid fa-camera text-blue-500 mr-2"></i> Verifikasi Kehadiran</h2>
+                    <button onclick="window.closeAbsensi()" class="w-8 h-8 bg-gray-100 rounded-full text-gray-600 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="relative w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden mb-4 border-4 border-dashed border-gray-200 flex items-center justify-center">
+                    <div id="camera-loading" class="text-gray-400 font-bold text-xs text-center"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 block"></i> Membuka Kamera...</div>
+                    <video id="attendance-video" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
+                </div>
+                <input type="password" id="absen-pin" class="w-full bg-slate-50 border-2 border-gray-200 rounded-2xl p-3 text-center text-lg font-black tracking-widest focus:border-blue-500 mb-4" placeholder="Ketik PIN Staf" maxlength="6" inputmode="numeric">
+                <button onclick="window.prosesAbsen('Masuk')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 transition shadow-lg"><i class="fa-solid fa-camera mr-2"></i> MULAI ABSEN MASUK</button>
+            </div>
+        </div>
+        `);
+    }
+
+    // 3. INJEKSI MENU PANCINGAN & RENDER PAKSA (Agar halaman Customer tidak kosong)
+    setTimeout(() => {
+        // Jika database menu benar-benar kosong, isi dengan 2 menu dummy
+        if (window.katalogMenu.length === 0) {
+            window.katalogMenu = [
+                { id: "M1", nama: "Es Teh Manis Pancingan", kategori: "tea", harga: 5000, stok: 100, image: "", opsiTopping: [] },
+                { id: "M2", nama: "Kopi Susu Pancingan", kategori: "coffee", harga: 15000, stok: 100, image: "", opsiTopping: [] }
+            ];
+            localStorage.setItem('mainstay_dbMenu', JSON.stringify(window.katalogMenu));
+        }
+        
+        // Panggil fungsi render agar gambar langsung muncul di layar!
+        if (typeof window.renderKatalog === 'function') window.renderKatalog();
+        if (typeof window.renderKategoriFilter === 'function') window.renderKategoriFilter();
+    }, 800); // Diberi jeda sedikit agar HTML selesai memuat
+
+});
+// ============================================================================
+// PATCH KESEMPURNAAN (TERAPKAN 6 PERBAIKAN SEKALIGUS)
+// ============================================================================
+
+// [PERBAIKAN 1]: FUNGSI SUARA KASIR (BEEP) TANPA FILE AUDIO EKSTERNAL
+window.playAudio = function(type) {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        if (type === 'masuk') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, ctx.currentTime); // Nada tinggi kasir
+            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1); // Durasi 0.1 detik
+        } else if (type === 'error') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(300, ctx.currentTime); // Nada rendah error
+            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        }
+    } catch(e) { console.log("Audio tidak didukung di perangkat ini."); }
+};
+
+// [PERBAIKAN 2]: KOMPRESI FOTO OTOMATIS AGAR MEMORI BROWSER TIDAK JEBOL
+window.prosesUploadGambar = function(event, targetInputId, previewImgId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 500; // Ukuran foto dikecilkan paksa maksimal 500px
+            const scaleSize = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Kompresi ke format JPEG dengan kualitas 60%
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+            
+            const inputEl = document.getElementById(targetInputId);
+            if (inputEl) { inputEl.value = compressedBase64; inputEl.dispatchEvent(new Event('input', { bubbles: true })); }
+            const previewImg = document.getElementById(previewImgId);
+            if (previewImg) { previewImg.src = compressedBase64; previewImg.classList.remove('hidden'); if(previewImg.nextElementSibling) previewImg.nextElementSibling.classList.add('hidden'); }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+// [PERBAIKAN 3]: LOGIKA KETERLAMBATAN SHIFT PADA SAAT ABSEN MASUK
+window.prosesAbsen = function(tipe) {
+    const pin = document.getElementById('absen-pin')?.value;
+    const staf = window.databaseStaf.find(s => s.pin === pin);
+    if (!staf) return alert("PIN Tidak Terdaftar!");
+    
+    let stafHadir = JSON.parse(localStorage.getItem('stafHadirMainstay')) || [];
+    if (tipe === 'Masuk' && stafHadir.includes(staf.nama)) {
+        if(typeof window.playAudio === 'function') window.playAudio('error'); 
+        return alert(`DITOLAK!\n${staf.nama} sudah Absen Masuk.`);
+    }
+    if ((tipe === 'Keluar' || tipe === 'Pulang') && !stafHadir.includes(staf.nama)) {
+        if(typeof window.playAudio === 'function') window.playAudio('error'); 
+        return alert(`DITOLAK!\n${staf.nama} tidak terdeteksi dalam shift.`);
+    }
+
+    let fotoWajah = "";
+    const video = document.getElementById('attendance-video');
+    if (video && !video.classList.contains('hidden')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 300; canvas.height = video.videoHeight * (300 / video.videoWidth);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        fotoWajah = canvas.toDataURL('image/jpeg', 0.4); 
+    }
+    
+    let durasiKerja = "-";
+    
+    // Perbandingan waktu absen vs jadwal shift
+    if (tipe === 'Masuk' && staf.shift && staf.shift.includes('-')) {
+        const jamMulai = staf.shift.split('-')[0].trim();
+        const [jamTarget, menitTarget] = jamMulai.split(':');
+        const waktuTarget = new Date();
+        waktuTarget.setHours(jamTarget, menitTarget, 0, 0);
+        const selisihMenit = Math.floor((new Date() - waktuTarget) / 60000);
+        
+        if (selisihMenit > 15) durasiKerja = `Terlambat ${selisihMenit} Menit`; 
+        else if (selisihMenit < -15) durasiKerja = `Lebih Awal ${Math.abs(selisihMenit)} Menit`;
+        else durasiKerja = "Tepat Waktu";
+    }
+    else if (tipe === 'Keluar' || tipe === 'Pulang') {
+        const riwayat = JSON.parse(localStorage.getItem('mainstay_dbAbsen')) || [];
+        const absenMasukTerakhir = riwayat.slice().reverse().find(l => l.nama === staf.nama && l.tipe === 'Masuk');
+        if (absenMasukTerakhir) {
+            const selisihMs = new Date() - new Date(absenMasukTerakhir.waktu);
+            durasiKerja = `${Math.floor(selisihMs / 3600000)} Jam ${Math.floor((selisihMs % 3600000) / 60000)} Menit`;
+        }
+    }
+
+    const dataAbsen = { id: 'ABS' + Date.now(), waktu: new Date().toISOString(), nama: staf.nama, tipe: tipe, foto: fotoWajah, durasi: durasiKerja };
+    window.riwayatAbsensi.push(dataAbsen);
+    localStorage.setItem('mainstay_dbAbsen', JSON.stringify(window.riwayatAbsensi));
+    if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'riwayat_absen'), window.riwayatAbsensi);
+
+    if (tipe === 'Masuk') {
+        stafHadir.push(staf.nama);
+        document.getElementById('kasir-blocker')?.classList.add('hidden'); 
+    } else {
+        stafHadir = stafHadir.filter(nama => nama !== staf.nama);
+        if (stafHadir.length === 0) {
+            document.getElementById('kasir-blocker')?.classList.remove('hidden'); 
+            window.statusStokTerkunci = true; 
+            if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: window.tanggalSistemSekarang, isLocked: true });
+        }
+    }
+    
+    localStorage.setItem('stafHadirMainstay', JSON.stringify(stafHadir));
+    window.closeAbsensi();
+    
+    let pesanAlert = `Berhasil Absen ${tipe}: ${staf.nama}`;
+    if (tipe === 'Masuk' && durasiKerja.includes('Terlambat')) pesanAlert += `\n⚠️ PERHATIAN: Anda ${durasiKerja}!`;
+    else if (tipe === 'Keluar') pesanAlert += `\nKerja: ${durasiKerja}`;
+    alert(pesanAlert);
+};
+
+// [PERBAIKAN 4]: FITUR LUPA PIN OWNER (BACKDOOR RESET)
+window.prosesLogin = function() {
+    const pinInput = document.getElementById('login-pin') || document.querySelector('input[type="password"]');
+    const pin = pinInput ? pinInput.value : '';
+    const errorEl = document.getElementById('login-error');
+
+    // Kode Penyelamat jika Owner lupa PIN
+    if (pin === 'RESET88') {
+        if (!window.profilOwner) window.profilOwner = { nama: "Master Owner" };
+        window.profilOwner.pin = '888888';
+        localStorage.setItem('mainstay_dbOwner', JSON.stringify(window.profilOwner));
+        if(pinInput) pinInput.value = '';
+        alert("SISTEM PEMULIHAN AKTIF:\nPIN Owner telah di-reset kembali ke 888888. Silakan login.");
+        return;
+    }
+
+    if (!pin) {
+        if (errorEl) { errorEl.classList.remove('hidden'); errorEl.innerText = "Harap masukkan PIN!"; } return;
+    }
+
+    if (!window.profilOwner || !window.profilOwner.pin) window.profilOwner = { nama: "Master Owner", pin: "888888" };
+    const staf = window.databaseStaf ? window.databaseStaf.find(s => s.pin === pin) : null;
+
+    if (pin === window.profilOwner.pin) {
+        window.closeLoginModal();
+        window.isAuthenticated = true; 
+        if (window.targetLoginRole === 'kasir') {
+            localStorage.setItem('isOwnerInKasir', 'true');
+            window.isKasirMode = true; 
+            window.switchRoleView('kasir');
+            document.getElementById('kasir-blocker')?.classList.add('hidden');
+        } else {
+            window.switchRoleView('owner');
+        }
+    } 
+    else if (staf && window.targetLoginRole === 'kasir') {
+        window.closeLoginModal();
+        window.isAuthenticated = true; 
+        localStorage.setItem('isOwnerInKasir', 'false');
+        window.isKasirMode = true; 
+        window.switchRoleView('kasir');
+        
+        let stafHadir = JSON.parse(localStorage.getItem('stafHadirMainstay')) || [];
+        if (stafHadir.length > 0) document.getElementById('kasir-blocker')?.classList.add('hidden');
+        else document.getElementById('kasir-blocker')?.classList.remove('hidden');
+    } 
+    else {
+        if (errorEl) { errorEl.classList.remove('hidden'); errorEl.innerText = "PIN Salah atau Tidak Terdaftar!"; } 
+        else alert("PIN Salah atau Tidak Terdaftar!");
+    }
+};
+
+// [PERBAIKAN 5]: SENSOR PERGANTIAN HARI (MIDNIGHT BUG)
+document.addEventListener('DOMContentLoaded', () => {
+    setInterval(() => {
+        const dateSekarang = new Date().toLocaleDateString('id-ID');
+        if(window.tanggalSistemSekarang !== dateSekarang) {
+            window.tanggalSistemSekarang = dateSekarang;
+            // Buka gembok otomatis saat hari berganti
+            if (window.db && window.fbSet) {
+                window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: dateSekarang, isLocked: false });
+            }
+            window.statusStokTerkunci = false;
+            if(typeof window.updateTombolGembokOwner === 'function') window.updateTombolGembokOwner();
+        }
+    }, 60000); // Sensor mendeteksi setiap 1 menit (tanpa membebani memori)
+});
+
+// [PERBAIKAN 6]: FORMAT STRUK THERMAL ANTI-POTONG
+window.cetakStrukThermal = function(data) {
+    let itemHTML = ''; 
+    data.item.forEach(i => { 
+        // Penambahan CSS word-wrap dan align-items untuk teks panjang
+        itemHTML += `
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; align-items:flex-start;">
+            <span style="flex:1; padding-right:10px; word-break:break-word;">${i.nama} x${i.qty}</span>
+            <span style="font-weight:bold; white-space:nowrap;">${(i.harga * i.qty).toLocaleString('id-ID')}</span>
+        </div>`; 
+    });
+    
+    const tgl = new Date(data.waktu); 
+    const waktuLokal = `${tgl.getDate().toString().padStart(2, '0')}/${(tgl.getMonth()+1).toString().padStart(2, '0')}/${tgl.getFullYear()} ${tgl.getHours().toString().padStart(2, '0')}:${tgl.getMinutes().toString().padStart(2, '0')}`;
+    
+    const printContent = `
+        <html><head><title>Struk Mainstay</title><style>body { font-family: 'Courier New', Courier, monospace; width: 58mm; margin: 0 auto; color: #000; } h2 { text-align: center; font-size: 16px; margin-bottom: 2px; } p { text-align: center; font-size: 10px; margin-top: 0; margin-bottom: 10px; } .line { border-top: 1px dashed #000; margin: 10px 0; } .bold { font-weight: bold; }</style></head>
+        <body>
+            <h2>MAINSTAY DRINK</h2>
+            <p>Order: ${data.noStruk}<br>Oleh: ${data.kasir}<br>Plg: ${data.pelanggan}<br>${waktuLokal}</p>
+            <div class="line"></div>
+            ${itemHTML}
+            <div class="line"></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;"><span>Subtotal:</span><span>${(data.totalTagihan + data.diskon).toLocaleString('id-ID')}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:red;"><span>Diskon:</span><span>-${data.diskon.toLocaleString('id-ID')}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; margin-top:5px;" class="bold"><span>TOTAL:</span><span>${data.totalTagihan.toLocaleString('id-ID')}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px;"><span>${data.metodePembayaran}:</span><span>${data.uangDiterima.toLocaleString('id-ID')}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;"><span>Kembali:</span><span>${data.uangKembali.toLocaleString('id-ID')}</span></div>
+            <div class="line"></div>
+            <p>Terima Kasih!<br>Powered by Mainstay POS</p>
+            <script>window.onload = function() { window.print(); window.close(); }</script>
+        </body></html>`;
+    
+    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    if (printWindow) { printWindow.document.write(printContent); printWindow.document.close(); }
+};
