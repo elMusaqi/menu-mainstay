@@ -2619,3 +2619,63 @@ window.closeLoginModal = function() {
         modal.classList.remove('flex');
     }
 };
+// ============================================================================
+// URUTAN FINAL: PATCH GABUNGAN ASSET (LOGO & QRIS) + UI KASIR & TOMBOL PLUS
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. PENERAPAN OTOMATIS LOGO & QRIS DARI FOLDER ASET
+    if (!window.systemConfig) window.systemConfig = {};
+    
+    if (!window.systemConfig.logoUrl || window.systemConfig.logoUrl.trim() === '') {
+        window.systemConfig.logoUrl = 'logo-512.png'; 
+    }
+    if (!window.systemConfig.qrisUrl || window.systemConfig.qrisUrl.trim() === '') {
+        window.systemConfig.qrisUrl = 'qris-mainstay.png'; 
+    }
+
+    setTimeout(() => {
+        const imgLogo = document.getElementById('header-logo-img');
+        const imgQrisOwner = document.getElementById('qris-img-display');
+        const imgQrisKasir = document.getElementById('kasir-qris-img');
+        
+        if (imgLogo) imgLogo.src = window.systemConfig.logoUrl;
+        if (imgQrisOwner) imgQrisOwner.src = window.systemConfig.qrisUrl;
+        if (imgQrisKasir) imgQrisKasir.src = window.systemConfig.qrisUrl;
+
+        const inputLogo = document.getElementById('setting-logo');
+        const inputQris = document.getElementById('setting-qris');
+        if (inputLogo && inputLogo.value === '') inputLogo.value = window.systemConfig.logoUrl;
+        if (inputQris && inputQris.value === '') inputQris.value = window.systemConfig.qrisUrl;
+    }, 500);
+
+    // 2. MERAPIKAN IKON TOMBOL PLUS (+) KASIR AGAR TIDAK GANDA
+    const btnPlus = document.getElementById('btn-plus-order-kasir');
+    if (btnPlus) {
+        btnPlus.innerHTML = '<i class="fa-solid fa-plus text-3xl"></i>'; 
+    }
+});
+
+// 3. JUDUL KASIR KHUSUS SAAT TOMBOL PLUS DIKLIK
+const bukaOrderKasirFinal = window.bukaOrderKasir;
+window.bukaOrderKasir = function() {
+    if (typeof bukaOrderKasirFinal === 'function') bukaOrderKasirFinal();
+
+    const headerTitle = document.querySelector('#view-customer h1') || document.querySelector('#view-customer h2');
+    if (headerTitle) {
+        if (!window.judulAsliCustomer) window.judulAsliCustomer = headerTitle.innerHTML;
+        headerTitle.innerHTML = '<i class="fa-solid fa-cash-register mr-2 text-amber-500"></i>KASIR: INPUT PESANAN';
+    }
+};
+
+const switchRoleViewFinal = window.switchLayarAsliTanpaGembok || window.switchRoleView;
+window.switchLayarAsliTanpaGembok = function(role) {
+    if (typeof switchRoleViewFinal === 'function') switchRoleViewFinal(role);
+    
+    if (role === 'customer') {
+        const headerTitle = document.querySelector('#view-customer h1') || document.querySelector('#view-customer h2');
+        if (headerTitle && window.judulAsliCustomer) {
+            headerTitle.innerHTML = window.judulAsliCustomer; 
+        }
+    }
+};
