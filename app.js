@@ -2279,3 +2279,101 @@ window.closeLoginModal = function() {
         modal.classList.remove('flex');
     }
 };
+// ============================================================================
+// SUPER RESCUE PATCH (BYPASS LOGIN & FORCE VIEW SWITCH)
+// ============================================================================
+
+// 1. MEMASTIKAN LAYAR BENAR-BENAR BERPINDAH (MENGGANTIKAN FUNGSI BAWAAN)
+window.switchRoleView = function(role) {
+    // Cari semua kemungkinan ID layar di HTML Anda
+    const viewCustomer = document.getElementById('view-customer');
+    const viewKasir = document.getElementById('view-kasir');
+    const viewOwner = document.getElementById('view-owner') || document.getElementById('view-admin') || document.getElementById('panel-owner');
+
+    // Sembunyikan semuanya
+    if (viewCustomer) viewCustomer.classList.add('hidden');
+    if (viewKasir) viewKasir.classList.add('hidden');
+    if (viewOwner) viewOwner.classList.add('hidden');
+
+    // Munculkan layar yang diminta
+    if (role === 'customer' && viewCustomer) viewCustomer.classList.remove('hidden');
+    if (role === 'kasir' && viewKasir) viewKasir.classList.remove('hidden');
+    if (role === 'owner' && viewOwner) viewOwner.classList.remove('hidden');
+
+    // Logika Tombol Melayang Kasir
+    const btnPlus = document.getElementById('btn-plus-order-kasir'); 
+    const btnPulang = document.getElementById('btn-absen-pulang');
+    if (btnPlus) btnPlus.classList.toggle('hidden', role !== 'kasir');
+    if (btnPulang) btnPulang.classList.toggle('hidden', role !== 'kasir');
+};
+
+// 2. FUNGSI LOGIN ANTI-GAGAL & BYPASS SUPER ADMIN
+window.prosesLogin = function() {
+    // Cari input PIN (Berjaga-jaga jika ID HTML Anda berbeda)
+    const pinInput = document.getElementById('login-pin') || document.querySelector('input[type="password"]');
+    const pin = pinInput ? pinInput.value : '';
+    const errorEl = document.getElementById('login-error');
+
+    if (!pin) {
+        alert("Harap masukkan PIN!");
+        return;
+    }
+
+    // Amankan data Owner jika memori (LocalStorage) corrupt
+    if (!window.profilOwner || !window.profilOwner.pin) {
+        window.profilOwner = { nama: "Master Owner", pin: "888888" };
+    }
+
+    // KUNCI MASTER DARURAT (SUPER ADMIN BYPASS)
+    if (pin === '999999') {
+         window.profilOwner.pin = '888888'; // Reset PIN kembali ke default
+         localStorage.setItem('mainstay_dbOwner', JSON.stringify(window.profilOwner));
+         window.closeLoginModal();
+         window.switchRoleView('owner');
+         alert("SISTEM RESCUE AKTIF!\nAnda masuk menggunakan jalur Super Admin.\nPIN Master Owner telah di-reset kembali menjadi: 888888");
+         return;
+    }
+
+    const staf = window.databaseStaf ? window.databaseStaf.find(s => s.pin === pin) : null;
+
+    if (pin === window.profilOwner.pin) {
+        // Jika PIN Owner
+        window.closeLoginModal();
+        if (window.targetLoginRole === 'kasir') {
+            localStorage.setItem('isOwnerInKasir', 'true');
+            document.getElementById('kasir-blocker')?.classList.add('hidden');
+            window.switchRoleView('kasir');
+            window.isKasirMode = true; 
+        } else {
+            window.switchRoleView('owner');
+        }
+    } else if (staf) {
+        // Jika PIN Staf
+        localStorage.setItem('isOwnerInKasir', 'false');
+        window.closeLoginModal();
+        window.switchRoleView('kasir');
+        window.isKasirMode = true; 
+        
+        let stafHadir = JSON.parse(localStorage.getItem('stafHadirMainstay')) || [];
+        if (stafHadir.length > 0) document.getElementById('kasir-blocker')?.classList.add('hidden');
+        else document.getElementById('kasir-blocker')?.classList.remove('hidden');
+    } else {
+        // Jika PIN Salah
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+            errorEl.innerText = "PIN Salah!";
+        } else {
+            alert("PIN Salah atau Tidak Terdaftar!");
+        }
+    }
+};
+
+window.closeLoginModal = function() {
+    const modal = document.getElementById('modal-login');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    const pinInput = document.getElementById('login-pin') || document.querySelector('input[type="password"]');
+    if (pinInput) pinInput.value = ''; // Kosongkan saat ditutup
+};
