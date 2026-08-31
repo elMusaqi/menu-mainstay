@@ -2249,3 +2249,33 @@ window.bersihkanRiwayatAbsen = function() { if(confirm("Hapus semua riwayat abse
 // ============================================================================
 // SYSTEM REBUILD COMPLETE: 100% UNIFIED, ZERO STACKING BUGS, ENTERPRISE READY.
 // ============================================================================
+// ============================================================================
+// PATCH PENGHUBUNG TOMBOL LOGIN HTML (MODAL CONTROLLER)
+// ============================================================================
+
+window.bukaLoginModal = function(role) {
+    // Memberitahu sistem siapa yang sedang mencoba login ('kasir' atau 'owner')
+    window.targetLoginRole = role; 
+    
+    // Membuka jendela pop-up login
+    const modal = document.getElementById('modal-login');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    
+    // Kosongkan kolom PIN dan sembunyikan pesan error sebelumnya
+    const pinInput = document.getElementById('login-pin');
+    if (pinInput) pinInput.value = '';
+    
+    const errorEl = document.getElementById('login-error');
+    if (errorEl) errorEl.classList.add('hidden');
+};
+
+window.closeLoginModal = function() {
+    const modal = document.getElementById('modal-login');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+};
