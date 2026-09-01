@@ -5363,3 +5363,72 @@ window.handleImageUpload = function(event, targetInputId) {
         }
     };
 })();
+/* ==========================================================================
+   MAINSTAY DRINK POS - TAHAP 40 (EMERGENCY RESCUE, FIX UI & DATA CONTOH)
+   ========================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. SUNTIKKAN DATA CONTOH (MOCK DATA) AGAR TIDAK KOSONG
+    window.AppState = window.AppState || {};
+    
+    // Data Contoh Menu (Biar Katalog Langsung Muncul)
+    if (!window.AppState.menus || Object.keys(window.AppState.menus).length === 0) {
+        window.AppState.menus = {
+            "menu_1": { nama: "Kopi Susu Gula Aren", harga: 18000, kategori: "Kopi", status: "tersedia", hasStamp: true, image: "https://images.unsplash.com/photo-1593443320739-77f74939d0da?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" },
+            "menu_2": { nama: "Matcha Latte Ice", harga: 22000, kategori: "Non-Kopi", status: "tersedia", hasStamp: true, image: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" },
+            "menu_3": { nama: "Choco Signature", harga: 20000, kategori: "Non-Kopi", status: "habis", hasStamp: true, image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" },
+            "menu_4": { nama: "French Fries", harga: 15000, kategori: "Makanan", status: "tersedia", hasStamp: false, image: "https://images.unsplash.com/photo-1576107232684-1279f390859f?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" }
+        };
+    }
+
+    // Data Contoh Karyawan (Biar Bisa Coba Login)
+    if (!window.AppState.staff || Object.keys(window.AppState.staff).length === 0) {
+        window.AppState.staff = {
+            "staff_1": { nama: "Budi (Kasir)", pin: "123456", posisi: "Kasir" },
+            "staff_2": { nama: "Siti (Barista)", pin: "654321", posisi: "Barista" }
+        };
+    }
+
+    // Data Contoh Gudang
+    if (!window.AppState.inventory || Object.keys(window.AppState.inventory).length === 0) {
+        window.AppState.inventory = {
+            "inv_1": { nama: "Cup Plastik 16oz", qty: 250, satuan: "pcs" },
+            "inv_2": { nama: "Susu UHT", qty: 4, satuan: "liter" } // <--- Ini akan memicu alert merah berkedip karena <= 5
+        };
+    }
+
+    // 2. PAKSA HAPUS LOADING SPINNER BENGONG
+    setTimeout(() => {
+        const loader = document.getElementById('loading-screen'); // Jika ada div loading di HTML
+        if (loader) loader.style.display = 'none';
+        
+        // Paksa Render Ulang Layar Pelanggan dengan Data Contoh
+        if (typeof window.renderCustomerView === 'function') {
+            window.renderCustomerView();
+        }
+    }, 1500);
+
+    // 3. PAKSA SAMBUNGKAN SEMUA TOMBOL LOGIN (Atas Kanan & Bawah)
+    setTimeout(() => {
+        // Cari semua tombol di HTML yang mengandung kata "Login", "Kasir", atau "Owner"
+        const allButtons = document.querySelectorAll('button');
+        allButtons.forEach(btn => {
+            const text = btn.innerText.toLowerCase();
+            if (text.includes('login') || text.includes('kasir') || text.includes('owner')) {
+                // Jika tombol belum punya fungsi onclick, kita pasang paksa
+                if (!btn.getAttribute('onclick')) {
+                    btn.onclick = function(e) {
+                        e.preventDefault();
+                        if (typeof window.openLoginModal === 'function') {
+                            window.openLoginModal();
+                        } else if (typeof window.bukaModalAbsensi === 'function') {
+                            window.bukaModalAbsensi();
+                        } else {
+                            alert("Sistem Keamanan gagal dimuat. Cek penulisan kode sebelumnya.");
+                        }
+                    };
+                }
+            }
+        });
+    }, 2000);
+});
