@@ -2511,8 +2511,9 @@ window.selesaikanPesanan = function(orderId) {
    ========================================================================== */
 console.log("Mainstay POS - Part 12 (GAS Sync & Offline Modes) Initialized.");
 console.log("🚀 SYSTEM FULLY LOADED & READY TO USE!");
+
 /* ==========================================================================
-   PATCH PERBAIKAN: FUNGSI PANEL, KAMERA, LOGO & BYPASS PIN MASTER
+   PATCH FINAL: FUNGSI PANEL, KAMERA, BYPASS PIN & PENERAPAN UI TOKO
    ========================================================================== */
 
 // 1. Fungsi Pembuka & Penutup 8 Panel Owner
@@ -2561,8 +2562,6 @@ const originalProsesLogin = window.prosesLogin;
 window.prosesLogin = function() {
     const pinInput = document.getElementById('login-pin').value.trim();
     const target = window.AppState.targetLoginRole;
-    
-    // Jika Owner masuk ke Kasir pakai PIN Master
     if (target === 'kasir' && pinInput === "888888") {
         document.getElementById('login-error').classList.add('hidden');
         window.AppState.activeStaffName = "Owner Master";
@@ -2572,38 +2571,14 @@ window.prosesLogin = function() {
         if(typeof window.loadKasirOrders === 'function') window.loadKasirOrders();
         return;
     }
-    // Jika bukan kondisi di atas, jalankan fungsi aslinya
     if(typeof originalProsesLogin === 'function') originalProsesLogin();
 };
 
-// 4. Fungsi Perbarui Logo
-window.updateLogoToko = function() {
-    const logoUrl = window.AppState.storeSettings?.logo;
-    const img = document.getElementById('header-logo-img');
-    const icon = document.getElementById('header-logo-icon');
-    if(logoUrl && img && icon) {
-        img.src = logoUrl;
-        img.classList.remove('hidden');
-        icon.classList.add('hidden');
-    }
-};
-
-// Panggil perbarui logo setelah settings dimuat
-const originalLoadSettings = window.loadOwnerSettings;
-window.loadOwnerSettings = function() {
-    if(typeof originalLoadSettings === 'function') originalLoadSettings();
-    setTimeout(window.updateLogoToko, 1000);
-};
-/* ==========================================================================
-   UPDATE PATCH: PENERAPAN LOGO, SOSMED, WA, DAN QRIS KE TAMPILAN
-   ========================================================================== */
-
+// 4. PENERAPAN LOGO, SOSMED, WA, DAN QRIS KE TAMPILAN UI
 window.applyTokoSettings = function() {
-    // Ambil data pengaturan yang sudah didownload dari Firebase
     const s = window.AppState.storeSettings;
     if (!s) return;
     
-    // 1. TERAPKAN LOGO
     const img = document.getElementById('header-logo-img');
     const icon = document.getElementById('header-logo-icon');
     if(s.logo && img && icon) {
@@ -2612,31 +2587,24 @@ window.applyTokoSettings = function() {
         icon.classList.add('hidden');
     }
     
-    // 2. TERAPKAN LINK SOSIAL MEDIA DI FOOTER (Hanya tampil di Customer)
     const linkWA = document.getElementById('link-wa');
     const linkIG = document.getElementById('link-ig');
     const linkTikTok = document.getElementById('link-tiktok');
     
     if (s.phoneWA && linkWA) {
-        // Format otomatis nomor WA (ubah 08... jadi 628...) agar link wa.me valid
         let wa = s.phoneWA.startsWith('0') ? '62' + s.phoneWA.substring(1) : s.phoneWA;
         linkWA.href = `https://wa.me/${wa}?text=Halo%20Mainstay%20Drink,%20saya%20ingin%20bertanya...`;
     }
     if (s.ig && linkIG) linkIG.href = s.ig;
     if (s.tiktok && linkTikTok) linkTikTok.href = s.tiktok;
     
-    // 3. TERAPKAN GAMBAR QRIS DI MODAL PEMBAYARAN KASIR
     const qrisImg = document.getElementById('qris-img-display');
-    if (s.qris && qrisImg) {
-        qrisImg.src = s.qris;
-    }
+    if (s.qris && qrisImg) qrisImg.src = s.qris;
 };
 
-// Modifikasi loadOwnerSettings agar otomatis menjalankan penerapan UI di atas
-const originalLoadSettings = window.loadOwnerSettings;
+// 5. Override Load Settings (Dibersihkan dari duplikasi variabel)
+const masterLoadSettings = window.loadOwnerSettings;
 window.loadOwnerSettings = function() {
-    if(typeof originalLoadSettings === 'function') originalLoadSettings();
-    
-    // Tunggu 1 detik agar data Firebase selesai dimuat, lalu terapkan ke layar
+    if(typeof masterLoadSettings === 'function') masterLoadSettings();
     setTimeout(window.applyTokoSettings, 1000);
 };
