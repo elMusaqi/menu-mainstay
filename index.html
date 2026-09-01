@@ -43,22 +43,37 @@
             #printable-receipt { position: absolute; left: 0; top: 0; width: 58mm; padding: 0; font-family: monospace; }
         }
     </style>
-            <!-- RADAR ERROR CANGGIH -->
+      <!-- SUNTIKAN ANTIBODI JAVASCRIPT (MEMPERBAIKI ERROR CLASSLIST) -->
     <script>
-        window.onerror = function(msg, url, line) {
-            var err = document.createElement('div');
-            err.style = "position:fixed; top:0; left:0; width:100%; background:red; color:white; padding:20px; z-index:9999; font-weight:bold; font-size:12px; overflow-y:auto; max-height:100vh;";
-            err.innerHTML = "🚨 ERROR SYSTEM:<br>Baris ke: " + line + "<br>" + msg;
-            document.body.appendChild(err);
-            return true;
-        };
-        window.addEventListener("unhandledrejection", function(e) {
-            var err = document.createElement('div');
-            err.style = "position:fixed; top:0; left:0; width:100%; background:red; color:white; padding:20px; z-index:9999; font-weight:bold; font-size:10px; overflow-y:auto; max-height:100vh; text-align:left; line-height:1.5;";
-            var stack = e.reason && e.reason.stack ? e.reason.stack : (e.reason || e);
-            err.innerHTML = "🚨 BUKTI ERROR DITEMUKAN (FOTO INI):<br><br>" + String(stack).replace(/\n/g, '<br>');
-            document.body.appendChild(err);
+        [NodeList, HTMLCollection, Array].forEach(function(Target) {
+            if (Target && Target.prototype && !Object.getOwnPropertyDescriptor(Target.prototype, 'classList')) {
+                Object.defineProperty(Target.prototype, 'classList', {
+                    get: function() {
+                        var self = this;
+                        return {
+                            remove: function() { 
+                                var args = arguments; 
+                                var arr = self.forEach ? self : Array.prototype.slice.call(self);
+                                arr.forEach(function(el) { if(el && el.classList) el.classList.remove.apply(el.classList, args); }); 
+                            },
+                            add: function() { 
+                                var args = arguments; 
+                                var arr = self.forEach ? self : Array.prototype.slice.call(self);
+                                arr.forEach(function(el) { if(el && el.classList) el.classList.add.apply(el.classList, args); }); 
+                            },
+                            toggle: function() { 
+                                var args = arguments; 
+                                var arr = self.forEach ? self : Array.prototype.slice.call(self);
+                                arr.forEach(function(el) { if(el && el.classList) el.classList.toggle.apply(el.classList, args); }); 
+                            }
+                        };
+                    }
+                });
+            }
         });
+
+        // Hapus pop-up merah agar tidak mengganggu lagi
+        window.onerror = function() { return false; };
     </script>
 
 </head>
@@ -972,6 +987,6 @@
     </nav>
 
     <!-- KODE INI MEMAKSA BROWSER MEMBACA VERSI TERBARU -->
-    <script type="module" src="app.js?v=6"></script>
+    <script type="module" src="app.js?v=7"></script>
 </body>
 </html>
