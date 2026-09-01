@@ -2682,3 +2682,73 @@ window.renderLaporanBulanIni = function(orders, finance) {
         </div>
     `;
 };
+/* ==========================================================================
+   VAKSIN ANTI-ERROR: MELINDUNGI KATALOG DARI DATA KOSONG FIREBASE
+   ========================================================================== */
+window.renderKatalog = function() {
+    const grid = document.getElementById('menu-grid');
+    if (!grid) return;
+    
+    const menusData = window.AppState?.menus || window.AppState?.rawMenus || {};
+    const activeCat = window.activeKategori || 'all';
+    const searchInput = document.getElementById('search-menu');
+    const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+    
+    grid.innerHTML = '';
+    let count = 0;
+
+    Object.keys(menusData).forEach(key => {
+        const menu = menusData[key];
+        if (!menu) return; // Lewati jika data kosong
+
+        // PENGAMAN 100%: Mencegah crash jika ada data Firebase yang bolong
+        const nama = (menu.nama || menu.name || 'Menu Baru').toLowerCase();
+        const desc = (menu.deskripsi || menu.desc || '').toLowerCase();
+        const kategori = (menu.kategori || menu.category || '');
+        const harga = menu.harga || menu.price || 0;
+        const img = menu.gambar || menu.image || menu.img || 'https://via.placeholder.com/300?text=Menu';
+
+        // Filter Pencarian (Aman)
+        if (keyword && !nama.includes(keyword) && !desc.includes(keyword)) return;
+        
+        // Filter Kategori (Aman)
+        if (activeCat !== 'all') {
+            if (typeof kategori === 'string' && !kategori.toLowerCase().includes(activeCat.toLowerCase())) return;
+            if (Array.isArray(kategori) && !kategori.some(k => k && k.toLowerCase().includes(activeCat.toLowerCase()))) return;
+        }
+
+        count++;
+        const formatRp = typeof window.formatRupiah === 'function' ? window.formatRupiah(harga) : 'Rp ' + harga.toLocaleString('id-ID');
+
+        grid.innerHTML += `
+            <div class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col h-full cursor-pointer hover:shadow-md transition" onclick="openMenuDetail('${key}')">
+                <div class="w-full h-28 bg-gray-100 rounded-xl mb-3 overflow-hidden">
+                    <img src="${img}" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-sm font-black text-gray-900 mb-1">${menu.nama || menu.name || 'Menu'}</h3>
+                <p class="text-[10px] text-gray-500 font-bold mb-3 line-clamp-2">${menu.deskripsi || menu.desc || ''}</p>
+                <div class="mt-auto flex justify-between items-end">
+                    <span class="text-amber-500 font-black text-sm">${formatRp}</span>
+                    <button class="w-8 h-8 bg-amber-500 rounded-full text-white flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    if (count === 0) grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400 font-bold">Menu tidak ditemukan atau masih kosong.</div>';
+};
+
+window.filterKategori = function(cat) {
+    window.activeKategori = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.remove('active', 'bg-amber-500', 'text-white', 'shadow-md');
+        b.classList.add('bg-slate-100', 'text-gray-600');
+    });
+    if(event && event.currentTarget) {
+        event.currentTarget.classList.remove('bg-slate-100', 'text-gray-600');
+        event.currentTarget.classList.add('active', 'bg-amber-500', 'text-white', 'shadow-md');
+    }
+    if (typeof window.renderKatalog === 'function') window.renderKatalog();
+};
