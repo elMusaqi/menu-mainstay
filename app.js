@@ -2511,3 +2511,86 @@ window.selesaikanPesanan = function(orderId) {
    ========================================================================== */
 console.log("Mainstay POS - Part 12 (GAS Sync & Offline Modes) Initialized.");
 console.log("🚀 SYSTEM FULLY LOADED & READY TO USE!");
+/* ==========================================================================
+   PATCH PERBAIKAN: FUNGSI PANEL, KAMERA, LOGO & BYPASS PIN MASTER
+   ========================================================================== */
+
+// 1. Fungsi Pembuka & Penutup 8 Panel Owner
+window.openPanel = function(panelId) {
+    const panel = document.getElementById(panelId);
+    if(panel) { panel.classList.remove('hidden'); panel.classList.add('flex'); }
+};
+window.closePanel = function(panelId) {
+    const panel = document.getElementById(panelId);
+    if(panel) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+};
+
+// 2. Fungsi Pembuka & Penutup Kamera Absensi
+window.openAbsensi = function() {
+    const modal = document.getElementById('modal-absensi');
+    if(modal) {
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        const video = document.getElementById('attendance-video');
+        const loading = document.getElementById('camera-loading');
+        if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                if(loading) loading.classList.add('hidden');
+            }).catch(err => {
+                alert("Gagal mengakses kamera. Pastikan izin browser diizinkan.");
+                if(loading) loading.classList.add('hidden');
+            });
+        }
+    }
+};
+window.closeAbsensi = function() {
+    const modal = document.getElementById('modal-absensi');
+    if(modal) {
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+        const video = document.getElementById('attendance-video');
+        if(video && video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.classList.add('hidden');
+        }
+    }
+};
+
+// 3. Perbaikan Override Login Kasir menggunakan PIN Owner (888888)
+const originalProsesLogin = window.prosesLogin;
+window.prosesLogin = function() {
+    const pinInput = document.getElementById('login-pin').value.trim();
+    const target = window.AppState.targetLoginRole;
+    
+    // Jika Owner masuk ke Kasir pakai PIN Master
+    if (target === 'kasir' && pinInput === "888888") {
+        document.getElementById('login-error').classList.add('hidden');
+        window.AppState.activeStaffName = "Owner Master";
+        document.getElementById('modal-login').classList.add('hidden');
+        document.getElementById('modal-login').classList.remove('flex');
+        window.switchRoleView('kasir');
+        if(typeof window.loadKasirOrders === 'function') window.loadKasirOrders();
+        return;
+    }
+    // Jika bukan kondisi di atas, jalankan fungsi aslinya
+    if(typeof originalProsesLogin === 'function') originalProsesLogin();
+};
+
+// 4. Fungsi Perbarui Logo
+window.updateLogoToko = function() {
+    const logoUrl = window.AppState.storeSettings?.logo;
+    const img = document.getElementById('header-logo-img');
+    const icon = document.getElementById('header-logo-icon');
+    if(logoUrl && img && icon) {
+        img.src = logoUrl;
+        img.classList.remove('hidden');
+        icon.classList.add('hidden');
+    }
+};
+
+// Panggil perbarui logo setelah settings dimuat
+const originalLoadSettings = window.loadOwnerSettings;
+window.loadOwnerSettings = function() {
+    if(typeof originalLoadSettings === 'function') originalLoadSettings();
+    setTimeout(window.updateLogoToko, 1000);
+};
