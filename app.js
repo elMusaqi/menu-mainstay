@@ -2608,3 +2608,77 @@ window.loadOwnerSettings = function() {
     if(typeof masterLoadSettings === 'function') masterLoadSettings();
     setTimeout(window.applyTokoSettings, 1000);
 };
+/* ==========================================================================
+   HELM PENGAMAN: MENCEGAH ERROR DATA KOSONG DARI FIREBASE (UNDEFINED)
+   ========================================================================== */
+
+// Menimpa fungsi Laporan Keuangan dengan versi yang kebal data kosong
+window.renderLaporanBulanIni = function(orders, finance) {
+    const panel = document.getElementById('panel-laporan');
+    if (!panel) return;
+    
+    const now = new Date();
+    const currentMonthPrefix = now.getFullYear().toString().slice(-2) + String(now.getMonth() + 1).padStart(2, '0');
+    const currentMonthFull = now.toISOString().slice(0,7);
+    
+    let totalGross = 0;
+    let totalTx = 0;
+    
+    // PENGAMAN 1: Pengecekan ketat Data Transaksi
+    if (orders) {
+        Object.values(orders).forEach(ord => {
+            // Cek apakah ord dan ord.orderId benar-benar ada sebelum di-includes()
+            if (ord && ord.status !== 'batal' && ord.orderId && typeof ord.orderId === 'string' && ord.orderId.includes(`-${currentMonthPrefix}`)) {
+                totalGross += (ord.grandTotal || 0);
+                totalTx++;
+            }
+        });
+    }
+    
+    let totalExpenses = 0;
+    // PENGAMAN 2: Pengecekan ketat Data Pengeluaran
+    if (finance) {
+        Object.keys(finance).forEach(dateStr => {
+            if (dateStr && typeof dateStr === 'string' && dateStr.startsWith(currentMonthFull)) {
+                const dayData = finance[dateStr];
+                if (dayData && dayData.outflows) {
+                    Object.values(dayData.outflows).forEach(out => {
+                        totalExpenses += (out.amount || 0);
+                    });
+                }
+            }
+        });
+    }
+    
+    const labaBersih = totalGross - totalExpenses;
+    
+    // Injeksi Tampilan ke UI
+    const h3Target = panel.querySelector('h3');
+    const pTx = panel.querySelector('p.bg-white\\/20');
+    const formatRp = window.formatRupiah ? window.formatRupiah : (val) => `Rp ${val}`;
+    
+    if (h3Target) h3Target.innerText = formatRp(totalGross);
+    if (pTx) pTx.innerText = `Dari ${totalTx} Transaksi Bulan Ini`;
+    
+    let breakdownContainer = document.getElementById('finance-breakdown');
+    if (!breakdownContainer) {
+        breakdownContainer = document.createElement('div');
+        breakdownContainer.id = 'finance-breakdown';
+        breakdownContainer.className = 'bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4';
+        const btnDownload = panel.querySelector('button.bg-white');
+        if (btnDownload) btnDownload.parentElement.insertBefore(breakdownContainer, btnDownload);
+    }
+    
+    const profitColor = labaBersih >= 0 ? 'text-green-600' : 'text-red-500';
+    
+    breakdownContainer.innerHTML = `
+        <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Rincian Laba/Rugi (Bulan Ini)</h3>
+        <div class="space-y-3 font-bold text-xs text-gray-700">
+            <div class="flex justify-between"><span>Omzet Kotor (Gross):</span> <span>${formatRp(totalGross)}</span></div>
+            <div class="flex justify-between"><span>Kas Keluar (Expenses/HPP):</span> <span class="text-red-500">- ${formatRp(totalExpenses)}</span></div>
+            <div class="border-t border-gray-200 pt-3 mt-1 flex justify-between font-black text-sm">
+                <span>Laba Bersih (Net Profit):</span> <span class="${profitColor}">${formatRp(labaBersih)}</span>
+            </div>
+        </div>
+    `;
+};
