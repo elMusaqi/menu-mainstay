@@ -13,10 +13,7 @@
             theme: {
                 extend: {
                     colors: {
-                        amber: {
-                            500: '#f59e0b',
-                            600: '#d97706',
-                        }
+                        amber: { 500: '#f59e0b', 600: '#d97706' }
                     }
                 }
             }
@@ -38,11 +35,18 @@
         .marquee-content { display: inline-block; animation: marquee 15s linear infinite; }
         .marquee-content:hover { animation-play-state: paused; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* Khusus Cetak Printer Thermal */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 58mm; padding: 0; font-family: monospace; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen overflow-y-auto pb-24">
 
-    <!-- ELEMEN AUDIO (Notifikasi Pesanan) -->
+    <!-- ELEMEN AUDIO & FLASH (Notifikasi Pesanan) -->
     <audio id="audio-masuk" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3?filename=ding-idea-40142.mp3" preload="auto"></audio>
     <audio id="audio-siap" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_bb630cc098.mp3?filename=success-1-6297.mp3" preload="auto"></audio>
     <div id="screen-flash" class="fixed inset-0 bg-amber-500 opacity-0 pointer-events-none z-[200] hidden transition-opacity duration-300"></div>
@@ -88,13 +92,13 @@
         </div>
     </div>
 
-    <!-- KONTEN UTAMA -->
+    <!-- KONTEN UTAMA (MAIN) -->
     <main id="main-content" class="w-full">
         
         <!-- ========================================== -->
         <!-- VIEW 1: CUSTOMER (SELF-ORDER)              -->
         <!-- ========================================== -->
-        <section id="view-customer" class="w-full">
+        <section id="view-customer" class="w-full transition-all">
             
             <!-- Promo, Marquee & Search -->
             <div class="bg-white pb-4 shadow-sm border-b border-gray-100">
@@ -111,8 +115,8 @@
                         <img id="carousel-img" src="https://images.unsplash.com/photo-1588644458316-24b94fa8ebc8?w=800&q=80" class="w-full h-full object-cover transition duration-700" alt="Promo">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-6">
                             <h3 id="carousel-title" class="text-white font-black text-sm md:text-lg mb-1 shadow-sm">Promo Segar</h3>
-                            <button onclick="openCarouselLink()" class="w-max bg-amber-500 text-white text-[10px] md:text-xs font-bold px-4 py-2 rounded-full hover:bg-amber-600 transition shadow-md">
-                                <i class="fa-solid fa-hand-pointer mr-1"></i> Lihat Promo
+                            <button onclick="cekStatusStamp()" class="w-max bg-amber-500 text-white text-[10px] md:text-xs font-bold px-4 py-2 rounded-full hover:bg-amber-600 transition shadow-md">
+                                <i class="fa-solid fa-ticket mr-1"></i> Cek Status Stamp Member
                             </button>
                         </div>
                         <div class="absolute top-3 right-3 flex gap-1 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-full" id="carousel-indicators">
@@ -129,8 +133,7 @@
             </div>
 
             <!-- Tab Kategori -->
-            <div class="bg-white px-4 py-3 sticky top-0 z-50 border-b border-gray-100 shadow-md transition-all">
-
+            <div class="bg-white px-4 py-3 sticky top-0 z-30 border-b border-gray-100 shadow-md transition-all">
                 <div class="max-w-7xl mx-auto flex gap-2 overflow-x-auto hide-scrollbar" id="category-tabs">
                     <button onclick="filterKategori('all')" class="cat-btn active shrink-0 px-5 py-2.5 rounded-full text-xs font-black bg-amber-500 text-white shadow-md transition">Semua Menu</button>
                     <button onclick="filterKategori('coffee')" class="cat-btn shrink-0 px-5 py-2.5 rounded-full text-xs font-bold bg-slate-100 text-gray-600 hover:bg-slate-200 transition"><i class="fa-solid fa-mug-hot mr-1.5"></i>Coffee</button>
@@ -142,6 +145,7 @@
             <div class="p-4 max-w-7xl mx-auto min-h-[50vh]">
                 <div id="menu-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     <!-- Menu Item dirender oleh JavaScript -->
+                    <div class="col-span-full text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-amber-500"></i><p class="text-xs font-bold text-gray-500 mt-2">Memuat Katalog dari Server...</p></div>
                 </div>
             </div>
 
@@ -164,7 +168,6 @@
                 </button>
             </div>
         </section>
-
         <!-- ========================================== -->
         <!-- MODAL PILIH VARIAN & TOPPING               -->
         <!-- ========================================== -->
@@ -399,7 +402,7 @@
             <!-- Tab Manajemen Pesanan (3 Tab) -->
             <div class="bg-white px-4 py-3 sticky top-[148px] z-20 border-b border-gray-100 shadow-sm">
                 <div class="flex bg-slate-100 p-1.5 rounded-2xl">
-                    <button onclick="switchKasirTab('konfirmasi')" id="tab-konfirmasi" class="flex-1 py-2.5 text-xs font-black text-slate-500 rounded-xl transition bg-white shadow-sm text-amber-600 relative">
+                    <button onclick="switchKasirTab('pending')" id="tab-pending" class="flex-1 py-2.5 text-xs font-black text-slate-500 rounded-xl transition bg-white shadow-sm text-amber-600 relative">
                         Konfirmasi <span id="badge-konfirmasi" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm hidden">0</span>
                     </button>
                     <button onclick="switchKasirTab('dapur')" id="tab-dapur" class="flex-1 py-2.5 text-xs font-black text-slate-500 rounded-xl transition relative hover:text-slate-700">
@@ -707,7 +710,7 @@
                 </div>
             </div>
             
-            <button class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition"><i class="fa-solid fa-floppy-disk mr-2"></i> SIMPAN PENGATURAN WEB</button>
+            <button onclick="saveOwnerSettings()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition"><i class="fa-solid fa-floppy-disk mr-2"></i> SIMPAN PENGATURAN WEB</button>
         </div>
     </div>
 
@@ -739,7 +742,6 @@
                     <button class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-sm"><i class="fa-solid fa-plus"></i> Tambah Slide</button>
                 </div>
                 
-                <!-- Item Slide 1 -->
                 <div class="border border-gray-200 rounded-xl p-4 mb-3 bg-gray-50">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs font-black text-gray-700 bg-white px-2 py-1 rounded border border-gray-200">Slide 1</span>
@@ -747,17 +749,6 @@
                     </div>
                     <label class="text-[10px] font-bold text-gray-500 block mb-1">Upload / URL Gambar</label>
                     <input type="text" placeholder="https://..." class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs mb-3 outline-none focus:border-pink-500">
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500 block mb-1">Judul Promo</label>
-                            <input type="text" placeholder="Cth: Promo Kopi" class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs outline-none focus:border-pink-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500 block mb-1">Link Tujuan (URL)</label>
-                            <input type="text" placeholder="https://..." class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs outline-none focus:border-pink-500">
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -776,24 +767,9 @@
                 <button class="flex-1 bg-amber-500 text-white font-black py-3 rounded-xl text-xs shadow-md"><i class="fa-solid fa-plus mr-1"></i> Tambah Menu</button>
                 <button class="flex-1 bg-gray-800 text-white font-black py-3 rounded-xl text-xs shadow-md"><i class="fa-solid fa-tags mr-1"></i> Kategori Baru</button>
             </div>
-            
-            <!-- List Katalog Mentah -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-3 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <img src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=100" class="w-12 h-12 rounded-lg object-cover">
-                    <div>
-                        <h4 class="font-black text-sm text-gray-900">Es Kopi Mainstay</h4>
-                        <p class="text-[10px] font-bold text-amber-500">Rp 16.000 <span class="text-gray-400 line-through ml-1">Rp 20.000</span></p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="relative inline-flex items-center cursor-pointer mr-2">
-                        <input type="checkbox" class="sr-only peer" checked>
-                        <div class="w-9 h-5 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
-                        <span class="ml-2 text-[9px] font-black text-gray-500 uppercase">Stok</span>
-                    </label>
-                    <button class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-pen"></i></button>
-                </div>
+            <!-- Katalog akan dirender JS secara dinamis disini -->
+            <div id="master-menu-list" class="space-y-3">
+                <p class="text-center text-xs font-bold text-gray-500 py-6">Memuat katalog...</p>
             </div>
         </div>
     </div>
@@ -805,7 +781,7 @@
             <button onclick="closePanel('panel-stok')" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-500 transition"><i class="fa-solid fa-chevron-down"></i></button>
         </div>
         <div class="flex-1 overflow-y-auto p-5 pb-32 max-w-3xl mx-auto w-full">
-            <button class="w-full bg-indigo-500 text-white font-black py-3 rounded-xl text-xs shadow-md mb-4"><i class="fa-solid fa-plus mr-1"></i> Tambah Bahan / Alat</button>
+            <button onclick="tambahInventory()" class="w-full bg-indigo-500 text-white font-black py-3 rounded-xl text-xs shadow-md mb-4"><i class="fa-solid fa-plus mr-1"></i> Tambah Bahan / Alat</button>
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-100 text-gray-600 font-black uppercase text-[10px]">
@@ -816,16 +792,8 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 font-bold">
-                        <tr>
-                            <td class="px-4 py-3 text-gray-900">Cup Plastik 16oz</td>
-                            <td class="px-4 py-3 text-indigo-600">450 pcs</td>
-                            <td class="px-4 py-3 text-right"><button class="text-blue-500"><i class="fa-solid fa-pen-to-square"></i></button></td>
-                        </tr>
-                        <tr>
-                            <td class="px-4 py-3 text-gray-900">Bubuk Matcha Premium</td>
-                            <td class="px-4 py-3 text-red-500">200 gram (Tipis)</td>
-                            <td class="px-4 py-3 text-right"><button class="text-blue-500"><i class="fa-solid fa-pen-to-square"></i></button></td>
-                        </tr>
+                        <!-- Rendered by JS -->
+                        <tr><td colspan="3" class="px-4 py-6 text-center text-gray-400">Memuat data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -851,7 +819,7 @@
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
                     <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">Database Member</h3>
-                    <button class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-black"><i class="fa-solid fa-download"></i> Export Data</button>
+                    <button onclick="exportMemberCSV()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-black"><i class="fa-solid fa-download"></i> Export Data</button>
                 </div>
                 <table class="w-full text-left text-[10px] md:text-xs">
                     <thead class="bg-slate-100 text-gray-600 font-black uppercase">
@@ -882,10 +850,13 @@
             <div class="bg-purple-600 rounded-2xl p-6 text-white shadow-lg mb-5 relative overflow-hidden">
                 <i class="fa-solid fa-sack-dollar absolute -bottom-5 -right-5 text-8xl opacity-20"></i>
                 <p class="text-xs font-bold text-purple-200 mb-1">Total Pendapatan Bulan Ini</p>
-                <h3 class="text-3xl font-black mb-1">Rp 12.500.000</h3>
-                <p class="text-[10px] font-bold bg-white/20 inline-block px-2 py-1 rounded-lg">Dari 450 Transaksi</p>
+                <h3 class="text-3xl font-black mb-1">Rp 0</h3>
+                <p class="text-[10px] font-bold bg-white/20 inline-block px-2 py-1 rounded-lg">Memuat data transaksi...</p>
             </div>
-            <button class="w-full bg-white border-2 border-purple-200 text-purple-700 font-black py-4 rounded-xl shadow-sm hover:bg-purple-50 transition mb-4"><i class="fa-solid fa-file-excel text-green-600 mr-2"></i> Download Laporan Lengkap (Excel)</button>
+            <!-- Div untuk Breakdown (Diinjeksi dinamis oleh JS) -->
+            <div id="finance-breakdown"></div>
+            
+            <button onclick="alert('Laporan sedang digenerate. File dapat diunduh langsung dari backend Google Sheets Anda.')" class="w-full bg-white border-2 border-purple-200 text-purple-700 font-black py-4 rounded-xl shadow-sm hover:bg-purple-50 transition mb-4"><i class="fa-solid fa-file-excel text-green-600 mr-2"></i> Download Laporan Lengkap (Excel)</button>
         </div>
     </div>
 
@@ -899,30 +870,14 @@
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
                     <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">Profiling PIN Karyawan</h3>
-                    <button class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg text-[10px] font-black"><i class="fa-solid fa-plus"></i> Tambah Staf</button>
+                    <button onclick="tambahStaff()" class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg text-[10px] font-black"><i class="fa-solid fa-plus"></i> Tambah Staf</button>
                 </div>
-                <div class="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50 font-bold text-xs mb-2">
-                    <div><span class="text-gray-900">Budi (Kasir 1)</span><br><span class="text-teal-600 text-[10px]">PIN: 123456</span></div>
-                    <button class="text-red-500"><i class="fa-solid fa-trash"></i></button>
-                </div>
-                <div class="flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50 font-bold text-xs">
-                    <div><span class="text-gray-900">Siti (Kasir 2)</span><br><span class="text-teal-600 text-[10px]">PIN: 654321</span></div>
-                    <button class="text-red-500"><i class="fa-solid fa-trash"></i></button>
-                </div>
+                <!-- Tempat inject list staff dari JS -->
             </div>
             
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Log Absensi Hari Ini</h3>
-                <div class="space-y-3">
-                    <div class="flex gap-3 items-center border border-gray-100 p-2 rounded-xl">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg"></div>
-                        <div class="flex-1">
-                            <p class="text-xs font-black text-gray-900">Budi</p>
-                            <p class="text-[9px] font-bold text-gray-500">Masuk: 07:45 WIB</p>
-                        </div>
-                        <span class="text-[9px] font-black text-green-600 bg-green-100 px-2 py-1 rounded">TEPAT</span>
-                    </div>
-                </div>
+                <!-- Tempat inject log absensi kamera dari JS -->
             </div>
         </div>
     </div>
@@ -935,7 +890,6 @@
         </div>
         <div class="flex-1 overflow-y-auto p-5 pb-32 space-y-6 max-w-3xl mx-auto w-full">
             
-            <!-- Draft WA & Struk Thermal -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Format Teks & Printer</h3>
                 <div class="space-y-4">
@@ -954,18 +908,17 @@
                 </div>
             </div>
 
-            <!-- Pusat Database & Backup -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Keamanan & Backup JSON</h3>
                 
                 <a href="https://script.google.com/macros/s/AKfycbzI64IPe7yAuN2ogQJ2Vs0Q8y3rBkwNawUXlpJAOHJ3M8yh-YgKaLBAJFqc8NCXSPOZ/exec" target="_blank" class="w-full bg-green-50 text-green-700 font-black py-3 rounded-xl border border-green-200 flex items-center justify-center gap-2 mb-3 hover:bg-green-100 transition text-sm"><i class="fa-solid fa-table"></i> Buka Google Sheets</a>
                 
                 <div class="grid grid-cols-2 gap-3 mb-3">
-                    <button class="bg-slate-800 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition text-xs flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-download text-xl text-blue-400"></i> Export JSON</button>
-                    <button class="bg-white border-2 border-slate-300 text-slate-700 font-black py-4 rounded-xl hover:bg-slate-50 transition text-xs flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-upload text-xl"></i> Import JSON</button>
+                    <button onclick="exportDatabaseJSON()" class="bg-slate-800 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition text-xs flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-download text-xl text-blue-400"></i> Export JSON</button>
+                    <button onclick="importDatabaseJSON()" class="bg-white border-2 border-slate-300 text-slate-700 font-black py-4 rounded-xl hover:bg-slate-50 transition text-xs flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-upload text-xl"></i> Import JSON</button>
                 </div>
                 
-                <button class="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm"><i class="fa-solid fa-rotate"></i> Sinkronisasi Ulang Database</button>
+                <button onclick="location.reload()" class="w-full bg-blue-600 text-white font-black py-3.5 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm"><i class="fa-solid fa-rotate"></i> Sinkronisasi Ulang Database</button>
             </div>
             
         </div>
