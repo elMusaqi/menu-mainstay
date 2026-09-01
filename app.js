@@ -1,361 +1,2513 @@
-// ============================================================================
-// MAINSTAY DRINK POS - KODE MASTER FINAL (UNIFIED SYSTEM)
-// Versi: 10.0 (Include Firebase, App Script, 3 Tab Dapur, Statistik, WA Member)
-// ============================================================================
+/* ==========================================================================
+   MAINSTAY DRINK POS - MAIN APPLICATION SCRIPT (app.js) 
+   Target Device: Infinix Note 30 Pro & Multi-Device Responsive
+   ========================================================================== */
 
-// ----------------------------------------------------------------------------
-// 1. INISIALISASI DATABASE FIREBASE LIVE
-// ----------------------------------------------------------------------------
-import('https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js').then(firebaseApp => {
-    import('https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js').then(firebaseDb => {
-        const firebaseConfig = {
-            apiKey: "AIzaSyAwBNnNulXL2MA1QGUOu1BAEqnihqHFn0o",
-            authDomain: "mainstay-pos.firebaseapp.com",
-            databaseURL: "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "mainstay-pos",
-            storageBucket: "mainstay-pos.firebasestorage.app",
-            messagingSenderId: "97498275061",
-            appId: "1:97498275061:web:c2088d6672aabb5886b9bc",
-            measurementId: "G-WL2PV7WB5L"
-        };
-        const app = firebaseApp.initializeApp(firebaseConfig);
-        window.db = firebaseDb.getDatabase(app);
-        window.fbRef = firebaseDb.ref; window.fbSet = firebaseDb.set; window.fbOnValue = firebaseDb.onValue; window.fbPush = firebaseDb.push;
-        console.log("✅ SISTEM MAINSTAY: Database Firebase Berhasil Terhubung!");
-    });
-}).catch(err => { console.error("❌ SISTEM MAINSTAY: Gagal memanggil Firebase.", err); });
+/* --------------------------------------------------------------------------
+   PART 1: FIREBASE INIT, GLOBAL STATE, & UTILITIES
+   -------------------------------------------------------------------------- */
 
-// ----------------------------------------------------------------------------
-// 2. DEKLARASI VARIABEL, LINK INTEGRASI & STATE
-// ----------------------------------------------------------------------------
-window.databaseStaf = []; window.profilOwner = { nama: "Master Owner", wa: "", rekening: "", pin: "888888", foto: "" }; window.masterTopping = []; window.databaseStok = []; window.riwayatAbsensi = []; window.riwayatTransaksiLokal = []; window.katalogMenu = []; window.systemConfig = { logoUrl: "logo-512.png", qrisUrl: "qris-mainstay.png", nomorWA: "", ig: "", tiktok: "", maps: "" }; window.statusStokTerkunci = false; window.tanggalSistemSekarang = new Date().toLocaleDateString('id-ID'); window.cameraStream = null; window.tempTotalBayarKasir = 0; window.tempSelectedToppings = []; window.isKasirMode = false; window.isProcessingCheckout = false; window.isAuthenticated = false; window.posKategoriAktif = 'all';
+// 1. IMPORT FIREBASE SDK (MODULAR)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, remove, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// INTEGRASI LINK ANDA:
-window.URL_GOOGLE_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbzI64IPe7yAuN2ogQJ2Vs0Q8y3rBkwNawUXlpJAOHJ3M8yh-YgKaLBAJFqc8NCXSPOZ/exec";
-window.joinMemberMainstay = function() { window.open("https://chat.whatsapp.com/DYUTVUGWfzcHoCWnKNFdSB", '_blank'); };
+// 2. HARDCODED FIREBASE CONFIGURATION (Data Produksi Wajib)
+const firebaseConfig = {
+    apiKey: "AIzaSyAwBNnNulXL2MA1QGUOu1BAEqnihqHFn0o",
+    authDomain: "mainstay-pos.firebaseapp.com",
+    databaseURL: "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "mainstay-pos",
+    storageBucket: "mainstay-pos.firebasestorage.app",
+    messagingSenderId: "97498275061",
+    appId: "1:97498275061:web:c2088d6672aabb5886b9bc",
+    measurementId: "G-WL2PV7WB5L"
+};
 
-// ----------------------------------------------------------------------------
-// 3. UTILITAS DASAR
-// ----------------------------------------------------------------------------
-window.playAudio = function(type) { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); if (type === 'masuk') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.1); } else if (type === 'error') { osc.type = 'square'; osc.frequency.setValueAtTime(300, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.3); } } catch(e) {} };
-window.escapeHTML = str => str ? str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag)) : "";
-window.prosesUploadGambar = function(event, targetId, previewId) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); const MAX = 500; canvas.width = MAX; canvas.height = img.height * (MAX / img.width); canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); const b64 = canvas.toDataURL('image/jpeg', 0.6); const inp = document.getElementById(targetId); if(inp) { inp.value = b64; inp.dispatchEvent(new Event('input', {bubbles:true})); } const prv = document.getElementById(previewId); if(prv) { prv.src = b64; prv.classList.remove('hidden'); if(prv.nextElementSibling) prv.nextElementSibling.classList.add('hidden'); } }; img.src = e.target.result; }; reader.readAsDataURL(file); };
+// 3. INITIALIZE FIREBASE APP & DATABASE
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-// ----------------------------------------------------------------------------
-// 4. INIT & INJEKSI HTML UTAMA
-// ----------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
-    const dbs = ['dbStaf','dbOwner','dbTopping','dbStok','dbAbsen','dbTransaksi','dbMenu','dbConfig'];
-    dbs.forEach(k => { if(localStorage.getItem('mainstay_'+k)) window[k === 'dbStaf' ? 'databaseStaf' : k.replace('db','').toLowerCase()] = JSON.parse(localStorage.getItem('mainstay_'+k)); });
-    if(window.katalogMenu.length === 0) { window.katalogMenu = [{ id: "M1", nama: "Es Teh Pancingan", kategori: "tea", harga: 5000, stok: 100, image: "", opsiTopping: [] }]; localStorage.setItem('mainstay_dbMenu', JSON.stringify(window.katalogMenu)); }
+// Wajib mengekspos db ke window agar bisa diakses oleh fungsi di part selanjutnya
+window.db = db; 
 
-    setTimeout(() => {
-        if (window.db && window.fbOnValue) {
-            window.fbOnValue(window.fbRef(window.db, 'katalog_menu'), (s) => { if(s.exists()){ window.katalogMenu = Object.values(s.val()); localStorage.setItem('mainstay_dbMenu', JSON.stringify(window.katalogMenu)); if(typeof window.renderKatalog === 'function') window.renderKatalog(); if(typeof window.renderKategoriFilter === 'function') window.renderKategoriFilter(); }});
-            window.fbOnValue(window.fbRef(window.db, 'inventaris_stok'), (s) => { if(s.exists()){ window.databaseStok = Object.values(s.val()); localStorage.setItem('mainstay_dbStok', JSON.stringify(window.databaseStok)); if(typeof window.renderPanelStok === 'function') window.renderPanelStok(); if(typeof window.renderStokStaf === 'function') window.renderStokStaf(); }});
-            window.fbOnValue(window.fbRef(window.db, 'hrd_karyawan'), (s) => { if(s.exists()){ window.databaseStaf = Object.values(s.val()); localStorage.setItem('mainstay_dbStaf', JSON.stringify(window.databaseStaf)); if(typeof window.renderPanelHRD === 'function') window.renderPanelHRD(); }});
-            window.fbOnValue(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), (s) => { if(s.exists()){ const d = s.val(); if (d.tanggal === window.tanggalSistemSekarang) window.statusStokTerkunci = d.isLocked; else { window.statusStokTerkunci = false; window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: window.tanggalSistemSekarang, isLocked: false }); } if(typeof window.updateTombolGembokOwner === 'function') window.updateTombolGembokOwner(); }});
-        }
-    }, 2000);
+// 4. GLOBAL APPLICATION STATE (Menyimpan Konteks Sesi & Navigasi)
+window.AppState = {
+    currentRole: 'customer',       // Peran yang sedang aktif: 'customer', 'kasir', 'owner'
+    targetLoginRole: '',           // Mengingat modal login mana yang sedang dibuka
+    activeStaffName: null,         // Mencatat nama staf yang sedang Check-In (Absen)
+    cart: [],                      // Keranjang pesanan customer / kasir
+    activeMenuForDetail: null,     // Menu yang sedang dibuka detail/kustomisasinya
+    currentAttendanceStream: null, // Stream video kamera depan untuk absensi
+    storeSettings: {
+        phoneWA: '628977099557',   // Default WA Resto (bisa diganti di panel)
+        isOpen: true,              // Emergency Switch Toko
+        audioEnabled: true
+    },
+    // Elemen Audio untuk notifikasi 3-Tab Dapur
+    audioMasuk: document.getElementById('audio-masuk'),
+    audioSiap: document.getElementById('audio-siap')
+};
 
-    setInterval(() => { const d = new Date().toLocaleDateString('id-ID'); if(window.tanggalSistemSekarang !== d) { window.tanggalSistemSekarang = d; window.statusStokTerkunci = false; if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: d, isLocked: false }); if(typeof window.updateTombolGembokOwner === 'function') window.updateTombolGembokOwner(); } }, 60000);
+// 5. CORE UTILITIES & FORMATTER
+// Menjalankan jam digital real-time beserta detik (HH:MM:SS) di Header
+window.initLiveClock = function() {
+    const clockEl = document.getElementById('live-clock');
+    if (!clockEl) return;
 
-    if(!document.getElementById('modal-login')) {
-        document.body.insertAdjacentHTML('beforeend', `
-        <div id="modal-login" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] hidden items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl flex flex-col"><div class="px-6 py-4 bg-gray-900 flex justify-between items-center text-white"><h2 class="font-black text-lg"><i class="fa-solid fa-lock text-amber-500 mr-2"></i> Otorisasi</h2><button onclick="window.closeLoginModal()" class="w-8 h-8 bg-gray-800 rounded-full hover:bg-red-500 transition"><i class="fa-solid fa-xmark"></i></button></div><div class="p-6 bg-slate-50 text-center"><input type="password" id="login-pin" class="w-full bg-white border-2 border-gray-200 rounded-2xl p-4 text-center text-2xl font-black focus:border-amber-500 mb-2" placeholder="******" maxlength="6" inputmode="numeric"><p id="login-error" class="text-xs font-black text-red-500 hidden mb-4 bg-red-50 py-2 rounded-lg">PIN Salah!</p><button onclick="window.prosesLogin()" class="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-amber-600 transition">MASUK</button></div></div></div>
-        <div id="modal-absensi" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[999] hidden flex-col items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-3xl p-6 relative flex flex-col"><div class="flex justify-between items-center mb-4"><h2 class="font-black text-lg text-gray-900"><i class="fa-solid fa-camera text-blue-500 mr-2"></i> Verifikasi Kehadiran</h2><button onclick="window.closeAbsensi()" class="w-8 h-8 bg-gray-100 rounded-full text-gray-600 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button></div><div class="relative w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden mb-4 border-4 border-dashed border-gray-200 flex items-center justify-center"><video id="attendance-video" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video></div><input type="password" id="absen-pin" class="w-full bg-slate-50 border-2 border-gray-200 rounded-2xl p-3 text-center text-lg font-black focus:border-blue-500 mb-4" placeholder="Ketik PIN Staf" maxlength="6" inputmode="numeric"><button onclick="window.prosesAbsen('Masuk')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition"><i class="fa-solid fa-camera mr-2"></i> MULAI ABSEN MASUK</button></div></div>
-        <div id="modal-pos-kasir" class="fixed inset-0 bg-slate-50 z-[150] hidden flex-col"><div class="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0"><h2 class="font-black text-lg"><i class="fa-solid fa-cash-register text-amber-400 mr-2"></i> KASIR POS</h2><button onclick="window.tutupOrderKasir()" class="bg-gray-800 w-8 h-8 rounded-full text-white hover:bg-red-500 transition shadow-sm"><i class="fa-solid fa-arrow-left"></i></button></div><div id="pos-kategori-container" class="flex gap-2 overflow-x-auto p-4 bg-white border-b shrink-0 shadow-sm"></div><div id="pos-menu-container" class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-4 gap-4 pb-32 content-start"></div><div class="absolute bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-20"><div><p class="text-[10px] font-bold text-gray-500 uppercase">Total Tagihan</p><h3 id="pos-total-harga" class="text-xl font-black text-amber-500">Rp 0</h3><p id="pos-total-item" class="text-[10px] font-bold text-gray-400">0 Item</p></div><div class="flex gap-2"><button onclick="window.openCartModal()" class="bg-indigo-50 text-indigo-600 px-3 py-3 rounded-2xl font-black flex items-center gap-2"><i class="fa-solid fa-basket-shopping"></i> <span class="hidden md:inline">KERANJANG</span></button><button onclick="window.prosesCheckout()" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black shadow-lg flex items-center gap-2"><i class="fa-solid fa-money-bill-wave"></i> BAYAR</button></div></div></div>
-        <div id="modal-manajemen-pesanan" class="fixed inset-0 bg-slate-50 z-[200] hidden flex-col"><div class="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md shrink-0"><h2 class="font-black text-lg"><i class="fa-solid fa-bell-concierge text-amber-400 mr-2"></i> MANAJEMEN DAPUR</h2><button onclick="document.getElementById('modal-manajemen-pesanan').classList.replace('flex', 'hidden');" class="bg-gray-800 w-8 h-8 rounded-full text-white hover:bg-red-500 transition shadow-sm"><i class="fa-solid fa-arrow-left"></i></button></div><div class="flex bg-white border-b shadow-sm shrink-0"><button onclick="window.renderTabPesanan('pending')" id="tab-btn-pending" class="flex-1 py-3 text-xs font-black text-gray-500 border-b-4 border-transparent transition">KONFIRMASI <span id="badge-pending" class="bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[10px] ml-1 hidden">0</span></button><button onclick="window.renderTabPesanan('dimasak')" id="tab-btn-dimasak" class="flex-1 py-3 text-xs font-black text-gray-500 border-b-4 border-transparent transition">DAPUR <span id="badge-dimasak" class="bg-amber-500 text-white px-1.5 py-0.5 rounded-full text-[10px] ml-1 hidden">0</span></button><button onclick="window.renderTabPesanan('selesai')" id="tab-btn-selesai" class="flex-1 py-3 text-xs font-black text-gray-500 border-b-4 border-transparent transition">SELESAI</button></div><div id="container-list-pesanan" class="flex-1 overflow-y-auto p-4 bg-slate-100 space-y-3"></div></div>
-        `);
-    }
-
-    setTimeout(() => {
-        const vK = document.getElementById('view-kasir');
-        if (vK) {
-            vK.classList.add('relative');
-            if(!document.getElementById('kasir-blocker')) vK.insertAdjacentHTML('afterbegin', `<div id="kasir-blocker" class="absolute inset-0 bg-slate-50/95 backdrop-blur-md z-[40] flex flex-col items-center justify-center hidden min-h-screen pb-32"><div class="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg mb-6"><i class="fa-solid fa-lock text-4xl text-gray-300"></i></div><h3 class="text-xl font-black text-gray-900 mb-1">Akses Terkunci</h3><p class="text-xs font-bold text-gray-500 mb-8 px-8 text-center">Wajib Absen Masuk.</p><button onclick="window.openAbsensi()" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg"><i class="fa-solid fa-camera mr-2"></i> MULAI ABSEN</button></div>`);
-            if(!document.getElementById('btn-logout-kasir')) vK.insertAdjacentHTML('afterbegin', `<button onclick="window.prosesLogout()" class="absolute top-4 right-4 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-black border border-red-100 hover:bg-red-600 hover:text-white transition shadow-sm z-[100]"><i class="fa-solid fa-power-off mr-2"></i>LOGOUT</button>`);
-            if(!document.getElementById('btn-akses-dapur')) vK.insertAdjacentHTML('beforeend', `<button onclick="window.bukaManajemenPesanan()" class="absolute bottom-24 right-4 bg-teal-500 text-white w-14 h-14 rounded-full shadow-[0_5px_15px_rgba(20,184,166,0.5)] flex flex-col items-center justify-center hover:bg-teal-600 transition z-[45]"><i class="fa-solid fa-bell-concierge text-2xl"></i><span class="text-[8px] font-black">DAPUR</span></button>`);
-            if(!document.getElementById('kasir-stats-container')) vK.insertAdjacentHTML('beforeend', `<div id="kasir-stats-container" class="grid grid-cols-3 gap-2 mt-8 w-full max-w-sm mx-auto px-4 absolute bottom-8 left-0 right-0 z-10"><div class="bg-white border border-green-200 p-3 rounded-2xl text-center"><i class="fa-solid fa-sack-dollar text-green-500 text-lg mb-1"></i><p class="text-[8px] font-black text-gray-400 uppercase">Omzet Shift</p><h4 id="stat-omzet-kasir" class="text-xs font-black text-green-600">Rp 0</h4></div><div class="bg-white border border-teal-200 p-3 rounded-2xl text-center"><i class="fa-solid fa-check-double text-teal-500 text-lg mb-1"></i><p class="text-[8px] font-black text-gray-400 uppercase">Selesai</p><h4 id="stat-selesai-kasir" class="text-xs font-black text-teal-600">0</h4></div><div class="bg-white border border-amber-200 p-3 rounded-2xl text-center"><i class="fa-solid fa-bell-concierge text-amber-500 text-lg mb-1 animate-bounce"></i><p class="text-[8px] font-black text-gray-400 uppercase">Antrean</p><h4 id="stat-proses-kasir" class="text-xs font-black text-amber-600">0</h4></div></div>`);
-        }
-        const oNav = document.querySelector('.owner-nav');
-        if (oNav && !document.getElementById('btn-logout-owner')) oNav.insertAdjacentHTML('beforeend', `<button onclick="window.prosesLogout()" class="w-full flex flex-col items-center justify-center p-3 rounded-2xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 mt-4"><i class="fa-solid fa-power-off text-xl mb-1"></i><span class="text-[10px] font-black">LOGOUT</span></button>`);
+    setInterval(() => {
+        const now = new Date();
+        const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
         
-        const pDash = document.getElementById('panel-dashboard');
-        if (pDash && !document.getElementById('owner-stats-container')) {
-            pDash.insertAdjacentHTML('afterbegin', `<div id="owner-stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 w-full max-w-4xl mx-auto"><div class="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-2xl text-white"><div class="flex justify-between items-start mb-2"><span class="text-[10px] font-black uppercase opacity-80">Pendapatan Hari Ini</span><i class="fa-solid fa-rupiah-sign"></i></div><h3 id="stat-omzet-owner" class="text-2xl font-black">Rp 0</h3></div><div class="bg-gradient-to-br from-teal-500 to-teal-600 p-4 rounded-2xl text-white"><div class="flex justify-between items-start mb-2"><span class="text-[10px] font-black uppercase opacity-80">Order Selesai</span><i class="fa-solid fa-check-double"></i></div><h3 id="stat-selesai-owner" class="text-2xl font-black">0 <span class="text-xs">Pesanan</span></h3></div><div class="bg-gradient-to-br from-amber-500 to-orange-500 p-4 rounded-2xl text-white"><div class="flex justify-between items-start mb-2"><span class="text-[10px] font-black uppercase opacity-80">Diproses</span><i class="fa-solid fa-fire-burner"></i></div><h3 id="stat-proses-owner" class="text-2xl font-black">0 <span class="text-xs">Pesanan</span></h3></div></div>`);
-        }
+        const dateStr = now.toLocaleDateString('id-ID', dateOptions);
+        const timeStr = now.toLocaleTimeString('id-ID', timeOptions);
         
-        const inpL = document.getElementById('setting-logo'); if (inpL && !document.getElementById('file-logo')) inpL.insertAdjacentHTML('afterend', `<input type="file" id="file-logo" class="mt-2 text-[10px] w-full text-blue-600 bg-blue-50 p-2 rounded-lg cursor-pointer" accept="image/*" onchange="window.prosesUploadGambar(event, 'setting-logo', 'header-logo-img')">`);
-        const inpQ = document.getElementById('setting-qris'); if (inpQ && !document.getElementById('file-qris')) inpQ.insertAdjacentHTML('afterend', `<input type="file" id="file-qris" class="mt-2 text-[10px] w-full text-blue-600 bg-blue-50 p-2 rounded-lg cursor-pointer" accept="image/*" onchange="window.prosesUploadGambar(event, 'setting-qris', 'qris-img-display')">`);
-
-        if(typeof window.renderKatalog === 'function') window.renderKatalog();
-        window.updateStatistikRealtime();
+        clockEl.innerText = `${dateStr} ${timeStr} WIB`;
     }, 1000);
-});
+};
 
-// ----------------------------------------------------------------------------
-// 5. OTORISASI & ISOLASI TAMPILAN
-// ----------------------------------------------------------------------------
-if (!window.switchLayarAsliTanpaGembok) window.switchLayarAsliTanpaGembok = window.switchRoleView;
+// Mengubah format angka menjadi format mata uang Rupiah
+window.formatRupiah = function(angka) {
+    if(!angka) return "Rp 0";
+    return 'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+// Mengubah otomatis format nomor HP (awalan 0 menjadi 62)
+window.formatPhoneWA = function(phone) {
+    let p = phone.trim();
+    if (p.startsWith('0')) {
+        p = '62' + p.substring(1);
+    }
+    return p;
+};
+
+// Mengontrol Screen Flash Visual (Animasi Kedip Layar untuk Notifikasi)
+window.triggerScreenFlash = function() {
+    const flash = document.getElementById('screen-flash');
+    if(flash) {
+        flash.classList.remove('hidden');
+        flash.classList.remove('opacity-0');
+        flash.classList.add('opacity-30');
+        
+        setTimeout(() => {
+            flash.classList.add('opacity-0');
+            flash.classList.remove('opacity-30');
+            setTimeout(() => flash.classList.add('hidden'), 300);
+        }, 400);
+    }
+};
+
+// Menjalankan fungsi dasar saat HTML selesai dimuat
+window.addEventListener('DOMContentLoaded', () => {
+    initLiveClock();
+    console.log("Mainstay POS - Part 1 (Core) Initialized.");
+});
+/* --------------------------------------------------------------------------
+   PART 2: SPA ROLE SWITCHING, CONTEXT-AWARE NAVIGATION & PIN AUTH
+   -------------------------------------------------------------------------- */
+
+// 1. SWITCH ROLE VIEW (Navigasi Bawah & SPA Container)
 window.switchRoleView = function(role) {
-    if ((role === 'owner' || role === 'kasir') && !window.isAuthenticated) {
-        window.targetLoginRole = role; const m = document.getElementById('modal-login');
-        if(m) { m.classList.replace('hidden', 'flex'); document.getElementById('login-pin').value = ''; document.getElementById('login-error').classList.add('hidden'); }
+    window.AppState.currentRole = role;
+    
+    // Sembunyikan semua kontainer layar utama
+    document.getElementById('view-customer').classList.add('hidden');
+    document.getElementById('view-kasir').classList.add('hidden');
+    document.getElementById('view-owner').classList.add('hidden');
+    
+    // Reset gaya Navigasi Bawah (Bottom Nav) ke mode pasif
+    document.querySelectorAll('.nav-indicator').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('text-amber-500');
+        el.classList.add('text-gray-400');
+    });
+
+    // Logika Pemilihan Tampilan Berdasarkan Peran
+    if (role === 'customer') {
+        document.getElementById('view-customer').classList.remove('hidden');
+        document.getElementById('nav-customer').classList.remove('text-gray-400');
+        document.getElementById('nav-customer').classList.add('text-amber-500');
+        document.getElementById('nav-customer').querySelector('.nav-indicator').classList.remove('hidden');
+    } 
+    else if (role === 'kasir') {
+        // Keamanan: Cegah akses langsung, wajib lewat verifikasi PIN
+        openLoginModal('kasir');
+    } 
+    else if (role === 'owner') {
+        // Keamanan: Cegah akses langsung, wajib lewat verifikasi PIN
+        openLoginModal('owner');
+    }
+};
+
+// 2. MODAL LOGIN (Membuka panel PIN dengan konteks target)
+window.openLoginModal = function(targetRole) {
+    window.AppState.targetLoginRole = targetRole;
+    
+    const modal = document.getElementById('modal-login');
+    const title = document.getElementById('login-title');
+    const desc = document.getElementById('login-desc');
+    const pinInput = document.getElementById('login-pin');
+    
+    // Set teks instruksi sesuai peran
+    if (targetRole === 'kasir') {
+        title.innerText = "PIN Kasir / Staff";
+        desc.innerText = "Masukkan 6 digit PIN staff Anda untuk mulai bertugas.";
+    } else {
+        title.innerText = "Master PIN Owner";
+        desc.innerText = "Masukkan PIN Master untuk otorisasi akses penuh (Owner).";
+    }
+    
+    // Bersihkan form
+    pinInput.value = '';
+    pinInput.type = 'password';
+    document.getElementById('pin-eye-icon').classList.replace('fa-eye-slash', 'fa-eye');
+    document.getElementById('login-error').classList.add('hidden');
+    
+    // Tampilkan Modal
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Auto-focus input PIN (Delay sedikit agar modal render dulu)
+    setTimeout(() => pinInput.focus(), 100);
+};
+
+// 3. CONTEXT-AWARE EXIT (Tutup modal login tanpa merusak sesi halaman belakang)
+window.closeLoginModal = function() {
+    document.getElementById('modal-login').classList.add('hidden');
+    document.getElementById('modal-login').classList.remove('flex');
+    
+    // Kembalikan highlight navigasi bawah ke peran yang saat ini sedang aktif secara nyata
+    // (Misal: batal login owner, tombol nav kembali nyala di customer)
+    switchRoleView(window.AppState.currentRole === window.AppState.targetLoginRole ? 'customer' : window.AppState.currentRole);
+};
+
+// 4. TOGGLE PIN VISIBILITY (Mata Intip PIN)
+window.togglePinVisibility = function() {
+    const pinInput = document.getElementById('login-pin');
+    const eyeIcon = document.getElementById('pin-eye-icon');
+    
+    if (pinInput.type === 'password') {
+        pinInput.type = 'text';
+        eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        pinInput.type = 'password';
+        eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+};
+
+// 5. PROSES VALIDASI LOGIN PIN
+window.prosesLogin = function() {
+    const pinInput = document.getElementById('login-pin').value.trim();
+    const errorMsg = document.getElementById('login-error');
+    const target = window.AppState.targetLoginRole;
+    
+    // Validasi kosong
+    if (!pinInput || pinInput.length < 4) {
+        errorMsg.innerText = "PIN terlalu pendek!";
+        errorMsg.classList.remove('hidden');
         return;
     }
-    if (role === 'customer') { window.isAuthenticated = false; window.isKasirMode = false; localStorage.removeItem('isOwnerInKasir'); }
-    window.switchLayarAsliTanpaGembok(role);
-};
-window.prosesLogin = function() {
-    const pin = document.getElementById('login-pin').value; const err = document.getElementById('login-error');
-    if (pin === 'RESET88') { window.profilOwner.pin = '888888'; localStorage.setItem('mainstay_dbOwner', JSON.stringify(window.profilOwner)); alert("Sistem Pemulihan Aktif: PIN Owner di-reset ke 888888"); return; }
-    if (!pin) { err.classList.remove('hidden'); err.innerText = "Masukkan PIN!"; return; }
-    const stf = window.databaseStaf.find(s => s.pin === pin);
-    if (pin === (window.profilOwner.pin||'888888')) {
-        window.closeLoginModal(); window.isAuthenticated = true;
-        if(window.targetLoginRole === 'kasir') { localStorage.setItem('isOwnerInKasir', 'true'); window.isKasirMode = true; window.switchRoleView('kasir'); document.getElementById('kasir-blocker')?.classList.add('hidden'); }
-        else window.switchRoleView('owner');
-    } else if (stf && window.targetLoginRole === 'kasir') {
-        window.closeLoginModal(); window.isAuthenticated = true; localStorage.setItem('isOwnerInKasir', 'false'); window.isKasirMode = true; window.switchRoleView('kasir');
-        const hdr = JSON.parse(localStorage.getItem('stafHadirMainstay')) || []; document.getElementById('kasir-blocker')?.classList[hdr.length > 0 ? 'add' : 'remove']('hidden');
-    } else { err.classList.remove('hidden'); err.innerText = "PIN Salah!"; }
-};
-window.closeLoginModal = function() { document.getElementById('modal-login')?.classList.replace('flex', 'hidden'); };
-window.prosesLogout = function() { if(confirm("Yakin Logout?")) { window.isAuthenticated = false; window.isKasirMode = false; localStorage.removeItem('isOwnerInKasir'); window.currentCart = []; localStorage.removeItem('cartMainstay'); window.updateCartFloat(); window.switchLayarAsliTanpaGembok('customer'); } };
 
-// ----------------------------------------------------------------------------
-// 6. ABSENSI KAMERA & TOLERANSI WAKTU
-// ----------------------------------------------------------------------------
-window.openAbsensi = async function() {
-    const m = document.getElementById('modal-absensi'); const v = document.getElementById('attendance-video'); if (m) m.classList.replace('hidden', 'flex');
-    try { const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); window.cameraStream = st; if (v) { v.srcObject = st; v.onloadedmetadata = () => { v.play(); v.classList.remove('hidden'); }; } } catch(e) { alert("Akses kamera ditolak."); window.closeAbsensi(); }
-};
-window.closeAbsensi = function() { if (window.cameraStream) { window.cameraStream.getTracks().forEach(t => t.stop()); window.cameraStream = null; } document.getElementById('modal-absensi')?.classList.replace('flex', 'hidden'); };
-window.prosesAbsen = function(tipe) {
-    const p = document.getElementById('absen-pin').value; const s = window.databaseStaf.find(x => x.pin === p); if (!s) return alert("PIN Tidak Terdaftar!");
-    let hdr = JSON.parse(localStorage.getItem('stafHadirMainstay')) || [];
-    if (tipe === 'Masuk' && hdr.includes(s.nama)) { window.playAudio('error'); return alert("Sudah Absen Masuk."); }
-    if (tipe !== 'Masuk' && !hdr.includes(s.nama)) { window.playAudio('error'); return alert("Belum Absen Masuk."); }
-
-    let fw = ""; const v = document.getElementById('attendance-video');
-    if (v && !v.classList.contains('hidden')) { const c = document.createElement('canvas'); c.width = 300; c.height = v.videoHeight * (300 / v.videoWidth); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); fw = c.toDataURL('image/jpeg', 0.4); }
+    errorMsg.classList.add('hidden');
     
-    let dr = "-";
-    if (tipe === 'Masuk' && s.shift && s.shift.includes('-')) {
-        const [jt, mt] = s.shift.split('-')[0].trim().split(':'); const wt = new Date(); wt.setHours(jt, mt, 0, 0); const sm = Math.floor((new Date() - wt) / 60000);
-        if (sm > 15) dr = `Terlambat ${sm} Menit`; else if (sm < -15) dr = `Lebih Awal ${Math.abs(sm)} Menit`; else dr = "Tepat Waktu";
-    } else if (tipe !== 'Masuk') {
-        const rw = JSON.parse(localStorage.getItem('mainstay_dbAbsen')) || []; const am = rw.slice().reverse().find(l => l.nama === s.nama && l.tipe === 'Masuk');
-        if (am) { const ms = new Date() - new Date(am.waktu); dr = `${Math.floor(ms / 3600000)} Jam ${Math.floor((ms % 3600000) / 60000)} Menit`; }
+    // === AUTENTIKASI OWNER ===
+    if (target === 'owner') {
+        // Cek Master PIN dari hardcoded blueprint
+        if (pinInput === "888888" || pinInput === "RESET88") {
+            // Sukses Login Owner
+            document.getElementById('modal-login').classList.add('hidden');
+            document.getElementById('modal-login').classList.remove('flex');
+            
+            // Tampilkan UI Owner
+            window.AppState.currentRole = 'owner';
+            document.getElementById('view-owner').classList.remove('hidden');
+            document.getElementById('nav-owner').classList.remove('text-gray-400');
+            document.getElementById('nav-owner').classList.add('text-amber-500');
+            document.getElementById('nav-owner').querySelector('.nav-indicator').classList.remove('hidden');
+            
+            // Panggil fungsi render Dashboard Owner (akan dibuat di part selanjutnya)
+            if(typeof window.loadOwnerDashboard === 'function') window.loadOwnerDashboard();
+            
+        } else {
+            errorMsg.innerText = "Master PIN Salah atau Ditolak!";
+            errorMsg.classList.remove('hidden');
+        }
+    } 
+    
+    // === AUTENTIKASI KASIR ===
+    else if (target === 'kasir') {
+        import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+            const { get, ref } = module;
+            const staffRef = ref(window.db, 'staff');
+            
+            get(staffRef).then((snapshot) => {
+                let isValid = false;
+                let activeStaff = "Staf Kasir";
+                
+                // Jika ada data di Firebase
+                if (snapshot.exists()) {
+                    snapshot.forEach((child) => {
+                        const stafData = child.val();
+                        if (stafData.pin === pinInput) {
+                            isValid = true;
+                            activeStaff = stafData.name;
+                        }
+                    });
+                }
+                
+                // Fallback PIN default sesuai di HTML untuk testing
+                if (pinInput === "123456" || pinInput === "654321") {
+                    isValid = true;
+                    activeStaff = pinInput === "123456" ? "Budi (Kasir 1)" : "Siti (Kasir 2)";
+                }
+                
+                if (isValid) {
+                    // Sukses Login Kasir
+                    window.AppState.activeStaffName = activeStaff;
+                    document.getElementById('modal-login').classList.add('hidden');
+                    document.getElementById('modal-login').classList.remove('flex');
+                    
+                    // Tampilkan UI Kasir
+                    window.AppState.currentRole = 'kasir';
+                    document.getElementById('view-kasir').classList.remove('hidden');
+                    document.getElementById('nav-kasir').classList.remove('text-gray-400');
+                    document.getElementById('nav-kasir').classList.add('text-amber-500');
+                    document.getElementById('nav-kasir').querySelector('.nav-indicator').classList.remove('hidden');
+                    
+                    // Panggil fungsi render Pesanan Kasir (di part selanjutnya)
+                    if(typeof window.loadKasirOrders === 'function') window.loadKasirOrders();
+                    
+                } else {
+                    errorMsg.innerText = "PIN Staff Tidak Ditemukan!";
+                    errorMsg.classList.remove('hidden');
+                }
+            }).catch(err => {
+                errorMsg.innerText = "Gagal terhubung ke server.";
+                errorMsg.classList.remove('hidden');
+            });
+        });
+    }
+};
+
+// 6. PROSES LOGOUT SESI (Keluar Aman)
+window.prosesLogout = function(role) {
+    if (confirm(`Apakah Anda yakin ingin mengakhiri sesi ${role === 'owner' ? 'Owner' : 'Kasir'}?`)) {
+        // Bersihkan state staff aktif
+        window.AppState.activeStaffName = null;
+        // Kembalikan paksa layar ke mode Customer Publik
+        switchRoleView('customer');
+    }
+};
+
+console.log("Mainstay POS - Part 2 (Navigation & PIN Auth) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 3: KATALOG MENU (FIREBASE), FILTERING, KUSTOMISASI & FLOATING CART
+   -------------------------------------------------------------------------- */
+
+window.AppState.menuData = []; // Menyimpan raw data menu untuk keperluan filter & pencarian
+
+// 1. AMBIL DATA MENU DARI FIREBASE (Real-Time Database)
+window.loadCatalogMenu = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        const menuRef = ref(window.db, 'menu');
+        
+        onValue(menuRef, (snapshot) => {
+            let data = snapshot.val();
+            
+            // Dummy Data Fallback (Akan muncul jika database Firebase masih kosong)
+            if (!data) {
+                data = [
+                    { id: '1', name: 'Es Kopi Mainstay', category: 'coffee', price: 16000, normalPrice: 20000, img: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=300', available: true, bestSeller: true, stampEligible: true, desc: 'Kopi signature khas Mainstay dengan gula aren asli.' },
+                    { id: '2', name: 'Matcha Latte Premium', category: 'non-coffee', price: 18000, normalPrice: 22000, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=300', available: true, bestSeller: true, stampEligible: true, desc: 'Teh hijau matcha jepang dipadukan dengan susu segar.' },
+                    { id: '3', name: 'Choco Hazelnut', category: 'non-coffee', price: 17000, normalPrice: 17000, img: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=300', available: false, bestSeller: false, stampEligible: true, desc: 'Coklat kental dengan perisa kacang hazelnut.' }
+                ];
+            } else {
+                // Konversi format Objek Firebase menjadi Array
+                data = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            }
+            
+            window.AppState.menuData = data;
+            
+            // Render pertama kali menampilkan semua menu (Kategori 'all')
+            window.filterKategori('all'); 
+        });
+    });
+};
+
+// 2. RENDER GRID KATALOG MENU KE DALAM HTML
+window.renderMenuGrid = function(menus) {
+    const grid = document.getElementById('menu-grid');
+    grid.innerHTML = '';
+    
+    // Tampilan jika hasil filter/pencarian kosong
+    if (menus.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 font-bold"><i class="fa-solid fa-face-frown text-3xl mb-2 text-slate-300"></i><br>Menu tidak ditemukan...</div>`;
+        return;
     }
 
-    const da = { id: 'ABS'+Date.now(), waktu: new Date().toISOString(), nama: s.nama, tipe: tipe, foto: fw, durasi: dr };
-    window.riwayatAbsensi.push(da); localStorage.setItem('mainstay_dbAbsen', JSON.stringify(window.riwayatAbsensi)); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'riwayat_absen'), window.riwayatAbsensi);
-    if (tipe === 'Masuk') { hdr.push(s.nama); document.getElementById('kasir-blocker')?.classList.add('hidden'); } else { hdr = hdr.filter(n => n !== s.nama); if (hdr.length === 0) { document.getElementById('kasir-blocker')?.classList.remove('hidden'); window.statusStokTerkunci = true; if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: window.tanggalSistemSekarang, isLocked: true }); } }
-    localStorage.setItem('stafHadirMainstay', JSON.stringify(hdr)); window.closeAbsensi(); alert(`Berhasil Absen ${tipe}\n${dr.includes('Terlambat')?'⚠️ '+dr:dr}`);
-};
+    menus.forEach(menu => {
+        // Logika Status "Habis" / Sold Out dari Blueprint
+        const isHabis = !menu.available;
+        
+        // Pengaturan gaya visual & fungsi klik berdasarkan stok
+        const clickAction = isHabis ? "" : `onclick="openMenuDetail('${menu.id}')"`;
+        const visualClass = isHabis ? "opacity-50 grayscale cursor-not-allowed" : "cursor-pointer group active:scale-95 hover:shadow-lg";
+        const badgeBestSeller = menu.bestSeller ? `<span class="absolute top-2 left-2 bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full z-10 shadow-sm">⭐ Best Seller</span>` : '';
+        const badgeSoldOut = isHabis ? `<div class="absolute inset-0 bg-black/40 z-20 flex items-center justify-center"><span class="bg-red-500 text-white font-black text-xs px-3 py-1 rounded-full shadow-lg transform -rotate-12 border-2 border-white">HABIS</span></div>` : '';
+        const coretHarga = (menu.normalPrice > menu.price) ? `<span class="text-[9px] text-gray-400 line-through ml-1">${window.formatRupiah(menu.normalPrice)}</span>` : '';
 
-// ----------------------------------------------------------------------------
-// 7. RENDER KATALOG & DEDICATED POS KASIR (QUICK ADD)
-// ----------------------------------------------------------------------------
-window.renderKatalog = function() {
-    const c = document.getElementById('menu-container') || document.querySelector('.menu-grid') || document.getElementById('katalog-list'); if(!c) return;
-    let fm = window.kategoriAktif && window.kategoriAktif !== 'all' ? window.katalogMenu.filter(m => m.kategori && m.kategori.toLowerCase() === window.kategoriAktif) : window.katalogMenu;
-    c.innerHTML = fm.length === 0 ? '<div class="col-span-full text-center py-10 text-gray-400 font-bold">Kosong.</div>' : '';
-    fm.forEach(i => {
-        const hb = i.stok === 0; const tp = (i.opsiTopping && i.opsiTopping.length > 0) ? '<span class="absolute top-2 left-2 bg-amber-500 text-white text-[8px] font-black px-2 py-1 rounded-full z-10">TOPPING</span>' : '';
-        c.innerHTML += `<div class="bg-white rounded-2xl shadow-sm border overflow-hidden relative group hover:border-amber-300 transition">${tp}${hb?'<span class="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-black px-2 py-1 rounded-md z-10">Habis</span>':''}<div onclick="window.openMenuDetail('${i.id}')" class="h-32 w-full bg-slate-100 relative overflow-hidden cursor-pointer">${i.image ? `<img src="${i.image}" class="w-full h-full object-cover ${hb?'grayscale opacity-50':'group-hover:scale-105 transition'}">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image text-3xl"></i></div>`}</div><div class="p-3"><h3 onclick="window.openMenuDetail('${i.id}')" class="font-black text-sm cursor-pointer line-clamp-1 ${hb?'text-gray-400':'text-gray-900'}">${i.nama}</h3><div class="flex justify-between items-end mt-2"><span class="text-xs font-black ${hb?'text-gray-400':'text-amber-500'}">Rp ${parseInt(i.harga).toLocaleString('id-ID')}</span>${!hb ? `<button onclick="window.tambahCepatKeKeranjang(event, '${i.id}')" class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 hover:bg-amber-500 hover:text-white transition z-20"><i class="fa-solid fa-plus text-sm"></i></button>` : ''}</div></div></div>`;
+        // Injeksi komponen Card
+        const card = document.createElement('div');
+        card.className = `bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden transition duration-300 transform ${visualClass}`;
+        
+        if(!isHabis) card.setAttribute("onclick", clickAction);
+
+        card.innerHTML = `
+            ${badgeBestSeller}
+            <div class="w-full aspect-square bg-slate-100 rounded-xl overflow-hidden mb-3 relative border border-slate-200">
+                ${badgeSoldOut}
+                <img src="${menu.img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" alt="${menu.name}">
+            </div>
+            <div>
+                <h4 class="font-black text-xs text-gray-900 line-clamp-1 leading-snug">${menu.name}</h4>
+                <div class="flex items-center gap-1 mt-1">
+                    <span class="text-xs font-black text-amber-600 drop-shadow-sm">${window.formatRupiah(menu.price)}</span>
+                    ${coretHarga}
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
     });
 };
 
-window.bukaOrderKasir = function() { window.isKasirMode = true; document.getElementById('modal-pos-kasir')?.classList.replace('hidden', 'flex'); window.renderPOSKategori(); window.renderPOSMenu('all'); window.updatePOSCartSummary(); };
-window.tutupOrderKasir = function() { if (window.currentCart && window.currentCart.length > 0) { if(!confirm("Yakin batal pesanan ini?")) return; window.currentCart = []; localStorage.removeItem('cartMainstay'); window.updatePOSCartSummary(); } document.getElementById('modal-pos-kasir')?.classList.replace('flex', 'hidden'); };
-window.renderPOSKategori = function() { const c = document.getElementById('pos-kategori-container'); if (!c) return; const un = ['Semua']; window.katalogMenu.forEach(m => { if(m.kategori) { const k = m.kategori.charAt(0).toUpperCase() + m.kategori.slice(1); if (!un.includes(k)) un.push(k); }}); c.innerHTML = ''; un.forEach(k => { const isA = (window.posKategoriAktif === 'all' && k === 'Semua') || window.posKategoriAktif === k.toLowerCase(); c.innerHTML += `<button onclick="window.renderPOSMenu('${k === 'Semua' ? 'all' : k.toLowerCase()}')" class="px-5 py-2 rounded-full text-xs font-black transition ${isA?'bg-amber-500 text-white':'bg-gray-100 text-gray-600'}">${k}</button>`; }); };
-window.renderPOSMenu = function(kat) {
-    window.posKategoriAktif = kat; window.renderPOSKategori(); const c = document.getElementById('pos-menu-container'); if(!c) return;
-    let fm = kat !== 'all' ? window.katalogMenu.filter(m => m.kategori && m.kategori.toLowerCase() === kat) : window.katalogMenu;
-    c.innerHTML = fm.length === 0 ? '<div class="col-span-full text-center text-gray-400 font-bold">Kosong.</div>' : '';
-    fm.forEach(i => {
-        const hb = i.stok === 0; const tp = (i.opsiTopping && i.opsiTopping.length > 0) ? '<span class="absolute top-2 left-2 bg-indigo-500 text-white text-[8px] px-1.5 py-0.5 rounded z-10"><i class="fa-solid fa-wand-magic-sparkles"></i></span>' : '';
-        c.innerHTML += `<div onclick="window.tambahCepatKeKeranjang(event, '${i.id}')" class="bg-white rounded-2xl shadow-sm border overflow-hidden relative cursor-pointer hover:border-amber-400 transition active:scale-95 flex flex-col h-full group">${tp}${hb?'<span class="absolute top-2 right-2 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded z-10">HABIS</span>':''}<div class="h-24 w-full bg-slate-100 relative shrink-0">${i.image ? `<img src="${i.image}" class="w-full h-full object-cover ${hb?'grayscale opacity-50':''}">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image"></i></div>`}<div class="absolute inset-0 bg-amber-500/20 hidden group-active:block transition"></div></div><div class="p-3 flex-1 flex flex-col justify-between"><h3 class="font-black text-xs leading-tight mb-2 ${hb?'text-gray-400':'text-gray-900'}">${i.nama}</h3><div class="flex justify-between items-center"><span class="text-[10px] font-black ${hb?'text-gray-400':'text-amber-500'}">Rp ${parseInt(i.harga).toLocaleString('id-ID')}</span>${!hb ? `<div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center pointer-events-none"><i class="fa-solid fa-plus text-[10px]"></i></div>` : ''}</div></div></div>`;
+// 3. FILTER MENU BERDASARKAN TAB KATEGORI
+window.filterKategori = function(kategoriId) {
+    // Reset visual warna semua tombol tab kategori
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-amber-500', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-100', 'text-gray-600');
     });
-};
-window.tambahCepatKeKeranjang = function(e, id) {
-    e.stopPropagation(); const i = window.katalogMenu.find(m => m.id === id); if(!i || i.stok <= 0) return alert("Stok Habis!");
-    if(i.opsiTopping && i.opsiTopping.length > 0) { window.openMenuDetail(id); return; }
-    window.currentCart = window.currentCart || []; const idx = window.currentCart.findIndex(c => c.id === i.id);
-    if(idx > -1) { if (window.currentCart[idx].qty + 1 > i.stok) return alert("Stok tidak cukup!"); window.currentCart[idx].qty += 1; window.currentCart[idx].subtotal = window.currentCart[idx].qty * window.currentCart[idx].harga; } 
-    else { window.currentCart.push({ cartId: Date.now().toString(), id: i.id, nama: i.nama, harga: parseInt(i.harga), qty: 1, subtotal: parseInt(i.harga), kategori: i.kategori }); }
-    localStorage.setItem('cartMainstay', JSON.stringify(window.currentCart)); window.playAudio('masuk'); window.updateCartFloat();
-    const btn = e.currentTarget; const old = btn.innerHTML; btn.innerHTML = '<div class="absolute inset-0 bg-green-500 flex items-center justify-center text-white text-2xl"><i class="fa-solid fa-check"></i></div>'; setTimeout(() => { btn.innerHTML = old; }, 300);
+    
+    // Beri warna terang pada tab yang sedang diklik (mencocokkan onClick value)
+    const activeBtn = Array.from(document.querySelectorAll('.cat-btn')).find(btn => btn.getAttribute('onclick').includes(kategoriId));
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-100', 'text-gray-600');
+        activeBtn.classList.add('active', 'bg-amber-500', 'text-white', 'shadow-md');
+    }
+
+    // Filter data asli berdasarkan ID kategori
+    let filtered = window.AppState.menuData;
+    if (kategoriId !== 'all') {
+        filtered = filtered.filter(m => m.category === kategoriId);
+    }
+    
+    // Kosongkan form pencarian saat berpindah tab
+    const searchInput = document.getElementById('search-menu');
+    if (searchInput) searchInput.value = '';
+    
+    window.renderMenuGrid(filtered);
 };
 
-window.updatePOSCartSummary = function() { const elT = document.getElementById('pos-total-harga'); const elI = document.getElementById('pos-total-item'); if(elT && window.currentCart) { elT.innerText = `Rp ${window.currentCart.reduce((s, i) => s + i.subtotal, 0).toLocaleString('id-ID')}`; elI.innerText = `${window.currentCart.reduce((s, i) => s + i.qty, 0)} Item`; } };
-const oldUpdCart = window.updateCartFloat; window.updateCartFloat = function() { if(typeof oldUpdCart === 'function') oldUpdCart(); window.updatePOSCartSummary(); };
+// 4. PENCARIAN MENU (SEARCH BAR)
+window.searchKatalog = function() {
+    const keyword = document.getElementById('search-menu').value.toLowerCase();
+    
+    // Kembalikan highlight tab ke 'all' saat mencari manual
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-amber-500', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-100', 'text-gray-600');
+    });
 
-if (!window.originalOpenCartModal) window.originalOpenCartModal = window.openCartModal;
+    const filtered = window.AppState.menuData.filter(m => 
+        m.name.toLowerCase().includes(keyword) || 
+        (m.desc && m.desc.toLowerCase().includes(keyword))
+    );
+    
+    window.renderMenuGrid(filtered);
+};
+
+// 5. MEMBUKA MODAL KUSTOMISASI DETAIL MENU (Klik dari grid)
+window.openMenuDetail = function(menuId) {
+    // Temukan objek menu dari ID
+    const menu = window.AppState.menuData.find(m => m.id.toString() === menuId.toString());
+    if (!menu) return;
+    
+    window.AppState.activeMenuForDetail = menu;
+    
+    // Tulis data dasar ke Modal HTML
+    document.getElementById('detail-img').src = menu.img;
+    document.getElementById('detail-name').innerText = menu.name;
+    document.getElementById('detail-desc').innerText = menu.desc || 'Minuman segar pilihan berkualitas.';
+    document.getElementById('detail-qty').innerText = "1"; // Reset Qty selalu ke 1
+    document.getElementById('detail-total-price').innerText = window.formatRupiah(menu.price);
+    
+    // Bangun Elemen HTML Kustomisasi Pintar (Ice, Sugar, Size)
+    const variantContainer = document.getElementById('detail-variants-container');
+    variantContainer.innerHTML = `
+        <!-- Pilihan Ukuran (Dynamic Pricing) -->
+        <div>
+            <label class="text-[10px] font-black text-gray-500 block mb-2 uppercase tracking-wide">Ukuran Gelas (Size)</label>
+            <div class="grid grid-cols-2 gap-3">
+                <label class="p-3 border-2 border-slate-200 rounded-xl text-xs font-black text-center cursor-pointer has-[:checked]:bg-amber-50 has-[:checked]:border-amber-500 transition shadow-sm hover:shadow-md">
+                    <input type="radio" name="var_size" value="Reguler" data-price="0" class="hidden" checked onchange="kalkulasiHargaDetail()"> Reguler
+                </label>
+                <label class="p-3 border-2 border-slate-200 rounded-xl text-xs font-black text-center cursor-pointer has-[:checked]:bg-amber-50 has-[:checked]:border-amber-500 transition shadow-sm hover:shadow-md">
+                    <input type="radio" name="var_size" value="Large" data-price="3000" class="hidden" onchange="kalkulasiHargaDetail()"> Large (+Rp 3rb)
+                </label>
+            </div>
+        </div>
+        
+        <!-- Pilihan Gula & Es -->
+        <div class="grid grid-cols-2 gap-4 mt-1">
+            <div>
+                <label class="text-[10px] font-black text-gray-500 block mb-2 uppercase tracking-wide">Level Gula</label>
+                <select id="var_sugar" class="w-full bg-slate-50 border border-slate-200 text-xs font-black rounded-xl p-3 focus:outline-none focus:border-amber-500 shadow-inner">
+                    <option value="Normal">Normal (100%)</option>
+                    <option value="Less Sugar">Less (50%)</option>
+                    <option value="No Sugar">No Sugar (0%)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-gray-500 block mb-2 uppercase tracking-wide">Level Es</label>
+                <select id="var_ice" class="w-full bg-slate-50 border border-slate-200 text-xs font-black rounded-xl p-3 focus:outline-none focus:border-amber-500 shadow-inner">
+                    <option value="Normal">Normal Ice</option>
+                    <option value="Less Ice">Less Ice</option>
+                    <option value="No Ice">No Ice</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    // Tampilkan Modal Animasi Naik (Slide Up)
+    const modal = document.getElementById('modal-menu-detail');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+// 6. TUTUP MODAL DETAIL (Context-Aware Exit)
+window.closeMenuDetail = function() {
+    const modal = document.getElementById('modal-menu-detail');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    window.AppState.activeMenuForDetail = null; // Bersihkan state memori menu
+};
+
+// 7. TAMBAH/KURANG KUANTITAS MENU (Tombol Plus Minus)
+window.updateQty = function(change) {
+    const qtyEl = document.getElementById('detail-qty');
+    let currentQty = parseInt(qtyEl.innerText) || 1;
+    
+    currentQty += change;
+    if(currentQty < 1) currentQty = 1; // Mengunci agar tidak bisa minus atau 0
+    
+    qtyEl.innerText = currentQty;
+    window.kalkulasiHargaDetail(); // Update grand total di tombol bawah secara live
+};
+
+// 8. LIVE KALKULASI HARGA DI TOMBOL CHECKOUT (Size + Qty)
+window.kalkulasiHargaDetail = function() {
+    const menu = window.AppState.activeMenuForDetail;
+    if(!menu) return;
+    
+    const qty = parseInt(document.getElementById('detail-qty').innerText) || 1;
+    let basePrice = parseInt(menu.price);
+    
+    // Deteksi harga varian (misal pilih Large +3000)
+    const selectedSize = document.querySelector('input[name="var_size"]:checked');
+    if (selectedSize && selectedSize.dataset.price) {
+        basePrice += parseInt(selectedSize.dataset.price);
+    }
+    
+    // Set Grand Total Akhir
+    const grandTotal = basePrice * qty;
+    document.getElementById('detail-total-price').innerText = window.formatRupiah(grandTotal);
+};
+
+// 9. PROSES TAMBAH KE KERANJANG (MASUK DATA STATE KERANJANG)
+window.addToCart = function() {
+    const menu = window.AppState.activeMenuForDetail;
+    const qty = parseInt(document.getElementById('detail-qty').innerText);
+    
+    // Tarik value kustomisasi HTML
+    const sizeOption = document.querySelector('input[name="var_size"]:checked');
+    const sugarOption = document.getElementById('var_sugar').value;
+    const iceOption = document.getElementById('var_ice').value;
+    
+    let unitPrice = parseInt(menu.price);
+    let variantText = []; // Tempat penampung text pesanan dapur
+    
+    // Analisa Teks Varian
+    if (sizeOption.value !== "Reguler") {
+        unitPrice += parseInt(sizeOption.dataset.price);
+        variantText.push(`Size: ${sizeOption.value}`);
+    }
+    if (sugarOption !== "Normal") variantText.push(`Gula: ${sugarOption}`);
+    if (iceOption !== "Normal") variantText.push(`Es: ${iceOption}`);
+    
+    // Penggabungan Catatan Kustomisasi untuk dapur
+    const notes = variantText.length > 0 ? variantText.join(', ') : 'Original';
+    const subtotal = unitPrice * qty;
+    
+    // Simpan dalam format Objek JSON rapih
+    const cartItem = {
+        id: menu.id + "_" + Date.now(), // Unik Anti-Collision ID item
+        menuId: menu.id,
+        name: menu.name,
+        qty: qty,
+        unitPrice: unitPrice,
+        subtotal: subtotal,
+        notes: notes,
+        stampEligible: menu.stampEligible
+    };
+    
+    window.AppState.cart.push(cartItem);
+    
+    // Bersihkan layar & beri efek visual sukses
+    window.closeMenuDetail();
+    window.updateCartBadge();
+    window.triggerScreenFlash();
+};
+
+// 10. UPDATE VISUAL TOMBOL KERANJANG MELAYANG (FLOATING CART)
+window.updateCartBadge = function() {
+    const badgeEl = document.getElementById('cart-badge');
+    const totalFloatEl = document.getElementById('cart-total-float');
+    const floatingCartPanel = document.getElementById('floating-cart');
+    
+    let totalItems = 0;
+    let grandTotal = 0;
+    
+    // Kalkulasi Total Global Keranjang
+    window.AppState.cart.forEach(item => {
+        totalItems += item.qty;
+        grandTotal += item.subtotal;
+    });
+    
+    badgeEl.innerText = totalItems;
+    totalFloatEl.innerText = window.formatRupiah(grandTotal);
+    
+    // Otomatis Muncul/Sembunyi berdasarkan isi keranjang
+    if (totalItems > 0) {
+        floatingCartPanel.classList.remove('hidden');
+    } else {
+        floatingCartPanel.classList.add('hidden');
+    }
+};
+
+// Panggil fungsi muat data menu (Delay sedikit setelah file js siap di DOM)
+setTimeout(() => {
+    if(typeof window.loadCatalogMenu === 'function') window.loadCatalogMenu();
+}, 200);
+
+console.log("Mainstay POS - Part 3 (Catalog & Floating Cart) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 4: KERANJANG BELANJA (CART REVIEW), CHECKOUT & QRIS HANDLING
+   -------------------------------------------------------------------------- */
+
+window.AppState.cartDiscount = 0; // State untuk menyimpan nominal diskon voucher
+
+// 1. MEMBUKA MODAL KERANJANG (CART SUMMARY REVIEW)
 window.openCartModal = function() {
-    window.originalOpenCartModal(); const c = document.getElementById('cart-items-container') || document.querySelector('.cart-items');
-    if (c) { Array.from(c.children).forEach((el, i) => { const r = el.querySelector('.text-right') || el.querySelector('div:last-child'); if (r && !r.querySelector('.btn-qty-control')) r.insertAdjacentHTML('beforeend', `<div class="flex items-center justify-end gap-2 mt-2 btn-qty-control"><button onclick="window.ubahQtyCartItem(${i}, -1)" class="w-7 h-7 bg-slate-100 rounded text-gray-700 font-black">-</button><span class="text-xs font-black w-5 text-center">${window.currentCart[i].qty}</span><button onclick="window.ubahQtyCartItem(${i}, 1)" class="w-7 h-7 bg-amber-100 text-amber-700 rounded font-black">+</button></div>`); if (!el.querySelector('.btn-hapus-item')) (el.querySelector('.flex.justify-between') || el).insertAdjacentHTML('beforeend', `<button onclick="window.hapusSatuItemKeranjang(${i})" class="btn-hapus-item ml-3 w-8 h-8 bg-red-50 text-red-500 rounded-lg shrink-0"><i class="fa-solid fa-trash text-[10px]"></i></button>`); }); }
-};
-window.ubahQtyCartItem = function(idx, j) { const i = window.currentCart[idx]; if (j > 0) { const m = window.katalogMenu.find(x => x.id === i.id); if (m && (i.qty + j) > m.stok) return alert("Stok limit."); } i.qty += j; i.subtotal = i.qty * i.harga; if (i.qty <= 0) return window.hapusSatuItemKeranjang(idx); localStorage.setItem('cartMainstay', JSON.stringify(window.currentCart)); window.updateCartFloat(); window.openCartModal(); };
-window.hapusSatuItemKeranjang = function(idx) { if (confirm("Hapus pesanan?")) { window.currentCart.splice(idx, 1); localStorage.setItem('cartMainstay', JSON.stringify(window.currentCart)); window.updateCartFloat(); if (window.currentCart.length === 0 && typeof window.closeCartModal === 'function') window.closeCartModal(); else window.openCartModal(); } };
-
-// ----------------------------------------------------------------------------
-// 8. PEMBAYARAN KASIR & SPREADSHEET (APPS SCRIPT)
-// ----------------------------------------------------------------------------
-if (!window.originalProsesCheckout) window.originalProsesCheckout = window.prosesCheckout;
-window.prosesCheckout = function() {
-    if (window.isKasirMode) {
-        if (!window.currentCart || window.currentCart.length === 0) return alert("Keranjang kosong.");
-        window.tempTotalBayarKasir = window.currentCart.reduce((s, i) => s + i.subtotal, 0);
-        let h = `<div id="modal-payment-kasir" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[250] flex flex-col items-center justify-end md:justify-center p-4"><div class="bg-white w-full max-w-sm rounded-t-3xl md:rounded-3xl p-6 shadow-2xl relative flex flex-col max-h-[95vh]"><button onclick="document.getElementById('modal-payment-kasir').remove(); window.openCartModal();" class="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full text-gray-600 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button><div class="overflow-y-auto flex-1 pb-4"><h2 class="text-xl font-black text-gray-900 mb-1"><i class="fa-solid fa-cash-register text-amber-500 mr-2"></i>Pembayaran</h2><label class="text-[10px] font-black text-gray-500 uppercase">Kasir:</label><select id="kasir-staf-dropdown" class="w-full bg-slate-50 border rounded-xl p-3 text-sm font-bold mb-2"></select><div class="grid grid-cols-2 gap-2 mt-2 mb-2"><div><label class="text-[10px] font-black text-gray-500 uppercase">Pelanggan</label><input type="text" id="kasir-nama-pelanggan" class="w-full bg-white border rounded-xl p-2.5 text-xs font-bold" placeholder="Opsional"></div><div><label class="text-[10px] font-black text-gray-500 uppercase">WA Pelanggan</label><input type="number" id="kasir-wa-pelanggan" class="w-full bg-white border rounded-xl p-2.5 text-xs font-bold" placeholder="08xx (Opsional)"></div></div><div class="mb-2"><div><label class="text-[10px] font-black text-gray-500 uppercase">Diskon (Rp)</label><input type="number" id="kasir-input-diskon" onkeyup="window.hitungKembalian()" class="w-full bg-white border rounded-xl p-2.5 text-xs font-bold text-red-500" placeholder="0"></div></div><div class="mt-2 mb-4"><label class="text-[10px] font-black text-gray-500 uppercase">Metode:</label><div class="grid grid-cols-2 gap-2 mt-1"><button id="btn-tunai" onclick="window.pilihMetodeKasir('Tunai')" class="bg-amber-500 text-white py-2 rounded-lg text-xs font-black border-2 border-amber-500">TUNAI</button><button id="btn-qris" onclick="window.pilihMetodeKasir('QRIS')" class="bg-white text-gray-500 py-2 rounded-lg text-xs font-black border-2">QRIS</button></div><input type="hidden" id="kasir-metode-terpilih" value="Tunai"></div><div class="bg-gray-900 text-white p-4 rounded-2xl mb-4 text-center"><p class="text-[10px] font-black text-gray-400 uppercase">Total Tagihan</p><h3 id="pay-total" class="text-3xl font-black text-amber-400">Rp ${window.tempTotalBayarKasir.toLocaleString('id-ID')}</h3></div><div id="kasir-qris-container" class="hidden flex-col items-center justify-center mb-4 p-4 border-2 border-dashed border-amber-300 bg-amber-50 rounded-2xl"><img id="kasir-qris-img" src="${window.systemConfig.qrisUrl}" class="w-40 h-40 object-contain rounded-xl"></div><div id="kasir-input-uang-area"><input type="number" id="pay-input" onkeyup="window.hitungKembalian()" class="w-full bg-slate-50 border rounded-xl p-4 text-2xl text-center font-black mb-3" placeholder="0"><div class="grid grid-cols-3 gap-2 mb-6"><button onclick="window.setUang(0)" class="bg-amber-100 text-amber-700 font-black py-3 rounded-xl text-[10px]">PAS</button><button onclick="window.setUang(10000)" class="bg-white border text-gray-700 font-black py-3 rounded-xl text-[10px]">10K</button><button onclick="window.setUang(20000)" class="bg-white border text-gray-700 font-black py-3 rounded-xl text-[10px]">20K</button><button onclick="window.setUang(50000)" class="bg-white border text-gray-700 font-black py-3 rounded-xl text-[10px]">50K</button><button onclick="window.setUang(100000)" class="bg-white border text-gray-700 font-black py-3 rounded-xl text-[10px]">100K</button><button onclick="window.setUang('clear')" class="bg-red-50 text-red-500 font-black py-3 rounded-xl text-[10px]"><i class="fa-solid fa-delete-left text-sm"></i></button></div><div class="flex justify-between items-center border-t pt-4"><span class="text-xs font-black">Kembalian:</span><span id="pay-kembalian" class="text-2xl font-black text-green-500">Rp 0</span></div></div></div><div class="shrink-0 pt-2"><button onclick="window.finalisasiPembayaranKasir()" class="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-lg"><i class="fa-solid fa-print mr-2"></i> BAYAR & PROSES DAPUR</button></div></div></div>`;
-        const oldM = document.getElementById('modal-payment-kasir'); if(oldM) oldM.remove(); document.body.insertAdjacentHTML('beforeend', h);
-        const dd = document.getElementById('kasir-staf-dropdown'); if (localStorage.getItem('isOwnerInKasir') === 'true') { dd.innerHTML = `<option value="Master Owner">Master Owner</option>`; } else { const h = JSON.parse(localStorage.getItem('stafHadirMainstay')) || []; if(h.length === 0) dd.innerHTML = `<option value="Kasir">Kasir</option>`; h.forEach(n => dd.innerHTML += `<option value="${n}">${n}</option>`); }
-        if (typeof window.closeCartModal === 'function') window.closeCartModal();
-    } else { window.originalProsesCheckout(); }
-};
-window.pilihMetodeKasir = function(m) {
-    document.getElementById('kasir-metode-terpilih').value = m; const bt = document.getElementById('btn-tunai'); const bq = document.getElementById('btn-qris'); const u = document.getElementById('kasir-input-uang-area'); const q = document.getElementById('kasir-qris-container');
-    if (m === 'QRIS') { bt.className = "bg-white text-gray-500 py-2 rounded-lg text-xs font-black border-2"; bq.className = "bg-amber-500 text-white py-2 rounded-lg text-xs font-black border-2 border-amber-500"; u.classList.add('hidden'); q.classList.replace('hidden', 'flex'); window.setUang(window.tempTotalBayarKasir); } else { bt.className = "bg-amber-500 text-white py-2 rounded-lg text-xs font-black border-2 border-amber-500"; bq.className = "bg-white text-gray-500 py-2 rounded-lg text-xs font-black border-2"; u.classList.remove('hidden'); q.classList.replace('flex', 'hidden'); window.setUang('clear'); }
-};
-window.setUang = function(n) { const i = document.getElementById('pay-input'); if(n === 'clear') i.value = ''; else if(n === 0) i.value = window.tempTotalBayarKasir; else i.value = n; window.hitungKembalian(); };
-window.hitungKembalian = function() {
-    const s = window.currentCart.reduce((sum, i) => sum + i.subtotal, 0); let d = parseInt(document.getElementById('kasir-input-diskon')?.value) || 0; if (d > s) { d = s; document.getElementById('kasir-input-diskon').value = d; }
-    const t = s - d; window.tempTotalBayarKasir = t; document.getElementById('pay-total').innerText = `Rp ${t.toLocaleString('id-ID')}`;
-    const ins = document.getElementById('pay-input').value; const u = ins === '' ? 0 : parseInt(ins); const k = u - t; const el = document.getElementById('pay-kembalian');
-    if (ins === '') { el.innerText = "MENUNGGU UANG"; el.className = "text-xl font-black text-amber-500"; } else if (k < 0) { el.innerText = "UANG KURANG!"; el.className = "text-2xl font-black text-red-500"; } else { el.innerText = `Rp ${k.toLocaleString('id-ID')}`; el.className = "text-2xl font-black text-green-500"; }
-};
-
-window.kirimKeSpreadsheet = function(d) {
-    if (!window.URL_GOOGLE_APPS_SCRIPT) return;
-    const f = new URLSearchParams(); f.append('waktu', d.waktu); f.append('noStruk', d.noStruk); f.append('kasir', d.kasir); f.append('pelanggan', d.pelanggan); f.append('item', d.item.map(i => `${i.nama} (x${i.qty})`).join(', ')); f.append('metodePembayaran', d.metodePembayaran); f.append('totalTagihan', d.totalTagihan); f.append('uangDiterima', d.uangDiterima); f.append('uangKembali', d.uangKembali); f.append('diskon', d.diskon);
-    fetch(window.URL_GOOGLE_APPS_SCRIPT, { method: 'POST', body: f, mode: 'no-cors' }).catch(e => {});
-};
-window.cetakStrukThermal = function(d) {
-    let ih = ''; d.item.forEach(i => { ih += `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; align-items:flex-start;"><span style="flex:1; padding-right:10px; word-break:break-word;">${i.nama} x${i.qty}</span><span style="font-weight:bold;">${(i.harga * i.qty).toLocaleString('id-ID')}</span></div>`; });
-    const tg = new Date(d.waktu); const wl = `${tg.getDate().toString().padStart(2, '0')}/${(tg.getMonth()+1).toString().padStart(2, '0')}/${tg.getFullYear()} ${tg.getHours().toString().padStart(2, '0')}:${tg.getMinutes().toString().padStart(2, '0')}`;
-    const ht = `<html><head><style>body{font-family:monospace;width:58mm;margin:0 auto;color:#000}h2{text-align:center;font-size:16px;margin-bottom:2px}p{text-align:center;font-size:10px;margin-top:0;margin-bottom:10px}.line{border-top:1px dashed #000;margin:10px 0}.bold{font-weight:bold}</style></head><body><h2>MAINSTAY</h2><p>Ord: ${d.noStruk}<br>Ksr: ${d.kasir}<br>Plg: ${d.pelanggan}<br>${wl}</p><div class="line"></div>${ih}<div class="line"></div><div style="display:flex; justify-content:space-between; font-size:12px;"><span>Subtot:</span><span>${(d.totalTagihan + d.diskon).toLocaleString('id-ID')}</span></div><div style="display:flex; justify-content:space-between; font-size:12px; color:red;"><span>Diskon:</span><span>-${d.diskon.toLocaleString('id-ID')}</span></div><div style="display:flex; justify-content:space-between; font-size:14px; margin-top:5px;" class="bold"><span>TOT:</span><span>${d.totalTagihan.toLocaleString('id-ID')}</span></div><div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px;"><span>${d.metodePembayaran}:</span><span>${d.uangDiterima.toLocaleString('id-ID')}</span></div><div style="display:flex; justify-content:space-between; font-size:12px;"><span>Kmbli:</span><span>${d.uangKembali.toLocaleString('id-ID')}</span></div><div class="line"></div><p>Terima Kasih!</p><script>window.onload=function(){window.print();window.close();}</script></body></html>`;
-    const w = window.open('', '_blank', 'width=300,height=500'); if(w) { w.document.write(ht); w.document.close(); }
-};
-
-window.finalisasiPembayaranKasir = async function() {
-    if (window.isProcessingCheckout) return; window.isProcessingCheckout = true;
-    const us = document.getElementById('pay-input').value; const u = us === '' ? 0 : parseInt(us); const k = u - window.tempTotalBayarKasir; const met = document.getElementById('kasir-metode-terpilih').value;
-    if (k < 0 && met === 'Tunai') { window.isProcessingCheckout = false; return alert("Uang kurang!"); }
-
-    let brgKurang = []; window.currentCart.forEach(c => { let ix = window.katalogMenu.findIndex(m => m.id === c.id); if(ix > -1 && window.katalogMenu[ix].stok < c.qty) brgKurang.push(`${c.nama} (Sisa: ${window.katalogMenu[ix].stok})`); });
-    if (brgKurang.length > 0) { window.isProcessingCheckout = false; return alert(`CHECKOUT GAGAL! Stok habis:\n- ${brgKurang.join('\n- ')}`); }
-
-    window.currentCart.forEach(c => { let ix = window.katalogMenu.findIndex(m => m.id === c.id); if (ix > -1) window.katalogMenu[ix].stok = Math.max(0, window.katalogMenu[ix].stok - c.qty); });
-    localStorage.setItem('mainstay_dbMenu', JSON.stringify(window.katalogMenu)); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'katalog_menu'), window.katalogMenu);
+    const modal = document.getElementById('modal-cart');
+    const container = document.getElementById('cart-items-container');
     
-    const dsk = parseInt(document.getElementById('kasir-input-diskon')?.value) || 0; const plg = document.getElementById('kasir-nama-pelanggan')?.value.trim(); const wa = document.getElementById('kasir-wa-pelanggan')?.value.trim();
-    const data = { waktu: new Date().toISOString(), noStruk: `ORD-${Date.now().toString().slice(-4)}`, pelanggan: plg !== '' ? window.escapeHTML(plg) : "Walk-in", pelangganWA: wa, kasir: document.getElementById('kasir-staf-dropdown')?.value || 'Kasir', metodePembayaran: met, item: [...window.currentCart], diskon: dsk, totalTagihan: window.tempTotalBayarKasir, uangDiterima: u, uangKembali: k, statusDapur: 'pending' };
+    // Label penginput otomatis berubah (Apakah Kasir/Owner yg ambil alih, atau murni Customer)
+    let actorLabel = window.AppState.currentRole === 'customer' ? 'Customer Publik' : 
+                    (window.AppState.currentRole === 'kasir' ? `Kasir (${window.AppState.activeStaffName})` : 'Owner (Master)');
+    document.getElementById('cart-actor-label').innerText = `Penginput: ${actorLabel}`;
     
-    if (window.db && window.fbPush && window.fbSet) { try { await window.fbSet(window.fbPush(window.fbRef(window.db, 'transaksi_hari_ini')), data); } catch (e) {} }
-    window.riwayatTransaksiLokal.push(data); localStorage.setItem('mainstay_dbTransaksi', JSON.stringify(window.riwayatTransaksiLokal));
+    container.innerHTML = ''; // Bersihkan kontainer lama
+    let subtotal = 0;
     
-    window.kirimKeSpreadsheet(data); window.cetakStrukThermal(data);
-    
-    document.getElementById('modal-payment-kasir').remove(); window.currentCart = []; localStorage.removeItem('cartMainstay'); window.updateCartFloat();
-    window.updateStatistikRealtime(); window.bukaManajemenPesanan(); setTimeout(() => { window.isProcessingCheckout = false; }, 1000);
-};
-
-// ----------------------------------------------------------------------------
-// 9. MANAJEMEN 3 TAB DAPUR & STATISTIK REALTIME
-// ----------------------------------------------------------------------------
-window.bukaManajemenPesanan = function() { document.getElementById('modal-manajemen-pesanan').classList.replace('hidden', 'flex'); window.renderTabPesanan('pending'); };
-window.renderTabPesanan = function(s) {
-    ['pending', 'dimasak', 'selesai'].forEach(t => { const b = document.getElementById(`tab-btn-${t}`); if(b) { b.classList.remove('border-amber-500', 'text-gray-900'); b.classList.add('border-transparent', 'text-gray-500'); } });
-    const ba = document.getElementById(`tab-btn-${s}`); if(ba) { ba.classList.remove('border-transparent', 'text-gray-500'); ba.classList.add('border-amber-500', 'text-gray-900'); }
-    const c = document.getElementById('container-list-pesanan'); c.innerHTML = '';
-    let rw = JSON.parse(localStorage.getItem('mainstay_dbTransaksi')) || []; rw = rw.map(tr => { if(!tr.statusDapur) tr.statusDapur = 'selesai'; return tr; }); localStorage.setItem('mainstay_dbTransaksi', JSON.stringify(rw));
-    
-    const cp = rw.filter(t => t.statusDapur === 'pending').length; const cd = rw.filter(t => t.statusDapur === 'dimasak').length;
-    const bp = document.getElementById('badge-pending'); if(bp) { bp.innerText = cp; cp > 0 ? bp.classList.remove('hidden') : bp.classList.add('hidden'); }
-    const bd = document.getElementById('badge-dimasak'); if(bd) { bd.innerText = cd; cd > 0 ? bd.classList.remove('hidden') : bd.classList.add('hidden'); }
-
-    let fl = rw.filter(t => t.statusDapur === s).reverse();
-    if (fl.length === 0) { c.innerHTML = `<div class="text-center py-20 text-gray-400 font-bold"><i class="fa-solid fa-mug-hot text-4xl mb-3"></i><p class="text-xs">Kosong.</p></div>`; return; }
-
-    fl.forEach(t => {
-        let bh = '';
-        if (s === 'pending') {
-            bh = `<button onclick="window.ubahStatusPesanan('${t.noStruk}', 'dimasak')" class="w-full bg-blue-500 text-white font-black py-2.5 rounded-xl hover:bg-blue-600 transition mb-2">TERIMA & MASAK</button>`;
-            if (t.metodePembayaran === 'QRIS' || t.pelangganWA) bh += `<a href="https://wa.me/${t.pelangganWA}" target="_blank" class="w-full flex items-center justify-center bg-green-100 text-green-700 font-black py-2 rounded-xl text-xs"><i class="fa-brands fa-whatsapp mr-1"></i> Hubungi WA</a>`; else if (t.metodePembayaran === 'Tunai') bh += `<div class="w-full text-center bg-amber-50 text-amber-600 font-black py-2 rounded-xl text-xs border">Tagih Cash Kasir</div>`;
-        } else if (s === 'dimasak') { bh = `<button onclick="window.ubahStatusPesanan('${t.noStruk}', 'selesai')" class="w-full bg-teal-500 text-white font-black py-3 rounded-xl hover:bg-teal-600 transition text-lg">SELESAI MASAK</button>`; } else if (s === 'selesai') { bh = `<div class="flex gap-2"><button onclick="window.cetakUlangStrukByNo('${t.noStruk}')" class="flex-1 bg-gray-100 text-gray-700 font-black py-2 rounded-xl border text-xs">Cetak Fisik</button><button onclick="window.cetakStrukDigital('${t.noStruk}')" class="flex-1 bg-green-500 text-white font-black py-2 rounded-xl text-xs">WA Digital</button></div>`; }
-        c.innerHTML += `<div class="bg-white p-4 rounded-2xl shadow-sm border mb-3"><div class="flex justify-between items-center border-b pb-2 mb-3"><div><h4 class="font-black text-sm">${t.pelanggan || 'Walk-in'}</h4><span class="text-[9px] text-gray-400">${t.noStruk} | ${new Date(t.waktu).toLocaleTimeString('id-ID')}</span></div><div class="text-right"><span class="block text-xs font-black text-amber-500">${t.metodePembayaran}</span><span class="text-sm font-black">Rp ${t.totalTagihan.toLocaleString('id-ID')}</span></div></div><ul class="text-xs font-bold text-gray-700 space-y-1 mb-4">${t.item.map(i => `<li class="flex justify-between"><span class="flex-1">${i.nama}</span><span>x${i.qty}</span></li>`).join('')}</ul>${bh}</div>`;
+    // Looping daftar pesanan dari Global State Cart
+    window.AppState.cart.forEach((item, index) => {
+        subtotal += item.subtotal;
+        
+        container.innerHTML += `
+            <div class="flex justify-between items-start bg-slate-50 p-4 rounded-xl border border-gray-100 shadow-sm relative group">
+                <div class="pr-8">
+                    <h5 class="text-sm font-black text-gray-900 leading-tight">${item.name}</h5>
+                    <p class="text-[10px] font-bold text-gray-500 mt-1 bg-white inline-block px-2 py-0.5 rounded border border-gray-200">
+                        ${item.qty}x @ ${window.formatRupiah(item.unitPrice)}
+                    </p>
+                    <p class="text-[9px] font-black text-amber-600 mt-1 uppercase tracking-wider"><i class="fa-solid fa-pen-clip text-gray-400 mr-1"></i> ${item.notes}</p>
+                </div>
+                <div class="text-right flex flex-col items-end">
+                    <span class="text-sm font-black text-amber-600 drop-shadow-sm">${window.formatRupiah(item.subtotal)}</span>
+                    <button onclick="hapusItemKeranjang(${index})" class="mt-2 w-7 h-7 bg-red-100 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition shadow-sm"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                </div>
+            </div>
+        `;
     });
+    
+    // Render Total Angka Transparansi
+    document.getElementById('cart-subtotal').innerText = window.formatRupiah(subtotal);
+    
+    const grandTotal = subtotal - window.AppState.cartDiscount;
+    document.getElementById('cart-grand-total').innerText = window.formatRupiah(grandTotal);
+    
+    // Tampilkan Modal Animasi Naik (Slide Up)
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 };
-window.ubahStatusPesanan = function(no, sB) { let rw = JSON.parse(localStorage.getItem('mainstay_dbTransaksi')) || []; let ix = rw.findIndex(t => t.noStruk === no); if(ix > -1) { rw[ix].statusDapur = sB; localStorage.setItem('mainstay_dbTransaksi', JSON.stringify(rw)); window.renderTabPesanan(sB === 'dimasak' ? 'pending' : 'dimasak'); window.playAudio('masuk'); window.updateStatistikRealtime(); } };
-window.cetakUlangStrukByNo = function(no) { let rw = JSON.parse(localStorage.getItem('mainstay_dbTransaksi')) || []; let tr = rw.find(t => t.noStruk === no); if(tr) window.cetakStrukThermal(tr); };
-window.cetakStrukDigital = function(no) { let tr = (JSON.parse(localStorage.getItem('mainstay_dbTransaksi')) || []).find(t => t.noStruk === no); if(!tr) return; let w = new Date(tr.waktu).toLocaleString('id-ID'); let itm = tr.item.map(i => `▪️ ${i.nama} (x${i.qty}) = Rp ${(i.harga * i.qty).toLocaleString('id-ID')}`).join('%0A'); let msg = `*STRUK DIGITAL MAINSTAY*%0ANo: ${tr.noStruk}%0AWaktu: ${w}%0AKasir: ${tr.kasir}%0APlg: ${tr.pelanggan}%0A%0A*Pesanan:*%0A${itm}%0A%0A*TOTAL: Rp ${tr.totalTagihan.toLocaleString('id-ID')}*%0AStatus: ${tr.metodePembayaran.toUpperCase()} (LUNAS)%0A%0A_Terima kasih!_`; window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank'); };
 
-window.updateStatistikRealtime = function() {
-    const r = JSON.parse(localStorage.getItem('mainstay_dbTransaksi')) || []; let to = 0, os = 0, op = 0; const t = new Date().toLocaleDateString('id-ID');
-    r.forEach(tr => { if (!tr.statusDapur) tr.statusDapur = 'selesai'; if (new Date(tr.waktu).toLocaleDateString('id-ID') === t) { to += parseInt(tr.totalTagihan); if (tr.statusDapur === 'selesai') os += 1; else op += 1; } });
-    if(document.getElementById('stat-omzet-owner')) document.getElementById('stat-omzet-owner').innerText = `Rp ${to.toLocaleString('id-ID')}`; if(document.getElementById('stat-selesai-owner')) document.getElementById('stat-selesai-owner').innerHTML = `${os} <span class="text-xs font-normal">Pesanan</span>`; if(document.getElementById('stat-proses-owner')) document.getElementById('stat-proses-owner').innerHTML = `${op} <span class="text-xs font-normal">Pesanan</span>`;
-    if(document.getElementById('stat-omzet-kasir')) document.getElementById('stat-omzet-kasir').innerText = `Rp ${(to>999999?(to/1000000).toFixed(1)+'M':to.toLocaleString('id-ID'))}`; if(document.getElementById('stat-selesai-kasir')) document.getElementById('stat-selesai-kasir').innerText = os; if(document.getElementById('stat-proses-kasir')) document.getElementById('stat-proses-kasir').innerText = op;
-}; setInterval(window.updateStatistikRealtime, 30000);
+// 2. TUTUP MODAL KERANJANG
+window.closeCartModal = function() {
+    document.getElementById('modal-cart').classList.add('hidden');
+    document.getElementById('modal-cart').classList.remove('flex');
+};
 
-// ----------------------------------------------------------------------------
-// 10. CRUD MASTER PANEL OWNER (HRD, STOK, MENU)
-// ----------------------------------------------------------------------------
-window.openPanel = function(pid) {
-    document.querySelectorAll('.panel-owner-content').forEach(p => { p.classList.add('hidden'); p.classList.remove('flex'); }); const t = document.getElementById(pid);
-    if(t) {
-        t.classList.remove('hidden'); t.classList.add('flex');
-        if (pid !== 'panel-dashboard' && pid !== 'panel-home' && !t.querySelector('.btn-kembali-dasbor')) t.insertAdjacentHTML('afterbegin', `<button onclick="window.openPanel('panel-dashboard')" class="btn-kembali-dasbor mb-4 bg-white text-gray-700 px-4 py-2 rounded-xl text-xs font-black border flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> Kembali</button>`);
-        if (pid === 'panel-hrd') window.renderPanelHRD(); if (pid === 'panel-stok') window.renderPanelStok();
-        if (pid === 'panel-katalog') { const bk = t.querySelector('button.bg-gray-800'); if(bk) { bk.innerHTML = '<i class="fa-solid fa-list-check mr-1"></i> Master Topping'; bk.onclick = () => window.bukaMasterTopping(); } const bi = Array.from(t.querySelectorAll('button')).find(b => b.innerText.toLowerCase().includes('import')); if(bi) { if(!document.getElementById('file-import-menu')) t.insertAdjacentHTML('beforeend', `<input type="file" id="file-import-menu" class="hidden" accept=".csv" onchange="window.prosesImportCSV(event)">`); bi.onclick = () => document.getElementById('file-import-menu').click(); } const bt = t.querySelector('button.bg-amber-500'); if(bt) bt.onclick = () => window.bukaFormMenu(''); window.renderAdminKatalog(t); }
+// 3. HAPUS ITEM DARI KERANJANG (Fitur Koreksi)
+window.hapusItemKeranjang = function(index) {
+    if(confirm("Hapus item ini dari pesanan?")) {
+        window.AppState.cart.splice(index, 1);
+        window.updateCartBadge(); // Update ikon mengapung
+        
+        // Jika keranjang jadi kosong, otomatis tutup modal
+        if (window.AppState.cart.length === 0) {
+            window.closeCartModal();
+        } else {
+            window.openCartModal(); // Re-render modal keranjang
+        }
     }
 };
 
-window.renderPanelHRD = function() {
-    const p = document.getElementById('panel-hrd'); if (!p) return; const c = p.querySelector('.space-y-5'); if (!c) return; const onl = (n) => (JSON.parse(localStorage.getItem('stafHadirMainstay')) || []).includes(n);
-    let h = `<div class="bg-gray-900 p-5 rounded-2xl text-white flex items-center justify-between mb-4"><div class="flex items-center gap-4"><div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center text-xl font-black overflow-hidden">${window.profilOwner.foto ? `<img src="${window.profilOwner.foto}" class="w-full h-full object-cover">` : window.profilOwner.nama.charAt(0)}</div><div><h3 class="font-black text-sm text-amber-400">Master Owner</h3><p class="text-[10px] font-bold text-gray-400">${window.profilOwner.nama}</p></div></div><button onclick="window.bukaFormOwner()" class="bg-white/10 px-3 py-2 rounded-xl text-xs font-bold"><i class="fa-solid fa-pen text-amber-400"></i> Edit</button></div><div class="bg-white p-5 rounded-2xl border"><div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="text-xs font-black uppercase">Database Karyawan</h3><div class="flex gap-2"><button onclick="window.bukaRiwayatAbsen()" class="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-[10px] font-black">Log Absen</button><button onclick="window.bukaFormStaf()" class="bg-teal-100 text-teal-700 px-3 py-1.5 rounded-lg text-[10px] font-black">Tambah Staf</button></div></div><div class="space-y-2">`;
-    if(window.databaseStaf.length === 0) h += `<p class="text-xs text-center py-4 text-gray-400">Kosong.</p>`;
-    window.databaseStaf.forEach((s, i) => { h += `<div class="flex justify-between items-center p-3 border rounded-xl bg-gray-50"><div class="flex items-center gap-3">${s.foto ? `<img src="${s.foto}" class="w-10 h-10 rounded-full object-cover border">` : `<div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-gray-500"><i class="fa-solid fa-user"></i></div>`}<div><span class="text-xs font-black flex items-center">${s.nama} <span class="text-[9px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded ml-1">${s.jobType||'Staf'}</span> ${onl(s.nama) ? '<span class="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>' : ''}</span><span class="text-gray-500 text-[10px] block mt-0.5">PIN: *** | Shift: ${s.shift||'-'}</span></div></div><div class="flex gap-1">${onl(s.nama) ? `<button onclick="window.paksaPulangStaf('${s.nama}')" class="w-8 h-8 bg-orange-50 text-orange-600 rounded-lg"><i class="fa-solid fa-person-walking-arrow-right"></i></button>` : ''}<button onclick="window.editStaf(${i})" class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg"><i class="fa-solid fa-pen"></i></button><button onclick="window.hapusStaf(${i})" class="w-8 h-8 bg-red-50 text-red-600 rounded-lg"><i class="fa-solid fa-trash"></i></button></div></div>`; }); c.innerHTML = h + `</div></div>`;
+// 4. TERAPKAN VOUCHER PROMO (Visual Front-End)
+window.terapkanPromo = function() {
+    const promoCode = document.getElementById('co-promo').value.trim().toUpperCase();
+    if (!promoCode) return;
+    
+    // (Integrasi Pengecekan Database Firebase Voucher akan ada di Part Lanjutan)
+    // Untuk saat ini, mari buat contoh dummy voucher "PROMO20" potongan 20rb
+    if (promoCode === "PROMO20") {
+        window.AppState.cartDiscount = 20000;
+        document.getElementById('cart-discount-row').classList.remove('hidden');
+        document.getElementById('cart-discount-value').innerText = `- ${window.formatRupiah(20000)}`;
+        alert("🎉 Voucher berhasil diterapkan!");
+        window.openCartModal(); // Re-render nominal
+    } else {
+        alert("Kode Voucher tidak valid atau sudah kedaluwarsa!");
+        window.AppState.cartDiscount = 0;
+        document.getElementById('cart-discount-row').classList.add('hidden');
+        window.openCartModal();
+    }
 };
-window.bukaFormOwner = function() { document.getElementById('hrd-form-title').innerHTML = 'Edit Owner'; document.getElementById('hrd-role').value = 'owner'; document.getElementById('hrd-area-gaji').classList.add('hidden'); document.getElementById('hrd-nama').value = window.profilOwner.nama; document.getElementById('hrd-pin').value = window.profilOwner.pin; document.getElementById('hrd-foto').value = window.profilOwner.foto || ''; const p = document.getElementById('hrd-preview-foto'); if(window.profilOwner.foto) { p.src = window.profilOwner.foto; p.classList.remove('hidden'); } else p.classList.add('hidden'); document.getElementById('modal-form-hrd').classList.replace('hidden', 'flex'); };
-window.bukaFormStaf = function() { document.getElementById('hrd-form-title').innerHTML = 'Tambah Staf'; document.getElementById('hrd-role').value = 'staf'; document.getElementById('hrd-id').value = ''; document.getElementById('hrd-area-gaji').classList.remove('hidden'); ['hrd-nama','hrd-pin','hrd-foto','hrd-shift-start','hrd-shift-end'].forEach(id => { const e = document.getElementById(id); if(e) e.value = ''; }); document.getElementById('hrd-preview-foto').classList.add('hidden'); document.getElementById('modal-form-hrd').classList.replace('hidden', 'flex'); };
-window.editStaf = function(i) { const s = window.databaseStaf[i]; document.getElementById('hrd-form-title').innerHTML = 'Edit Staf'; document.getElementById('hrd-role').value = 'staf'; document.getElementById('hrd-id').value = i; document.getElementById('hrd-area-gaji').classList.remove('hidden'); document.getElementById('hrd-nama').value = s.nama; document.getElementById('hrd-pin').value = s.pin; document.getElementById('hrd-foto').value = s.foto || ''; if (s.shift && s.shift.includes('-')) { const [st, en] = s.shift.split('-'); document.getElementById('hrd-shift-start').value = st.trim(); document.getElementById('hrd-shift-end').value = en.trim(); } const p = document.getElementById('hrd-preview-foto'); if(s.foto) { p.src = s.foto; p.classList.remove('hidden'); } else p.classList.add('hidden'); document.getElementById('modal-form-hrd').classList.replace('hidden', 'flex'); };
-window.tutupFormHRD = function() { document.getElementById('modal-form-hrd').classList.replace('flex', 'hidden'); };
-window.simpanDataHRD = function() { if (document.getElementById('hrd-role').value === 'owner') { window.profilOwner.nama = document.getElementById('hrd-nama').value; window.profilOwner.pin = document.getElementById('hrd-pin').value; window.profilOwner.foto = document.getElementById('hrd-foto').value; localStorage.setItem('mainstay_dbOwner', JSON.stringify(window.profilOwner)); } else { const idIdx = document.getElementById('hrd-id').value; const st = document.getElementById('hrd-shift-start').value; const en = document.getElementById('hrd-shift-end').value; const d = { id: idIdx !== '' ? window.databaseStaf[idIdx].id : "S" + Date.now(), nama: document.getElementById('hrd-nama').value, pin: document.getElementById('hrd-pin').value, foto: document.getElementById('hrd-foto').value, jobType: document.getElementById('hrd-tipe-kerja')?.value || 'Tetap', shift: (st && en) ? `${st} - ${en}` : '' }; if (idIdx !== '') window.databaseStaf[idIdx] = d; else window.databaseStaf.push(d); localStorage.setItem('mainstay_dbStaf', JSON.stringify(window.databaseStaf)); if (window.db && window.fbSet) { let fb = {}; window.databaseStaf.forEach(x => fb[x.id] = x); window.fbSet(window.fbRef(window.db, 'hrd_karyawan'), fb); } } window.tutupFormHRD(); window.renderPanelHRD(); alert("Disimpan!"); };
-window.hapusStaf = function(i) { if ((JSON.parse(localStorage.getItem('stafHadirMainstay')) || []).includes(window.databaseStaf[i].nama)) return alert("Staf sedang aktif. Paksa pulang dulu."); if(confirm("Hapus?")) { window.databaseStaf.splice(i, 1); localStorage.setItem('mainstay_dbStaf', JSON.stringify(window.databaseStaf)); if (window.db && window.fbSet) { let fb = {}; window.databaseStaf.forEach(x => fb[x.id] = x); window.fbSet(window.fbRef(window.db, 'hrd_karyawan'), fb); } window.renderPanelHRD(); } };
-window.paksaPulangStaf = function(n) { if(confirm(`Paksa pulang ${n}?`)) { let h = JSON.parse(localStorage.getItem('stafHadirMainstay')) || []; h = h.filter(x => x !== n); localStorage.setItem('stafHadirMainstay', JSON.stringify(h)); if (h.length === 0) { document.getElementById('kasir-blocker')?.classList.remove('hidden'); window.statusStokTerkunci = true; if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: window.tanggalSistemSekarang, isLocked: true }); } window.riwayatAbsensi.push({ id: 'ABS'+Date.now(), waktu: new Date().toISOString(), nama: n, tipe: 'Pulang (Force By Owner)', foto: '', durasi: '-' }); localStorage.setItem('mainstay_dbAbsen', JSON.stringify(window.riwayatAbsensi)); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'riwayat_absen'), window.riwayatAbsensi); window.renderPanelHRD(); } };
 
-window.updateTombolGembokOwner = function() { const b = document.getElementById('btn-toggle-kunci'); if(!b) return; if(window.statusStokTerkunci) { b.innerHTML = '<i class="fa-solid fa-lock text-red-500"></i> Izin Staf: TERKUNCI'; b.className = "ml-2 bg-red-50 text-slate-700 px-4 py-2 rounded-xl text-xs font-black border border-red-200 flex items-center gap-2"; } else { b.innerHTML = '<i class="fa-solid fa-lock-open text-green-500"></i> Izin Staf: TERBUKA'; b.className = "ml-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-xs font-black border flex items-center gap-2"; } };
-window.toggleKunciOwner = function() { window.statusStokTerkunci = !window.statusStokTerkunci; if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'pengaturan_sistem/kunci_stok'), { tanggal: window.tanggalSistemSekarang, isLocked: window.statusStokTerkunci }); window.updateTombolGembokOwner(); };
-window.renderPanelStok = function() { const p = document.getElementById('panel-stok'); if (!p) return; const ha = p.querySelector('.flex.justify-between.items-center'); if (ha && !document.getElementById('btn-toggle-kunci')) ha.insertAdjacentHTML('beforeend', `<button id="btn-toggle-kunci" onclick="window.toggleKunciOwner()" class="ml-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-xs font-black border flex items-center gap-2"></button>`); window.updateTombolGembokOwner(); const old = document.getElementById('admin-stok-list'); if(old) old.remove(); let h = `<div id="admin-stok-list" class="space-y-3 mt-4">`; if (window.databaseStok.length === 0) h += `<div class="text-center py-10 text-gray-400 font-bold text-xs border-2 border-dashed rounded-2xl">Kosong.</div>`; window.databaseStok.forEach(i => { const l = parseFloat(i.jumlah) <= 5; h += `<div class="${l?'bg-red-50 border-red-200':'bg-white'} p-4 rounded-2xl border flex items-center justify-between"><div class="flex items-center gap-4">${i.fotoBukti ? `<img src="${i.fotoBukti}" class="w-10 h-10 rounded-xl object-cover border">` : `<div class="w-10 h-10 rounded-xl bg-white border flex items-center justify-center"><i class="fa-solid fa-box ${l?'text-red-500':'text-indigo-500'}"></i></div>`}<div><h4 class="font-black text-sm">${i.nama} ${l?'<span class="ml-2 text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded">Menipis</span>':''}</h4><p class="text-[10px] font-bold text-gray-500">${i.kategori}</p></div></div><div class="flex items-center gap-4"><div class="text-right"><span class="block text-[10px] font-bold text-gray-400">SISA</span><span class="font-black text-lg ${l?'text-red-600':'text-indigo-600'}">${i.jumlah} <span class="text-xs">${i.satuan}</span></span></div><div class="flex flex-col gap-1 border-l pl-3"><button onclick="window.bukaFormStok('${i.id}')" class="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg text-[10px]"><i class="fa-solid fa-pen"></i></button><button onclick="window.hapusStok('${i.id}')" class="w-7 h-7 bg-red-50 text-red-600 rounded-lg text-[10px]"><i class="fa-solid fa-trash"></i></button></div></div></div>`; }); (p.querySelector('.flex-1') || p).insertAdjacentHTML('beforeend', h + `</div>`); };
-window.renderStokStaf = function() { const c = document.getElementById('staf-stok-container'); const lb = document.getElementById('status-gembok-staf'); if (!c) return; if (window.statusStokTerkunci) { lb.innerText = "🔒 TERKUNCI"; lb.classList.replace('text-indigo-200', 'text-amber-300'); } else { lb.innerText = "🔓 TERBUKA"; lb.classList.replace('text-amber-300', 'text-indigo-200'); } c.innerHTML = window.databaseStok.length === 0 ? '<p class="text-center text-xs text-gray-400 mt-4">Kosong.</p>' : ''; window.databaseStok.forEach(i => { c.innerHTML += `<div class="bg-white p-3 rounded-xl border flex items-center justify-between gap-3">${i.fotoBukti ? `<img src="${i.fotoBukti}" class="w-10 h-10 rounded-lg object-cover border shrink-0">` : `<div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-300 flex items-center justify-center shrink-0"><i class="fa-solid fa-camera"></i></div>`}<div class="flex-1"><h4 class="font-black text-sm">${i.nama}</h4><p class="text-[10px] font-bold text-gray-500">Tercatat: ${i.jumlah} ${i.satuan}</p></div><button onclick="window.bukaFormStok('${i.id}')" class="${window.statusStokTerkunci ? 'bg-gray-100 text-gray-400' : 'bg-indigo-50 text-indigo-600'} px-4 py-2 rounded-lg text-xs font-black">${window.statusStokTerkunci ? 'Terkunci' : 'Update'}</button></div>`; }); };
-window.bukaFormStok = function(id) { const own = localStorage.getItem('sesiMainstay') === 'owner' || localStorage.getItem('isOwnerInKasir') === 'true'; const isE = id !== ''; const it = isE ? window.databaseStok.find(b => b.id === id) : null; if (!own && window.statusStokTerkunci) return alert("DITOLAK! Toko dikunci Owner."); document.getElementById('stok-form-title').innerHTML = isE ? 'Update Stok' : 'Tambah Barang'; document.getElementById('stok-id').value = isE ? it.id : ''; document.getElementById('stok-nama').value = isE ? it.nama : ''; document.getElementById('stok-jumlah').value = isE ? it.jumlah : ''; document.getElementById('stok-satuan').value = isE ? it.satuan : ''; document.getElementById('stok-foto').value = isE ? (it.fotoBukti||'') : ''; const p = document.getElementById('stok-preview-foto'); const c = document.getElementById('stok-icon-kamera'); if (isE && it && it.fotoBukti) { p.src = it.fotoBukti; p.classList.remove('hidden'); c.classList.add('hidden'); } else { p.src = ''; p.classList.add('hidden'); c.classList.remove('hidden'); } if (!own && isE) { document.getElementById('stok-nama').readOnly = true; document.getElementById('stok-nama').classList.add('bg-gray-100'); } else { document.getElementById('stok-nama').readOnly = false; document.getElementById('stok-nama').classList.remove('bg-gray-100'); } document.getElementById('modal-form-stok').classList.replace('hidden', 'flex'); };
-window.tutupFormStok = function() { document.getElementById('modal-form-stok').classList.replace('flex', 'hidden'); };
-window.simpanDataStok = function() { const own = localStorage.getItem('sesiMainstay') === 'owner' || localStorage.getItem('isOwnerInKasir') === 'true'; if (window.statusStokTerkunci && !own) return alert("GAGAL! Toko ditutup."); const nm = document.getElementById('stok-nama').value.trim(); const jm = document.getElementById('stok-jumlah').value; if(nm === '' || jm === '') return alert("Isi form dengan benar!"); const id = document.getElementById('stok-id').value; const d = { id: id !== '' ? id : 'INV' + Date.now(), nama: nm, kategori: document.getElementById('stok-kategori').value, jumlah: parseFloat(jm), satuan: document.getElementById('stok-satuan').value || 'Pcs', fotoBukti: document.getElementById('stok-foto').value }; if (id !== '') window.databaseStok[window.databaseStok.findIndex(b => b.id === id)] = d; else window.databaseStok.push(d); localStorage.setItem('mainstay_dbStok', JSON.stringify(window.databaseStok)); if (window.db && window.fbSet) { let fb = {}; window.databaseStok.forEach(b => fb[b.id] = b); window.fbSet(window.fbRef(window.db, 'inventaris_stok'), fb); } window.tutupFormStok(); if (document.getElementById('panel-stok') && !document.getElementById('panel-stok').classList.contains('hidden')) window.renderPanelStok(); if (document.getElementById('modal-staf-list-stok') && !document.getElementById('modal-staf-list-stok').classList.contains('hidden')) window.renderStokStaf(); alert("Disimpan!"); };
-window.hapusStok = function(id) { const own = localStorage.getItem('sesiMainstay') === 'owner' || localStorage.getItem('isOwnerInKasir') === 'true'; if (!own) return alert("Hanya Owner."); if(confirm("Hapus?")) { window.databaseStok = window.databaseStok.filter(b => b.id !== id); localStorage.setItem('mainstay_dbStok', JSON.stringify(window.databaseStok)); if (window.db && window.fbSet) { let fb = {}; window.databaseStok.forEach(b => fb[b.id] = b); window.fbSet(window.fbRef(window.db, 'inventaris_stok'), fb); } window.renderPanelStok(); } };
-window.bukaListStokStaf = function() { document.getElementById('modal-staf-list-stok').classList.replace('hidden', 'flex'); window.renderStokStaf(); }; window.tutupListStokStaf = function() { document.getElementById('modal-staf-list-stok').classList.replace('flex', 'hidden'); };
+// 5. PROSES CHECKOUT FINAL KE FIREBASE (Order Generation)
+window.prosesCheckout = function() {
+    // Validasi Keranjang Kosong
+    if (window.AppState.cart.length === 0) {
+        alert("Keranjang masih kosong!");
+        return;
+    }
 
-window.renderAdminKatalog = function(p) { let c = document.getElementById('admin-katalog-list'); if (!c) { (p.querySelector('.flex-1') || p).insertAdjacentHTML('beforeend', '<div id="admin-katalog-list" class="space-y-3 mt-4"></div>'); c = document.getElementById('admin-katalog-list'); } c.innerHTML = window.katalogMenu.length === 0 ? '<div class="text-center py-10 text-gray-400 font-bold text-xs border-2 border-dashed rounded-2xl">Kosong. Import CSV atau Tambah.</div>' : ''; window.katalogMenu.forEach(i => { const hb = i.stok === 0; c.innerHTML += `<div class="bg-white p-4 rounded-2xl border ${hb?'border-red-200 bg-red-50':'border-gray-100'} flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-12 h-12 shrink-0">${i.image ? `<img src="${i.image}" class="w-full h-full rounded-lg object-cover border ${hb?'grayscale opacity-50':''}">` : `<div class="w-full h-full rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 border"><i class="fa-solid fa-image"></i></div>`}</div><div><h4 class="font-black text-sm ${hb?'text-gray-400':'text-gray-900'}">${i.nama} ${hb?'<span class="ml-2 text-[8px] bg-red-500 text-white px-2 py-0.5 rounded">HABIS</span>':''}</h4><p class="text-[10px] font-bold text-amber-500">Rp ${parseInt(i.harga).toLocaleString('id-ID')} | <span class="uppercase">${i.kategori}</span></p></div></div><div class="flex gap-2"><button onclick="window.toggleSoldOutMenu('${i.id}')" class="w-8 h-8 rounded-lg text-[10px] ${hb?'bg-red-500 text-white':'bg-gray-100'}"><i class="fa-solid fa-ban"></i></button><button onclick="window.bukaFormMenu('${i.id}')" class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg"><i class="fa-solid fa-pen"></i></button><button onclick="window.hapusMenu('${i.id}')" class="w-8 h-8 bg-red-50 text-red-500 rounded-lg"><i class="fa-solid fa-trash"></i></button></div></div>`; }); };
-window.toggleSoldOutMenu = function(id) { const i = window.katalogMenu.findIndex(m => m.id === id); if (i > -1) { window.katalogMenu[i].stok = window.katalogMenu[i].stok === 0 ? 100 : 0; window.simpanMenuHanyaData(); } };
-window.hapusMenu = function(id) { if(confirm("Hapus menu?")) { window.katalogMenu = window.katalogMenu.filter(m => m.id !== id); window.simpanMenuHanyaData(); } };
-window.simpanMenuHanyaData = function() { localStorage.setItem('mainstay_dbMenu', JSON.stringify(window.katalogMenu)); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'katalog_menu'), window.katalogMenu); const p = document.getElementById('panel-katalog'); if (p && !p.classList.contains('hidden')) window.renderAdminKatalog(p); if(typeof window.renderKatalog === 'function') window.renderKatalog(); if(typeof window.renderKategoriFilter === 'function') window.renderKategoriFilter(); };
-window.bukaFormMenu = function(id) { const isE = id !== ''; const it = isE ? window.katalogMenu.find(m => m.id === id) : null; document.getElementById('form-menu-title').innerHTML = isE ? 'Edit Menu' : 'Tambah Menu'; document.getElementById('menu-id').value = isE ? it.id : ''; document.getElementById('menu-nama').value = isE ? it.nama : ''; document.getElementById('menu-kategori').value = isE ? it.kategori : ''; document.getElementById('menu-harga').value = isE ? it.harga : ''; document.getElementById('menu-foto').value = isE && it.image ? it.image : ''; const tc = document.getElementById('container-topping-checkbox'); tc.innerHTML = ''; if (window.masterTopping.length === 0) tc.innerHTML = '<p class="text-[10px] text-gray-400">Kosong.</p>'; else window.masterTopping.forEach(t => { tc.innerHTML += `<label class="flex items-center gap-3 bg-white p-2 border rounded-lg"><input type="checkbox" class="master-top-cb w-4 h-4" value="${t.id}" ${isE && it.opsiTopping?.includes(t.id) ? 'checked' : ''}><span class="text-xs font-bold">${t.nama} (+Rp ${parseInt(t.harga).toLocaleString('id-ID')})</span></label>`; }); document.getElementById('modal-form-menu').classList.replace('hidden', 'flex'); };
-window.tutupFormMenu = function() { document.getElementById('modal-form-menu').classList.replace('flex', 'hidden'); };
-window.simpanDataMenu = function() { const nm = document.getElementById('menu-nama').value.trim(); const hg = parseInt(document.getElementById('menu-harga').value) || 0; if (nm === '' || hg === 0) return alert("Nama/Harga tidak valid!"); const id = document.getElementById('menu-id').value; const ops = Array.from(document.querySelectorAll('.master-top-cb:checked')).map(c => c.value); const dm = { id: id !== '' ? id : 'M' + Date.now(), nama: nm, kategori: document.getElementById('menu-kategori').value.toLowerCase().trim() || 'umum', harga: hg, image: document.getElementById('menu-foto').value, stok: id !== '' ? window.katalogMenu.find(m => m.id === id).stok : 100, opsiTopping: ops }; if (id !== '') window.katalogMenu[window.katalogMenu.findIndex(m => m.id === id)] = dm; else window.katalogMenu.push(dm); window.simpanMenuHanyaData(); window.tutupFormMenu(); alert("Disimpan!"); };
+    const name = document.getElementById('co-name').value.trim();
+    let phone = document.getElementById('co-phone').value.trim();
+    const orderType = document.querySelector('input[name="co_tipe"]:checked').value;
+    
+    // Logika Blueprint: Pre-Order WAJIB isi Nama & Nomor WA
+    if (orderType === "Pre-Order (PO)") {
+        if (!name || !phone) {
+            alert("⚠️ Sistem Pre-Order (PO) MEWAJIBKAN pengisian Nama dan Nomor WhatsApp aktif!");
+            return;
+        }
+    }
+    
+    // Format nomor HP agar otomatis jadi awalan 62 (Standar WhatsApp)
+    if (phone) phone = window.formatPhoneWA(phone);
+    
+    const isMember = document.getElementById('co-member').checked; // Klasifikasi Member
+    const paymentMethod = document.querySelector('input[name="co_payment"]:checked').value;
+    
+    // Kalkulasi Total
+    let subtotal = 0;
+    window.AppState.cart.forEach(item => subtotal += item.subtotal);
+    const grandTotal = subtotal - window.AppState.cartDiscount;
+    
+    // ==========================================
+    // GENERATE ANTI-COLLISION ORDER ID PINTAR
+    // ==========================================
+    // Aturan Blueprint: {Aktor}-{Metode/Tipe}-{YYMMDD}-{Hash}
+    const actorPrefix = window.AppState.currentRole === 'customer' ? 'CUS' : 'KSR';
+    const typeMiddle = orderType === "Pre-Order (PO)" ? 'PO' : (paymentMethod === 'Tunai' ? 'CSH' : 'QRS');
+    
+    // Ambil format tanggal YYMMDD (Misal: 260901 untuk 1 Sep 2026)
+    const dateObj = new Date();
+    const yy = dateObj.getFullYear().toString().slice(-2);
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    
+    // Random 4 digit hash unik (Kombinasi Huruf dan Angka)
+    const hash = Math.random().toString(36).substring(2, 6).toUpperCase();
+    
+    const orderId = `${actorPrefix}-${typeMiddle}-${yy}${mm}${dd}-${hash}`;
+    
+    // ==========================================
+    // STRUKTUR DATA PESANAN YANG AKAN DI-PUSH KE FIREBASE
+    // ==========================================
+    const orderData = {
+        orderId: orderId,
+        actor: window.AppState.currentRole, // 'customer', 'kasir', 'owner'
+        staffName: window.AppState.activeStaffName || 'Mandiri (Self-Order)',
+        customerName: name || 'Anonim',
+        customerPhone: phone || '',
+        isMember: isMember,
+        orderType: orderType,
+        paymentMethod: paymentMethod,
+        items: window.AppState.cart,
+        subtotal: subtotal,
+        discount: window.AppState.cartDiscount,
+        grandTotal: grandTotal,
+        status: 'pending', // Masuk ke Dapur Tab 1 (Konfirmasi)
+        timestamp: Date.now()
+    };
 
-window.bukaMasterTopping = function() { document.getElementById('modal-master-topping').classList.replace('hidden', 'flex'); window.renderMasterTopping(); }; window.tutupMasterTopping = function() { document.getElementById('modal-master-topping').classList.replace('flex', 'hidden'); if(!document.getElementById('modal-form-menu').classList.contains('hidden')) window.bukaFormMenu(document.getElementById('menu-id').value); };
-window.renderMasterTopping = function() { const l = document.getElementById('list-master-topping'); l.innerHTML = window.masterTopping.length === 0 ? '<div class="text-center py-6 text-gray-400 font-bold text-xs border-2 border-dashed rounded-xl">Kosong.</div>' : ''; window.masterTopping.forEach((t, i) => { l.innerHTML += `<div class="bg-white p-3 rounded-xl border flex justify-between items-center mb-2"><div><h4 class="text-xs font-black">${t.nama}</h4><p class="text-[10px] font-bold text-amber-500">+ Rp ${parseInt(t.harga).toLocaleString('id-ID')}</p></div><button onclick="window.hapusMasterTopping(${i})" class="w-7 h-7 bg-red-50 text-red-500 rounded-lg"><i class="fa-solid fa-trash text-[10px]"></i></button></div>`; }); };
-window.tambahMasterTopping = function() { const nm = document.getElementById('top-input-nama').value.trim(); const hg = document.getElementById('top-input-harga').value; if(!nm || !hg) return alert("Isi form!"); window.masterTopping.push({ id: 'T' + Date.now(), nama: nm, harga: parseInt(hg) }); document.getElementById('top-input-nama').value = ''; document.getElementById('top-input-harga').value = ''; window.simpanToppingHanyaData(); window.renderMasterTopping(); };
-window.hapusMasterTopping = function(i) { if(confirm("Hapus?")) { window.masterTopping.splice(i, 1); window.simpanToppingHanyaData(); window.renderMasterTopping(); } };
-window.simpanToppingHanyaData = function() { localStorage.setItem('mainstay_dbTopping', JSON.stringify(window.masterTopping)); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'master_topping'), window.masterTopping); };
-window.prosesImportCSV = function(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = function(ev) { const br = ev.target.result.split('\n'); let c = 0; for(let i = 1; i < br.length; i++) { if(br[i].trim() === '') continue; const k = br[i].split(','); if(k.length >= 3) { window.katalogMenu.push({ id: 'M' + Date.now() + i, nama: k[0].trim(), kategori: k[1].trim().toLowerCase(), harga: parseInt(k[2].trim()) || 0, image: k[3] ? k[3].trim() : '', stok: 100, opsiTopping: [] }); c++; } } window.simpanMenuHanyaData(); alert(`Import ${c} Menu.`); e.target.value = ''; }; r.readAsText(f); };
+    // Impor modular Firebase dan eksekusi penyimpanan (Kirim ke Realtime Database)
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, set } = module;
+        const orderRef = ref(window.db, 'orders/' + orderId);
+        
+        // Simpan data order
+        set(orderRef, orderData).then(() => {
+            // Bersihkan Keranjang Setelah Berhasil Disimpan
+            window.AppState.cart = [];
+            window.AppState.cartDiscount = 0;
+            document.getElementById('co-name').value = '';
+            document.getElementById('co-phone').value = '';
+            document.getElementById('co-promo').value = '';
+            window.updateCartBadge();
+            window.closeCartModal();
+            
+            // Pemicu Suara Bel "Pesanan Masuk" di latar belakang jika pengaturan aktif
+            if(window.AppState.storeSettings.audioEnabled && window.AppState.audioMasuk) {
+                 window.AppState.audioMasuk.play().catch(e => console.log("Audio play diizinkan user interaction."));
+            }
+            
+            // NAVIGASI SETELAH SUKSES (QRIS vs TUNAI)
+            if (paymentMethod === 'QRIS Resto') {
+                // Tampilkan Modal QRIS
+                document.getElementById('qris-antrean').innerText = orderId;
+                document.getElementById('qris-total-bayar').innerText = window.formatRupiah(grandTotal);
+                
+                // Ambil link QRIS dari Pengaturan Toko
+                import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((mod) => {
+                    mod.get(mod.ref(window.db, 'settings/qris')).then((snap) => {
+                        const qrisImg = snap.val() || 'qris-mainstay.png';
+                        document.getElementById('qris-img-display').src = qrisImg;
+                    });
+                });
+                
+                document.getElementById('modal-qris').classList.remove('hidden');
+                document.getElementById('modal-qris').classList.add('flex');
+            } else {
+                // Jika Tunai
+                alert(`✅ Pesanan Tunai Berhasil Dibuat!\nNo. Order: ${orderId}\n\nSilakan tunjukkan nomor ini ke kasir untuk melakukan pembayaran.`);
+                window.switchRoleView('customer'); // Kembalikan ke layar utama
+            }
+            
+        }).catch((error) => {
+            alert("Terjadi kesalahan sistem saat memproses pesanan. Coba lagi.");
+            console.error(error);
+        });
+    });
+};
 
-window.bukaRiwayatTransaksi = function() { const l = document.getElementById('list-riwayat-transaksi'); l.innerHTML = ''; const r = JSON.parse(localStorage.getItem('mainstay_dbTransaksi')) || []; if (r.length === 0) l.innerHTML = `<div class="text-center py-10 text-gray-400 font-bold text-xs border-2 border-dashed rounded-2xl">Kosong.</div>`; else [...r].reverse().forEach((t, i) => { l.innerHTML += `<div class="bg-white p-4 rounded-xl border shadow-sm mb-2"><div class="flex justify-between items-start border-b pb-2"><div><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black">${t.noStruk}</span><span class="text-[9px] text-gray-400 ml-2 font-bold">${new Date(t.waktu).toLocaleTimeString('id-ID')}</span></div><span class="text-sm font-black text-gray-900">Rp ${t.totalTagihan.toLocaleString('id-ID')}</span></div><p class="text-xs font-bold text-gray-600 mt-2">${t.item.map(x => `${x.nama} (x${x.qty})`).join(', ')}</p><div class="flex justify-between items-center mt-2"><div class="text-[10px] font-bold text-gray-400 flex flex-col"><span>Oleh: ${t.kasir} | Plg: ${t.pelanggan}</span><span class="text-amber-500 uppercase">${t.metodePembayaran}</span></div><button onclick="window.cetakUlangStrukByNo('${t.noStruk}')" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-[9px] font-black border"><i class="fa-solid fa-print"></i> Cetak</button></div></div>`; }); document.getElementById('modal-riwayat-transaksi').classList.replace('hidden', 'flex'); };
-window.tutupRiwayatTransaksi = function() { document.getElementById('modal-riwayat-transaksi').classList.replace('flex', 'hidden'); };
-window.bukaRiwayatAbsen = function() { const l = document.getElementById('list-riwayat-absen'); l.innerHTML = ''; if (window.riwayatAbsensi.length === 0) l.innerHTML = `<div class="text-center py-10 text-gray-400 font-bold text-xs border-2 border-dashed rounded-2xl">Kosong.</div>`; else [...window.riwayatAbsensi].reverse().forEach(lg => { const t = new Date(lg.waktu); l.innerHTML += `<div class="bg-white p-3 rounded-xl border flex gap-4 shadow-sm items-center mb-2">${lg.foto ? `<img src="${lg.foto}" class="w-12 h-12 rounded-xl object-cover border">` : `<div class="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-400"><i class="fa-solid fa-user-slash"></i></div>`}<div class="flex-1"><h4 class="text-xs font-black text-gray-900">${lg.nama}</h4><p class="text-[9px] font-bold text-gray-400">${t.getDate()}/${t.getMonth()+1} - ${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}</p>${lg.durasi && lg.durasi !== "-" ? `<span class="block mt-1 text-[9px] font-black text-indigo-500">Kerja: ${lg.durasi}</span>` : ''}</div><div class="shrink-0"><span class="${lg.tipe === 'Masuk' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} px-2 py-1 rounded text-[9px] font-black uppercase">${lg.tipe}</span></div></div>`; }); document.getElementById('modal-riwayat-absen').classList.replace('hidden', 'flex'); };
-window.tutupRiwayatAbsen = function() { document.getElementById('modal-riwayat-absen').classList.replace('flex', 'hidden'); };
-window.bersihkanRiwayatAbsen = function() { if(confirm("Hapus semua?")) { window.riwayatAbsensi = []; localStorage.setItem('mainstay_dbAbsen', JSON.stringify([])); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'riwayat_absen'), []); window.bukaRiwayatAbsen(); } };
+// 6. FUNGSI PENUTUPAN / PEMBATALAN TAMPILAN QRIS
+window.batalQRIS = function() {
+    document.getElementById('modal-qris').classList.add('hidden');
+    document.getElementById('modal-qris').classList.remove('flex');
+    window.switchRoleView('customer');
+};
 
-document.addEventListener('DOMContentLoaded', () => { const pW = document.getElementById('panel-edit-web'); if (pW) { const btn = pW.querySelector('button.bg-blue-600'); if (btn) btn.onclick = function() { window.systemConfig.nomorWA = document.getElementById('setting-wa')?.value || ''; window.systemConfig.ig = document.getElementById('setting-ig')?.value || ''; window.systemConfig.tiktok = document.getElementById('setting-tiktok')?.value || ''; window.systemConfig.logoUrl = document.getElementById('setting-logo')?.value || window.systemConfig.logoUrl; window.systemConfig.qrisUrl = document.getElementById('setting-qris')?.value || window.systemConfig.qrisUrl; let m = document.getElementById('setting-maps')?.value || ''; if(m.includes('src="')) m = m.split('src="')[1].split('"')[0]; window.systemConfig.maps = m; if (document.getElementById('header-logo-img')) document.getElementById('header-logo-img').src = window.systemConfig.logoUrl; if (document.getElementById('qris-img-display')) document.getElementById('qris-img-display').src = window.systemConfig.qrisUrl; if (document.getElementById('kasir-qris-img')) document.getElementById('kasir-qris-img').src = window.systemConfig.qrisUrl; localStorage.setItem('mainstay_dbConfig', JSON.stringify(window.systemConfig)); if (window.db && window.fbSet) window.fbSet(window.fbRef(window.db, 'konfigurasi_web'), window.systemConfig); alert("Disimpan!"); }; } });
+// 7. FUNGSI UNDUH GAMBAR QRIS (Native JS Pemicu Download)
+window.unduhQRIS = function() {
+    const qrisSrc = document.getElementById('qris-img-display').src;
+    // Karena keterbatasan cross-origin tanpa backend, kita gunakan trik tab baru
+    window.open(qrisSrc, '_blank');
+};
+
+// 8. FUNGSI KIRIM BUKTI WA OTOMATIS (WhatsApp API Text Formatting)
+window.kirimBuktiWA = function() {
+    const orderId = document.getElementById('qris-antrean').innerText;
+    const nomorTujuan = window.AppState.storeSettings.phoneWA;
+    const pesanTeks = encodeURIComponent(`Halo Kak, ini bukti transfer QRIS saya untuk pembayaran pesanan nomor:\n*${orderId}*\n\n(Mohon dilampirkan foto tangkapan layar/screenshot bukti transfer di bawah chat ini).`);
+    
+    // Redirect ke WhatsApp (Otomatis buka aplikasi WA di HP)
+    window.open(`https://wa.me/${nomorTujuan}?text=${pesanTeks}`, '_blank');
+    
+    // Tutup modal
+    window.batalQRIS();
+};
+
+console.log("Mainstay POS - Part 4 (Cart, Checkout & QRIS) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 5: DASHBOARD KASIR, 3-TAB KITCHEN SYSTEM & THERMAL PRINTING
+   -------------------------------------------------------------------------- */
+
+window.AppState.activeKasirTab = 'konfirmasi'; // Default tab kasir
+window.AppState.rawOrders = {}; // Cache order data untuk cetak struk
+
+// 1. PINDAH TAB KASIR (Konfirmasi, Dapur, Selesai)
+window.switchKasirTab = function(tabName) {
+    window.AppState.activeKasirTab = tabName;
+    
+    // Reset gaya tombol tab
+    const tabs = ['konfirmasi', 'dapur', 'selesai'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if(btn) {
+            btn.classList.remove('bg-white', 'shadow-sm', 'text-amber-600');
+            btn.classList.add('text-slate-500');
+        }
+    });
+    
+    // Aktifkan tab yang dipilih
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    if(activeBtn) {
+        activeBtn.classList.add('bg-white', 'shadow-sm', 'text-amber-600');
+        activeBtn.classList.remove('text-slate-500');
+    }
+    
+    // Muat ulang daftar pesanan sesuai tab aktif
+    window.renderKasirList();
+};
+
+// 2. LOAD DATA PESANAN DARI FIREBASE (Real-Time Listener)
+window.loadKasirOrders = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        const ordersRef = ref(window.db, 'orders');
+        
+        onValue(ordersRef, (snapshot) => {
+            const data = snapshot.val();
+            window.AppState.rawOrders = data || {};
+            
+            let countPending = 0;
+            let countDapur = 0;
+            
+            // Hitung Badge Notifikasi
+            if(data) {
+                Object.values(data).forEach(ord => {
+                    if(ord.status === 'pending') countPending++;
+                    if(ord.status === 'dapur') countDapur++;
+                });
+            }
+            
+            // Update UI Badge Angka
+            const badgeKonfirmasi = document.getElementById('badge-konfirmasi');
+            const badgeDapur = document.getElementById('badge-dapur');
+            
+            if(badgeKonfirmasi) {
+                badgeKonfirmasi.innerText = countPending;
+                if(countPending > 0) badgeKonfirmasi.classList.remove('hidden');
+                else badgeKonfirmasi.classList.add('hidden');
+            }
+            
+            if(badgeDapur) {
+                badgeDapur.innerText = countDapur;
+                if(countDapur > 0) badgeDapur.classList.remove('hidden');
+                else badgeDapur.classList.add('hidden');
+            }
+            
+            // Render Daftar Visual
+            window.renderKasirList();
+        });
+    });
+};
+
+// 3. RENDER KARTU PESANAN KE DALAM TAB YANG AKTIF
+window.renderKasirList = function() {
+    const container = document.getElementById('kasir-list-container');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    const orders = window.AppState.rawOrders;
+    const tab = window.AppState.activeKasirTab;
+    
+    // Filter pesanan sesuai tab (pending / dapur / selesai)
+    const filteredOrders = Object.values(orders).filter(ord => ord.status === tab);
+    
+    // Urutkan: Jika pending (terlama di atas agar dikerjakan dulu). Jika selesai (terbaru di atas).
+    filteredOrders.sort((a, b) => tab === 'selesai' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp);
+    
+    if (filteredOrders.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-16 text-gray-400">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                    <i class="fa-solid fa-clipboard-list text-3xl opacity-50 text-slate-500"></i>
+                </div>
+                <p class="text-sm font-black text-slate-500">Belum ada antrean di tab ini.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Render Kartu Pesanan HTML
+    filteredOrders.forEach(ord => {
+        const isQRIS = ord.paymentMethod === 'QRIS Resto';
+        const qrisBadge = isQRIS ? `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[9px]"><i class="fa-solid fa-qrcode"></i> QRIS (Cek WA)</span>` : `<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[9px]"><i class="fa-solid fa-money-bill-wave"></i> TUNAI</span>`;
+        const timeStr = new Date(ord.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+        
+        let actionsHtml = '';
+        
+        // Tombol Aksi Berdasarkan Tab
+        if (tab === 'pending') {
+            actionsHtml = `
+                <button onclick="updateOrderStatus('${ord.orderId}', 'dapur')" class="flex-1 bg-green-500 text-white text-xs font-black py-2.5 rounded-xl shadow-sm hover:bg-green-600 transition"><i class="fa-solid fa-fire-burner mr-1"></i> Terima & Masak</button>
+                <button onclick="batalkanPesanan('${ord.orderId}')" class="flex-1 bg-red-50 text-red-600 text-xs font-black py-2.5 rounded-xl shadow-sm border border-red-200 hover:bg-red-100 transition"><i class="fa-solid fa-xmark mr-1"></i> Batalkan</button>
+            `;
+        } else if (tab === 'dapur') {
+            actionsHtml = `
+                <div class="w-full flex gap-2 flex-wrap md:flex-nowrap">
+                    <button onclick="cetakStruk('${ord.orderId}', false)" class="flex-1 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-black py-2.5 rounded-lg shadow-sm hover:bg-blue-100 transition"><i class="fa-solid fa-receipt mr-1"></i> Struk Kasir</button>
+                    <button onclick="cetakStruk('${ord.orderId}', true)" class="flex-1 bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-black py-2.5 rounded-lg shadow-sm hover:bg-amber-100 transition"><i class="fa-solid fa-ticket mr-1"></i> Tiket Dapur</button>
+                    <button onclick="kirimStrukWA('${ord.orderId}')" class="flex-1 bg-green-500 text-white text-[10px] font-black py-2.5 rounded-lg shadow-sm hover:bg-green-600 transition"><i class="fa-brands fa-whatsapp text-sm"></i> Kirim Struk</button>
+                    <button onclick="updateOrderStatus('${ord.orderId}', 'selesai')" class="w-full md:w-auto bg-gray-900 text-white text-xs font-black px-5 py-2.5 rounded-lg shadow-sm hover:bg-black transition"><i class="fa-solid fa-check mr-1"></i> Selesai</button>
+                </div>
+            `;
+        } else if (tab === 'selesai') {
+            actionsHtml = `
+                <button onclick="cetakStruk('${ord.orderId}', false)" class="bg-gray-100 text-gray-600 border border-gray-200 text-[10px] font-black px-4 py-2 rounded-lg hover:bg-gray-200 transition"><i class="fa-solid fa-print mr-1"></i> Cetak Ulang Struk</button>
+            `;
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3";
+        card.innerHTML = `
+            <div class="flex justify-between items-start border-b border-gray-100 pb-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[10px] font-black bg-slate-800 text-white px-2 py-0.5 rounded tracking-wider">${ord.orderId}</span>
+                        <span class="text-[9px] font-bold text-gray-400"><i class="fa-regular fa-clock"></i> ${timeStr}</span>
+                    </div>
+                    <h4 class="font-black text-sm text-gray-900">${ord.customerName} <span class="text-[10px] text-gray-500 font-bold">(${ord.customerPhone || '-'})</span></h4>
+                    <p class="text-[10px] font-black text-gray-500 mt-1 uppercase"><i class="fa-solid fa-motorcycle text-amber-500 mr-1"></i> ${ord.orderType}</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm font-black text-amber-600 block mb-1">${window.formatRupiah(ord.grandTotal)}</span>
+                    ${qrisBadge}
+                </div>
+            </div>
+            
+            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs font-bold text-gray-700">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-200 pb-1">Detail Pesanan:</p>
+                <ul class="space-y-1">
+                    ${(ord.items || []).map(item => `
+                        <li class="flex justify-between">
+                            <span>${item.qty}x ${item.name} <span class="text-amber-600 text-[9px]">(${item.notes})</span></span>
+                            ${tab !== 'dapur' ? `<span class="text-gray-400 text-[9px]">${window.formatRupiah(item.subtotal)}</span>` : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+            
+            <div class="flex gap-2 mt-1">
+                ${actionsHtml}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+};
+
+// 4. UPDATE STATUS PESANAN (Terima / Selesai)
+window.updateOrderStatus = function(orderId, newStatus) {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, update } = module;
+        const orderRef = ref(window.db, 'orders/' + orderId);
+        
+        update(orderRef, { status: newStatus }).then(() => {
+            if (newStatus === 'dapur' && window.AppState.storeSettings.audioEnabled && window.AppState.audioSiap) {
+                // Bunyikan nada sukses diterima (opsional)
+            }
+        });
+    });
+};
+
+// 5. BATALKAN PESANAN (Dengan Validasi PIN Owner Khusus Void - Sesuai Blueprint)
+window.batalkanPesanan = function(orderId) {
+    const pin = prompt("Keamanan Ketat: Pesanan batal membutuhkan otorisasi PIN Master Owner (Void/Refund Log). Masukkan PIN:");
+    if (pin !== "888888") {
+        alert("Otorisasi Gagal! PIN Master salah.");
+        return;
+    }
+    
+    const alasan = prompt("Masukkan alasan pembatalan (Cth: Bahan habis, Customer kabur):");
+    if(!alasan) return;
+
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, update } = module;
+        // Kita ubah status menjadi batal, dan mencatat void log (Blueprint Part 15)
+        const orderRef = ref(window.db, 'orders/' + orderId);
+        update(orderRef, { 
+            status: 'batal',
+            voidReason: alasan,
+            voidBy: 'Owner',
+            voidTimestamp: Date.now()
+        }).then(() => {
+            alert(`Pesanan ${orderId} resmi dibatalkan dan tercatat di Log Void.`);
+        });
+    });
+};
+
+// 6. LOGIKA CETAK STRUK THERMAL (CSS @media print)
+window.cetakStruk = function(orderId, isDapurOnly = false) {
+    const ord = window.AppState.rawOrders[orderId];
+    if(!ord) return alert("Data pesanan tidak ditemukan!");
+    
+    // Pastikan kontainer cetak tersedia di DOM (Inject dinamis jika belum ada)
+    let printContainer = document.getElementById('printable-receipt');
+    if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'printable-receipt';
+        document.body.appendChild(printContainer);
+    }
+    
+    const timeStr = new Date(ord.timestamp).toLocaleDateString('id-ID', {
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit'
+    });
+    
+    const namaKasir = document.getElementById('kasir-staf-dropdown').value || window.AppState.activeStaffName;
+    const isOwner = window.AppState.currentRole === 'owner';
+    const handlerName = isOwner ? 'Owner (Master)' : namaKasir;
+
+    // --- HTML STRUK TIKET DAPUR (TANPA HARGA) ---
+    if (isDapurOnly) {
+        printContainer.innerHTML = `
+            <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 10px;">
+                <h2 style="margin: 0; font-size: 16px;">TIKET DAPUR</h2>
+                <h3 style="margin: 5px 0 0; font-size: 18px; font-weight: bold;">ORDER: ${orderId}</h3>
+                <p style="margin: 3px 0; font-size: 12px;">Tipe: <b>${ord.orderType.toUpperCase()}</b></p>
+            </div>
+            <p style="margin: 2px 0;">Customer: <b>${ord.customerName}</b></p>
+            <p style="margin: 2px 0;">Waktu: ${timeStr}</p>
+            <hr style="border: 1px dashed #000; margin: 5px 0;">
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px;">
+                ${(ord.items || []).map(item => `
+                    <li style="margin-bottom: 8px;">
+                        <span style="font-weight: bold; font-size: 16px;">${item.qty}x ${item.name}</span><br>
+                        <i style="font-size: 12px; margin-left: 15px;">- ${item.notes}</i>
+                    </li>
+                `).join('')}
+            </ul>
+            <hr style="border: 1px dashed #000; margin: 10px 0;">
+            <p style="text-align: center; font-size: 10px;">~ Mainstay Drink Kitchen ~</p>
+        `;
+    } 
+    // --- HTML STRUK KASIR LENGKAP (DENGAN HARGA) ---
+    else {
+        printContainer.innerHTML = `
+            <div style="text-align: center; margin-bottom: 10px;">
+                <h2 style="margin: 0; font-size: 18px;">MAINSTAY DRINK</h2>
+                <p style="margin: 2px 0; font-size: 10px;">Minuman Andalanmu</p>
+            </div>
+            <hr style="border: 1px dashed #000; margin: 5px 0;">
+            <p style="margin: 2px 0; font-size: 11px;">Order: ${orderId}</p>
+            <p style="margin: 2px 0; font-size: 11px;">Tgl: ${timeStr}</p>
+            <p style="margin: 2px 0; font-size: 11px;">Kasir: ${handlerName}</p>
+            <p style="margin: 2px 0; font-size: 11px;">Cust: ${ord.customerName}</p>
+            <hr style="border: 1px dashed #000; margin: 5px 0;">
+            <table style="width: 100%; font-size: 11px; margin-bottom: 5px;">
+                ${(ord.items || []).map(item => `
+                    <tr>
+                        <td colspan="2" style="padding-top: 4px;"><b>${item.name}</b></td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left: 5px;">${item.qty}x @ ${item.unitPrice}</td>
+                        <td style="text-align: right;">${item.subtotal}</td>
+                    </tr>
+                    <tr><td colspan="2" style="font-size: 9px; font-style: italic; padding-left: 5px; color: #555;">Kust: ${item.notes}</td></tr>
+                `).join('')}
+            </table>
+            <hr style="border: 1px dashed #000; margin: 5px 0;">
+            ${ord.discount > 0 ? `<p style="margin: 2px 0; font-size: 11px; text-align: right;">Diskon: -${ord.discount}</p>` : ''}
+            <p style="margin: 4px 0; font-size: 14px; font-weight: bold; text-align: right;">TOTAL: ${window.formatRupiah(ord.grandTotal)}</p>
+            <p style="margin: 2px 0; font-size: 11px; text-align: right;">Metode: ${ord.paymentMethod}</p>
+            <hr style="border: 1px dashed #000; margin: 10px 0;">
+            <p style="text-align: center; font-size: 10px;">Terima kasih telah berbelanja!<br>IG: @mainstay.in</p>
+        `;
+    }
+    
+    // Eksekusi print browser (Otomatis ditangkap oleh @media print di CSS)
+    window.print();
+};
+
+// 7. KIRIM STRUK DIGITAL VIA WHATSAPP (Draft API)
+window.kirimStrukWA = function(orderId) {
+    const ord = window.AppState.rawOrders[orderId];
+    if(!ord || !ord.customerPhone) {
+        alert("Nomor WhatsApp customer tidak tersedia pada pesanan ini.");
+        return;
+    }
+
+    const gmapsReviewLink = "https://g.page/mainstay-drink-shop/review?ad";
+    let detailItems = ord.items.map(item => `- ${item.qty}x ${item.name} (${item.notes})`).join('\n');
+    
+    const teksWA = `Halo ${ord.customerName}!\n\nPesanan Anda dari *Mainstay Drink* sudah siap! 🥤\n\n*No. Order:* ${ord.orderId}\n*Rincian Pesanan:*\n${detailItems}\n\n*Total Tagihan:* ${window.formatRupiah(ord.grandTotal)}\n\nTerima kasih telah berbelanja minuman andalanmu! Jika Anda suka, yuk bantu berikan bintang 5 di Google Maps kami:\n⭐ ${gmapsReviewLink}`;
+    
+    let phone = window.formatPhoneWA(ord.customerPhone);
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(teksWA)}`, '_blank');
+};
+
+console.log("Mainstay POS - Part 5 (Kasir & Dapur) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 6: LIVE CASH DRAWER MONITOR, KAS KELUAR & SHIFT CLOSING (AUDIT)
+   -------------------------------------------------------------------------- */
+
+window.AppState.dailyFinance = {
+    startingCash: 0, // Modal Awal Laci
+    totalCashSales: 0, // Penjualan Tunai
+    totalQrisSales: 0, // Penjualan QRIS
+    totalOutflows: 0   // Kas Keluar / Prive Tunai
+};
+
+// 1. LISTENER KEUANGAN HARIAN (Firebase)
+window.loadDailyFinance = function() {
+    const todayStr = new Date().toISOString().slice(0,10); // Format: YYYY-MM-DD
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        const financeRef = ref(window.db, `finance_daily/${todayStr}`);
+        
+        onValue(financeRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            window.AppState.dailyFinance.startingCash = data.startingCash || 0;
+            
+            // Hitung total Kas Keluar hari ini
+            let outTotal = 0;
+            if(data.outflows) {
+                Object.values(data.outflows).forEach(out => outTotal += out.amount);
+            }
+            window.AppState.dailyFinance.totalOutflows = outTotal;
+            
+            window.calculateLiveCashDrawer();
+        });
+    });
+};
+
+// 2. KALKULASI REAL-TIME & RENDER DASHBOARD LACI KASIR
+window.calculateLiveCashDrawer = function() {
+    let cashSales = 0;
+    let qrisSales = 0;
+    
+    // Iterasi dari rawOrders (yang diload di Part 5) untuk hari ini
+    const todayCode = new Date().toISOString().slice(2,10).replace(/-/g,''); // Format: YYMMDD
+    
+    Object.values(window.AppState.rawOrders).forEach(ord => {
+        // Abaikan pesanan yang dibatalkan
+        if (ord.status === 'batal') return;
+        
+        // Pastikan hanya pesanan hari ini (berdasarkan OrderID)
+        if (ord.orderId.includes(todayCode)) {
+            if (ord.paymentMethod === 'Tunai') cashSales += ord.grandTotal;
+            if (ord.paymentMethod === 'QRIS Resto') qrisSales += ord.grandTotal;
+        }
+    });
+    
+    window.AppState.dailyFinance.totalCashSales = cashSales;
+    window.AppState.dailyFinance.totalQrisSales = qrisSales;
+    
+    // RUMUS EXPECTED CASH (TARGET LACI)
+    const startingCash = window.AppState.dailyFinance.startingCash;
+    const outflows = window.AppState.dailyFinance.totalOutflows;
+    const expectedCash = startingCash + cashSales - outflows;
+    const totalOmzet = cashSales + qrisSales;
+    
+    // Inject atau Update UI Live Cash Drawer di layar Kasir
+    window.renderLiveCashUI(totalOmzet, expectedCash);
+};
+
+// 3. INJEKSI ELEMEN UI LIVE CASH KE TAMPILAN KASIR
+window.renderLiveCashUI = function(omzet, targetKas) {
+    const kasirView = document.getElementById('view-kasir');
+    if (!kasirView) return;
+    
+    let cashPanel = document.getElementById('live-cash-panel');
+    
+    // Jika panel belum ada, buat dan sisipkan di bawah Header Kasir
+    if (!cashPanel) {
+        cashPanel = document.createElement('div');
+        cashPanel.id = 'live-cash-panel';
+        cashPanel.className = 'bg-gray-900 px-4 py-3 shadow-md border-b-4 border-amber-500 z-20 relative text-white flex justify-between items-center';
+        
+        // Sisipkan setelah elemen header pertama di dalam view-kasir
+        const headerKasir = kasirView.querySelector('.sticky.top-\\[68px\\]');
+        if (headerKasir && headerKasir.nextSibling) {
+            headerKasir.parentNode.insertBefore(cashPanel, headerKasir.nextSibling);
+        } else {
+            kasirView.prepend(cashPanel);
+        }
+    }
+    
+    cashPanel.innerHTML = `
+        <div>
+            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Target Fisik Uang di Laci</p>
+            <h3 class="text-xl font-black text-amber-400 leading-none">${window.formatRupiah(targetKas)}</h3>
+        </div>
+        <div class="text-right flex gap-3 items-center">
+            <div class="hidden md:block text-right pr-3 border-r border-gray-700">
+                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Total Omzet Harian</p>
+                <p class="text-sm font-bold text-white">${window.formatRupiah(omzet)}</p>
+            </div>
+            <button onclick="prosesKasKeluar()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[10px] font-black px-3 py-2 rounded-lg transition"><i class="fa-solid fa-money-bill-transfer mr-1"></i> Kas Keluar</button>
+            <button onclick="prosesTutupShift()" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-black px-3 py-2 rounded-lg transition shadow-[0_0_10px_rgba(239,68,68,0.3)]"><i class="fa-solid fa-lock mr-1"></i> Tutup Shift</button>
+        </div>
+    `;
+};
+
+// 4. PENCATATAN KAS KELUAR / PRIVE TUNAI
+window.prosesKasKeluar = function() {
+    const nominal = prompt("Masukkan nominal Kas Keluar / Prive yang diambil dari laci (Angka saja):");
+    if (!nominal || isNaN(nominal)) return;
+    
+    const alasan = prompt("Masukkan alasan / keterangan pengeluaran (Cth: Beli es batu, Prive Owner):");
+    if (!alasan) return;
+    
+    const todayStr = new Date().toISOString().slice(0,10);
+    const idKasKeluar = "OUT-" + Date.now();
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, set } = module;
+        const outRef = ref(window.db, `finance_daily/${todayStr}/outflows/${idKasKeluar}`);
+        
+        set(outRef, {
+            amount: parseInt(nominal),
+            reason: alasan,
+            staff: window.AppState.activeStaffName || 'Owner',
+            timestamp: Date.now()
+        }).then(() => {
+            alert(`Berhasil mencatat kas keluar sejumlah ${window.formatRupiah(nominal)}.`);
+        });
+    });
+};
+
+// 5. TUTUP SHIFT & AUDIT KASIR (Pencocokan Sistem vs Fisik)
+window.prosesTutupShift = function() {
+    if (!window.AppState.activeStaffName) {
+        alert("Sesi tidak valid. Silakan login ulang.");
+        return;
+    }
+    
+    const startingCash = window.AppState.dailyFinance.startingCash;
+    const cashSales = window.AppState.dailyFinance.totalCashSales;
+    const outflows = window.AppState.dailyFinance.totalOutflows;
+    const expectedCash = startingCash + cashSales - outflows;
+    
+    alert(`PERSIAPAN TUTUP SHIFT\n\nNama Staf: ${window.AppState.activeStaffName}\nSilakan hitung seluruh uang fisik yang ada di dalam laci kasir sekarang.`);
+    
+    const physicalCashInput = prompt("Masukkan total uang fisik (Cash) yang ada di laci (Angka saja):");
+    if (physicalCashInput === null || physicalCashInput === "") return;
+    
+    const physicalCash = parseInt(physicalCashInput);
+    if (isNaN(physicalCash)) {
+        alert("Input harus berupa angka!");
+        return;
+    }
+    
+    const selisih = physicalCash - expectedCash;
+    let statusSelisih = "SEIMBANG (BALANCE) ✅";
+    if (selisih > 0) statusSelisih = `LEBIH (PLUS) ${window.formatRupiah(selisih)} ⚠️`;
+    if (selisih < 0) statusSelisih = `KURANG (MINUS) ${window.formatRupiah(Math.abs(selisih))} ❌`;
+    
+    const konfirmasi = confirm(`--- HASIL AUDIT SHIFT ---\n\nTarget Sistem: ${window.formatRupiah(expectedCash)}\nUang Fisik di Laci: ${window.formatRupiah(physicalCash)}\nStatus: ${statusSelisih}\n\nApakah Anda yakin ingin menutup shift dan menyimpan log ini?`);
+    
+    if (konfirmasi) {
+        const shiftId = "SHIFT-" + Date.now();
+        const shiftLog = {
+            staffName: window.AppState.activeStaffName,
+            startingCash: startingCash,
+            cashSales: cashSales,
+            outflows: outflows,
+            expectedCash: expectedCash,
+            physicalCash: physicalCash,
+            discrepancy: selisih,
+            timestamp: Date.now()
+        };
+        
+        import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+            const { ref, set } = module;
+            const logRef = ref(window.db, `shift_logs/${shiftId}`);
+            
+            set(logRef, shiftLog).then(() => {
+                alert("Shift berhasil ditutup dan diaudit. Anda akan dikeluarkan dari sistem.");
+                window.prosesLogout('kasir');
+            });
+        });
+    }
+};
+
+// Override loadKasirOrders dari Part 5 agar memanggil loadDailyFinance juga
+const originalLoadKasirOrders = window.loadKasirOrders;
+window.loadKasirOrders = function() {
+    originalLoadKasirOrders();
+    window.loadDailyFinance();
+};
+
+console.log("Mainstay POS - Part 6 (Live Cash Drawer & Shift Closing) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 7: OWNER MASTER PANEL (DASHBOARD, SETTINGS, & CATALOG CRUD)
+   -------------------------------------------------------------------------- */
+
+// 1. RENDER DASHBOARD OWNER (Statistik Pendapatan & Pesanan Real-Time)
+window.loadOwnerDashboard = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        const ordersRef = ref(window.db, 'orders');
+        
+        onValue(ordersRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            
+            let totalPendapatanHariIni = 0;
+            let countBaru = 0;
+            let countDapur = 0;
+            let countSelesai = 0;
+            
+            const todayCode = new Date().toISOString().slice(2,10).replace(/-/g,''); // YYMMDD
+            
+            Object.values(data).forEach(ord => {
+                // Hanya hitung pesanan hari ini yang TIDAK dibatalkan
+                if (ord.orderId.includes(todayCode) && ord.status !== 'batal') {
+                    // Pendapatan kotor (setelah diskon, sebelum HPP/Prive)
+                    totalPendapatanHariIni += ord.grandTotal;
+                    
+                    if (ord.status === 'pending') countBaru++;
+                    if (ord.status === 'dapur') countDapur++;
+                    if (ord.status === 'selesai') countSelesai++;
+                }
+            });
+            
+            // Injeksi ke HTML Dashboard Owner
+            const elPendapatan = document.getElementById('stat-pendapatan');
+            const elBaru = document.getElementById('stat-pesanan');
+            const elDapur = document.getElementById('stat-dapur');
+            const elSelesai = document.getElementById('stat-selesai');
+            
+            if(elPendapatan) elPendapatan.innerText = window.formatRupiah(totalPendapatanHariIni);
+            if(elBaru) elBaru.innerText = countBaru;
+            if(elDapur) elDapur.innerText = countDapur;
+            if(elSelesai) elSelesai.innerText = countSelesai;
+        });
+        
+        // Panggil fungsi penyiapan form di dalam panel
+        window.loadOwnerSettings();
+        window.renderMasterKatalog();
+    });
+};
+
+// 2. LOAD PENGATURAN TOKO (Form Edit Web & Kontak)
+window.loadOwnerSettings = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, get } = module;
+        
+        get(ref(window.db, 'settings')).then((snapshot) => {
+            if (snapshot.exists()) {
+                const s = snapshot.val();
+                
+                // Isi input form HTML dengan data dari Firebase
+                if(document.getElementById('setting-wa')) document.getElementById('setting-wa').value = s.phoneWA || '';
+                if(document.getElementById('setting-logo')) document.getElementById('setting-logo').value = s.logo || '';
+                if(document.getElementById('setting-ig')) document.getElementById('setting-ig').value = s.ig || '';
+                if(document.getElementById('setting-tiktok')) document.getElementById('setting-tiktok').value = s.tiktok || '';
+                if(document.getElementById('setting-qris')) document.getElementById('setting-qris').value = s.qris || '';
+                if(document.getElementById('setting-maps')) document.getElementById('setting-maps').value = s.mapsEmbed || '';
+                if(document.getElementById('setting-buka')) document.getElementById('setting-buka').checked = s.isOpen !== false; // default true
+                if(document.getElementById('setting-audio')) document.getElementById('setting-audio').checked = s.audioEnabled !== false; // default true
+                if(document.getElementById('setting-audio-masuk')) document.getElementById('setting-audio-masuk').value = s.audioMasukUrl || '';
+                if(document.getElementById('setting-audio-siap')) document.getElementById('setting-audio-siap').value = s.audioSiapUrl || '';
+            }
+        });
+    });
+};
+
+// 3. SIMPAN PENGATURAN TOKO KE FIREBASE
+// Fungsi ini dipanggil oleh tombol "SIMPAN PENGATURAN WEB" di dalam HTML panel-edit-web
+window.saveOwnerSettings = function() {
+    const newSettings = {
+        phoneWA: document.getElementById('setting-wa').value.trim(),
+        logo: document.getElementById('setting-logo').value.trim(),
+        ig: document.getElementById('setting-ig').value.trim(),
+        tiktok: document.getElementById('setting-tiktok').value.trim(),
+        qris: document.getElementById('setting-qris').value.trim(),
+        mapsEmbed: document.getElementById('setting-maps').value.trim(),
+        isOpen: document.getElementById('setting-buka').checked,
+        audioEnabled: document.getElementById('setting-audio').checked,
+        audioMasukUrl: document.getElementById('setting-audio-masuk').value.trim(),
+        audioSiapUrl: document.getElementById('setting-audio-siap').value.trim()
+    };
+
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, set } = module;
+        set(ref(window.db, 'settings'), newSettings).then(() => {
+            alert("Pengaturan Toko berhasil disimpan dan langsung aktif!");
+            // Update Global State
+            window.AppState.storeSettings = newSettings;
+            
+            // Terapkan pengaturan audio custom jika ada
+            if (newSettings.audioMasukUrl && window.AppState.audioMasuk) window.AppState.audioMasuk.src = newSettings.audioMasukUrl;
+            if (newSettings.audioSiapUrl && window.AppState.audioSiap) window.AppState.audioSiap.src = newSettings.audioSiapUrl;
+        }).catch(err => {
+            alert("Gagal menyimpan pengaturan: " + err.message);
+        });
+    });
+};
+
+// 4. RENDER DAFTAR MASTER KATALOG MENU (Panel Owner)
+window.renderMasterKatalog = function() {
+    // Kita gunakan window.AppState.menuData yang sudah diload di Part 3
+    const menus = window.AppState.menuData || [];
+    
+    // Cari elemen pembungkus di HTML (kita buatkan ID virtual jika di HTML statik belum ada wadah <ul> nya)
+    // Di file index.html Anda, daftar katalog mentah ada di dalam #panel-katalog
+    const panelKatalog = document.getElementById('panel-katalog');
+    if (!panelKatalog) return;
+    
+    // Cari kontainer list, jika belum ada kita inject
+    let listContainer = document.getElementById('master-menu-list');
+    if (!listContainer) {
+        // Hapus elemen statik bawaan HTML dan ganti dengan kontainer dinamis
+        const divLists = panelKatalog.querySelectorAll('.bg-white.p-4.rounded-2xl.shadow-sm'); // Ambil card contoh
+        divLists.forEach(d => { if(!d.id) d.remove(); }); 
+        
+        listContainer = document.createElement('div');
+        listContainer.id = 'master-menu-list';
+        listContainer.className = 'space-y-3';
+        
+        // Masukkan ke dalam flex-1 area
+        const wrapper = panelKatalog.querySelector('.flex-1');
+        if(wrapper) wrapper.appendChild(listContainer);
+    }
+    
+    listContainer.innerHTML = ''; // Bersihkan kontainer
+    
+    if (menus.length === 0) {
+        listContainer.innerHTML = '<p class="text-center text-xs font-bold text-gray-500 py-6">Katalog masih kosong.</p>';
+        return;
+    }
+    
+    menus.forEach(menu => {
+        const itemHtml = document.createElement('div');
+        itemHtml.className = "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition hover:border-amber-300";
+        
+        // Logika Toggle Checkbox Stok (Biru/Hijau jika tersedia, Merah/Mati jika habis)
+        const isChecked = menu.available ? 'checked' : '';
+        const coretHarga = (menu.normalPrice > menu.price) ? `<span class="text-gray-400 line-through ml-1">${window.formatRupiah(menu.normalPrice)}</span>` : '';
+        
+        itemHtml.innerHTML = `
+            <div class="flex items-center gap-3 w-2/3">
+                <img src="${menu.img}" class="w-12 h-12 rounded-lg object-cover border border-gray-200">
+                <div>
+                    <h4 class="font-black text-sm text-gray-900 line-clamp-1">${menu.name}</h4>
+                    <p class="text-[10px] font-bold text-amber-600">${window.formatRupiah(menu.price)} ${coretHarga}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" class="sr-only peer" ${isChecked} onchange="toggleMenuStock('${menu.id}', this.checked)">
+                    <div class="w-9 h-5 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                    <span class="ml-2 text-[9px] font-black text-gray-500 uppercase hidden md:inline">Stok</span>
+                </label>
+                <button onclick="editMasterMenu('${menu.id}')" class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center hover:bg-blue-500 hover:text-white transition"><i class="fa-solid fa-pen"></i></button>
+            </div>
+        `;
+        listContainer.appendChild(itemHtml);
+    });
+};
+
+// 5. FITUR DARURAT: SWITCH HABIS/TERSEDIA (Emergency Stock Toggle)
+window.toggleMenuStock = function(menuId, isAvailable) {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, update } = module;
+        const menuRef = ref(window.db, `menu/${menuId}`);
+        
+        update(menuRef, { available: isAvailable }).then(() => {
+            // Berhasil diupdate, UI pelanggan langsung berubah via real-time listener di Part 3
+            console.log(`Menu ${menuId} status ketersediaan diubah menjadi: ${isAvailable}`);
+        });
+    });
+};
+
+// 6. PLACEHOLDER UNTUK BUKA MODAL FORM TAMBAH/EDIT MENU (Akan dibuat di part selanjutnya)
+window.editMasterMenu = function(menuId) {
+    alert("Fitur Form Edit/Tambah Menu akan dirender pada Modul CRUD Lanjutan (Part berikutnya). Mode: Edit ID " + menuId);
+};
+
+// Tambahkan event listener untuk tombol Simpan Web di HTML yang statis
+document.addEventListener('DOMContentLoaded', () => {
+    // Cari tombol simpan pengaturan web dan lekatkan fungsinya
+    const panelWeb = document.getElementById('panel-edit-web');
+    if (panelWeb) {
+        const btnSimpanWeb = panelWeb.querySelector('button.bg-blue-600');
+        if (btnSimpanWeb) {
+            btnSimpanWeb.setAttribute('onclick', 'saveOwnerSettings()');
+        }
+    }
+});
+
+console.log("Mainstay POS - Part 7 (Owner Dashboard & Settings) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 8: INVENTORY (STOK BAHAN BAKU) & MEMBER CRM (DATA PELANGGAN)
+   -------------------------------------------------------------------------- */
+
+// ==========================================
+// A. MANAJEMEN INVENTARIS (STOK BAHAN & ALAT)
+// ==========================================
+window.AppState.inventoryData = {};
+
+window.loadInventory = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        onValue(ref(window.db, 'inventory'), (snapshot) => {
+            window.AppState.inventoryData = snapshot.val() || {};
+            window.renderInventory();
+        });
+    });
+};
+
+window.renderInventory = function() {
+    const panelStok = document.getElementById('panel-stok');
+    if (!panelStok) return;
+
+    // Cari area tabel di dalam panel stok
+    let tbody = panelStok.querySelector('tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    const items = Object.entries(window.AppState.inventoryData);
+
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-6 text-center text-gray-400">Belum ada data stok barang.</td></tr>';
+        return;
+    }
+
+    items.forEach(([id, item]) => {
+        // Logika Low Stock Threshold (Peringatan Stok Menipis) dari Blueprint
+        const isLow = item.qty <= (item.minQty || 10);
+        const qtyClass = isLow ? 'text-red-500 font-black' : 'text-indigo-600';
+        const warningIcon = isLow ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ' : '';
+        const warningText = isLow ? ' <span class="text-[9px] bg-red-100 text-red-600 px-1 py-0.5 rounded ml-1">Tipis</span>' : '';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-gray-900 border-b border-gray-50">${item.name}</td>
+            <td class="px-4 py-3 ${qtyClass} border-b border-gray-50">${warningIcon}${item.qty} ${item.unit}${warningText}</td>
+            <td class="px-4 py-3 text-right border-b border-gray-50">
+                <button onclick="editInventory('${id}')" class="text-blue-500 bg-blue-50 w-7 h-7 rounded-lg hover:bg-blue-500 hover:text-white transition shadow-sm"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button onclick="hapusInventory('${id}')" class="text-red-500 bg-red-50 w-7 h-7 rounded-lg hover:bg-red-500 hover:text-white transition ml-1 shadow-sm"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+};
+
+window.tambahInventory = function() {
+    const name = prompt("Nama Barang / Bahan (Cth: Cup Plastik 16oz):");
+    if (!name) return;
+    const qty = prompt("Jumlah Stok Fisik Saat Ini (Angka):");
+    if (!qty || isNaN(qty)) return;
+    const unit = prompt("Satuan (Cth: pcs, gram, bungkus, renceng):");
+    if (!unit) return;
+    
+    // Tentukan batas minimum untuk memicu warna merah/alert
+    let minQty = prompt("Batas Minimum Stok untuk Peringatan (Angka, Default: 10):");
+    minQty = minQty && !isNaN(minQty) ? parseInt(minQty) : 10;
+
+    const id = "INV-" + Date.now();
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, set } = module;
+        set(ref(window.db, `inventory/${id}`), {
+            name: name,
+            qty: parseInt(qty),
+            unit: unit,
+            minQty: minQty,
+            updatedAt: Date.now(),
+            updatedBy: window.AppState.currentRole
+        }).then(() => {
+            alert(`Barang ${name} berhasil ditambahkan!`);
+        });
+    });
+};
+
+window.editInventory = function(id) {
+    const item = window.AppState.inventoryData[id];
+    if (!item) return;
+
+    const newQty = prompt(`Update Stok Baru untuk "${item.name}"\nStok saat ini: ${item.qty} ${item.unit}`, item.qty);
+    
+    if (newQty && !isNaN(newQty)) {
+        import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+            const { ref, update } = module;
+            update(ref(window.db, `inventory/${id}`), {
+                qty: parseInt(newQty),
+                updatedAt: Date.now(),
+                updatedBy: window.AppState.currentRole
+            }).then(() => {
+                // Beri efek flash jika stok diedit
+                window.triggerScreenFlash();
+            });
+        });
+    }
+};
+
+window.hapusInventory = function(id) {
+    if (confirm("⚠️ PERHATIAN: Apakah Anda yakin ingin menghapus barang ini secara permanen dari inventaris?")) {
+        import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+            const { ref, remove } = module;
+            remove(ref(window.db, `inventory/${id}`));
+        });
+    }
+};
+
+// ==========================================
+// B. MANAJEMEN DATABASE MEMBER & CRM
+// ==========================================
+window.AppState.membersData = {};
+
+window.loadMembers = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        onValue(ref(window.db, 'members'), (snapshot) => {
+            window.AppState.membersData = snapshot.val() || {};
+            window.renderMembers();
+        });
+    });
+};
+
+window.renderMembers = function() {
+    const tbody = document.getElementById('table-member-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    const members = Object.entries(window.AppState.membersData);
+
+    if (members.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Belum ada member yang bergabung.</td></tr>';
+        return;
+    }
+
+    // Urutkan berdasarkan yang paling baru bergabung (Descending)
+    members.sort((a, b) => (b[1].joinedAt || 0) - (a[1].joinedAt || 0));
+
+    members.forEach(([phone, member]) => {
+        // Tampilkan tanggal bergabung
+        const dateStr = member.joinedAt 
+            ? new Date(member.joinedAt).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: '2-digit'})
+            : '-';
+            
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-3 text-gray-900 border-b border-gray-50">${member.name}</td>
+            <td class="p-3 text-green-600 border-b border-gray-50"><i class="fa-brands fa-whatsapp"></i> ${phone}</td>
+            <td class="p-3 text-gray-400 text-[10px] border-b border-gray-50">${dateStr}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+};
+
+// Ekspor Data Member ke CSV / Excel
+window.exportMemberCSV = function() {
+    const members = Object.values(window.AppState.membersData);
+    if (members.length === 0) {
+        alert("Tidak ada data member untuk diekspor.");
+        return;
+    }
+
+    // Format Header CSV
+    let csvContent = "data:text/csv;charset=utf-8,Nama,No. WhatsApp,Tanggal Bergabung,Jumlah Stamp,Sesi Selesai\n";
+    
+    // Looping data member ke baris CSV
+    members.forEach(m => {
+        const dateStr = m.joinedAt ? new Date(m.joinedAt).toLocaleDateString('id-ID') : '-';
+        // Cegah error koma pada nama
+        const cleanName = m.name ? m.name.replace(/,/g, '') : 'Anonim'; 
+        const row = `"${cleanName}","${m.phone}","${dateStr}","${m.stamps || 0}","${m.completedSessions || 0}"`;
+        csvContent += row + "\r\n";
+    });
+
+    // Proses Download Otomatis Browser
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const today = new Date().toISOString().slice(0,10);
+    link.setAttribute("download", `Database_Member_Mainstay_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+// ==========================================
+// C. PENGIKATAN (BINDING) EVENT KE TOMBOL HTML STATIS
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Hubungkan tombol "Tambah Bahan" di Panel Stok
+    const panelStok = document.getElementById('panel-stok');
+    if (panelStok) {
+        const btnTambahStok = panelStok.querySelector('button.bg-indigo-500');
+        if (btnTambahStok) btnTambahStok.setAttribute('onclick', 'tambahInventory()');
+    }
+
+    // 2. Hubungkan tombol "Export Data" di Panel Member
+    const panelMember = document.getElementById('panel-member');
+    if (panelMember) {
+        const btnExport = panelMember.querySelector('button.bg-gray-800');
+        if (btnExport) btnExport.setAttribute('onclick', 'exportMemberCSV()');
+    }
+});
+
+// Panggil fungsi muat data Firebase saat aplikasi jalan
+setTimeout(() => {
+    if(typeof window.loadInventory === 'function') window.loadInventory();
+    if(typeof window.loadMembers === 'function') window.loadMembers();
+}, 800);
+
+console.log("Mainstay POS - Part 8 (Inventory & CRM Member) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 9: MEMBER AUTO-REGISTRATION, LOYALTY STAMPS & REWARD SYSTEM
+   -------------------------------------------------------------------------- */
+
+// 1. LOGIKA INTI: SINKRONISASI MEMBER & PENAMBAHAN STAMP (Berjalan Latar Belakang)
+// Fungsi ini akan secara otomatis dipanggil sesaat setelah pesanan berhasil dibuat (Checkout)
+window.prosesLoyaltyMember = function(phone, name, cartItems, isJoinChecked) {
+    if (!phone) return; // Tidak ada nomor WA = tidak bisa dilacak
+    
+    const cleanPhone = window.formatPhoneWA(phone);
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, get, set, update } = module;
+        const memberRef = ref(window.db, `members/${cleanPhone}`);
+        
+        get(memberRef).then((snapshot) => {
+            const memberExists = snapshot.exists();
+            
+            // Jika tidak centang daftar member dan belum pernah jadi member, abaikan.
+            if (!isJoinChecked && !memberExists) return;
+            
+            // Hitung berapa item di keranjang yang berhak dapat stamp
+            // (Menu bundling murah / diskon besar yang di-set stampEligible: false di blueprint tidak akan dihitung)
+            let newStamps = 0;
+            cartItems.forEach(item => {
+                if (item.stampEligible !== false) { // Default dianggap eligible jika tidak ada flag false
+                    newStamps += item.qty;
+                }
+            });
+            
+            if (memberExists) {
+                // UPDATE MEMBER LAMA
+                const data = snapshot.val();
+                let totalStamps = (data.stamps || 0) + newStamps;
+                let sessions = data.completedSessions || 0;
+                
+                // Konversi 5 Stamp menjadi 1 Sesi Selesai (Sesuai Blueprint)
+                while (totalStamps >= 5) {
+                    totalStamps -= 5;
+                    sessions += 1;
+                }
+                
+                update(memberRef, {
+                    name: name, // Perbarui nama jika ada perubahan ejaan
+                    stamps: totalStamps,
+                    completedSessions: sessions,
+                    lastTx: Date.now()
+                });
+                
+            } else {
+                // PENDAFTARAN MEMBER BARU (Pertama kali centang)
+                let totalStamps = newStamps;
+                let sessions = 0;
+                
+                while (totalStamps >= 5) {
+                    totalStamps -= 5;
+                    sessions += 1;
+                }
+                
+                set(memberRef, {
+                    name: name,
+                    phone: cleanPhone,
+                    joinedAt: Date.now(),
+                    stamps: totalStamps,
+                    completedSessions: sessions,
+                    lastTx: Date.now()
+                });
+            }
+        });
+    });
+};
+
+// 2. CEK STATUS STAMP OLEH CUSTOMER (WIDGET SELF-SERVICE)
+window.cekStatusStamp = function() {
+    const inputPhone = prompt("Masukkan Nomor WhatsApp Anda untuk mengecek status Stamp & Reward:");
+    if (!inputPhone) return;
+    
+    const cleanPhone = window.formatPhoneWA(inputPhone);
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, get } = module;
+        
+        get(ref(window.db, `members/${cleanPhone}`)).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const sisaStamp = data.stamps || 0;
+                const sesiSelesai = data.completedSessions || 0;
+                
+                // Visualisasi Titik Stamp Sederhana
+                let dots = "";
+                for(let i = 1; i <= 5; i++) {
+                    dots += i <= sisaStamp ? "🟢" : "⚪";
+                }
+                
+                let pesan = `Halo, ${data.name}!\n\n`;
+                pesan += `Progress Stamp Anda:\n${dots} (${sisaStamp}/5)\n\n`;
+                pesan += `Sesi Penuh (Siap Klaim Reward): ${sesiSelesai} Sesi\n\n`;
+                
+                if (sesiSelesai > 0) {
+                    pesan += "🎉 KABAR BAIK! Anda memiliki Reward yang bisa diklaim ke Kasir hari ini!";
+                } else {
+                    pesan += `Kumpulkan ${5 - sisaStamp} minuman lagi untuk mendapatkan minuman gratis!`;
+                }
+                
+                alert(pesan);
+            } else {
+                alert("Nomor Anda belum terdaftar sebagai Member Mainstay Drink. Silakan centang 'Daftar Member' pada saat checkout pesanan Anda berikutnya!");
+            }
+        }).catch(err => {
+            alert("Gagal terhubung ke database. Coba lagi.");
+        });
+    });
+};
+
+// 3. KLAIM REWARD (HANYA BISA DILAKUKAN OLEH KASIR / OWNER)
+window.klaimRewardMember = function() {
+    // Pastikan hanya Kasir atau Owner yang bisa mengakses fungsi ini
+    if (window.AppState.currentRole === 'customer') {
+        alert("Akses ditolak. Hanya Staf yang bisa memproses klaim reward.");
+        return;
+    }
+    
+    const inputPhone = prompt("Masukkan No. WA Member yang ingin mengklaim reward:");
+    if (!inputPhone) return;
+    
+    const cleanPhone = window.formatPhoneWA(inputPhone);
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, get, update } = module;
+        const memberRef = ref(window.db, `members/${cleanPhone}`);
+        
+        get(memberRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                
+                if (data.completedSessions && data.completedSessions > 0) {
+                    const konfirmasi = confirm(`Member ${data.name} memiliki ${data.completedSessions} Sesi Reward.\n\nApakah Anda yakin ingin memproses 1 klaim minuman gratis sekarang? (Sesi akan dikurangi 1)`);
+                    
+                    if (konfirmasi) {
+                        update(memberRef, {
+                            completedSessions: data.completedSessions - 1
+                        }).then(() => {
+                            alert("Klaim berhasil diproses! Silakan berikan minuman gratis (reward) kepada pelanggan.");
+                        });
+                    }
+                } else {
+                    alert(`Member ${data.name} belum memiliki Sesi Penuh (Siap Klaim). Sisa stamp saat ini: ${data.stamps}/5`);
+                }
+            } else {
+                alert("Data Member tidak ditemukan.");
+            }
+        });
+    });
+};
+
+// 4. MENGHUBUNGKAN (HOOK) LOGIKA KE FUNGSI CHECKOUT PART 4
+// Kita override sedikit fungsi prosesCheckout() dari Part 4 agar otomatis memanggil fungsi Loyalty di atas.
+const originalProsesCheckout = window.prosesCheckout;
+window.prosesCheckout = function() {
+    // Ambil data sebelum checkout dieksekusi oleh original function
+    const name = document.getElementById('co-name') ? document.getElementById('co-name').value.trim() : '';
+    const phone = document.getElementById('co-phone') ? document.getElementById('co-phone').value.trim() : '';
+    const isMember = document.getElementById('co-member') ? document.getElementById('co-member').checked : false;
+    
+    // Copy isi keranjang saat ini
+    const currentCart = JSON.parse(JSON.stringify(window.AppState.cart)); 
+    
+    // Eksekusi checkout bawaan (Part 4)
+    if(typeof originalProsesCheckout === 'function') {
+        originalProsesCheckout();
+    }
+    
+    // Jalankan sistem Loyalty Stamp di latar belakang jika keranjang tidak kosong
+    if (currentCart.length > 0 && phone) {
+        window.prosesLoyaltyMember(phone, name, currentCart, isMember);
+    }
+};
+
+console.log("Mainstay POS - Part 9 (Member Loyalty Stamps) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 10: HRD MASTER (PROFIL STAFF, GAJI, & LOG ABSENSI KAMERA)
+   -------------------------------------------------------------------------- */
+
+window.AppState.staffData = {};
+window.AppState.attendanceLogs = {};
+
+// 1. MEMUAT DATA STAF & ABSENSI HARI INI DARI FIREBASE
+window.loadHRDData = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, onValue } = module;
+        
+        // A. Load Data Staff (Untuk Profil & Otorisasi PIN)
+        onValue(ref(window.db, 'staff'), (snapshot) => {
+            window.AppState.staffData = snapshot.val() || {};
+            window.renderStaffList();
+            window.updateKasirDropdown(); // Update dropdown kasir di Dashboard Kasir
+        });
+        
+        // B. Load Log Absensi Khusus Hari Ini
+        const todayStr = new Date().toISOString().slice(0,10); // Format YYYY-MM-DD
+        onValue(ref(window.db, `attendance_logs/${todayStr}`), (snapshot) => {
+            window.AppState.attendanceLogs = snapshot.val() || {};
+            window.renderAttendanceLogs();
+        });
+    });
+};
+
+// 2. RENDER DAFTAR KARYAWAN KE PANEL HRD (Owner)
+window.renderStaffList = function() {
+    const panel = document.getElementById('panel-hrd');
+    if (!panel) return;
+    
+    // Cari elemen <h3> "Profiling PIN Karyawan" untuk dijadikan patokan injeksi DOM
+    const h3Staff = Array.from(panel.querySelectorAll('h3')).find(el => el.innerText.includes('Profiling PIN Karyawan'));
+    if (!h3Staff) return;
+    
+    // Buat/Temukan kontainer dinamis
+    let container = document.getElementById('dynamic-staff-list');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'dynamic-staff-list';
+        container.className = 'space-y-2 mt-3';
+        h3Staff.parentElement.appendChild(container);
+        
+        // Hapus elemen dummy statis bawaan HTML
+        const staticItems = h3Staff.parentElement.querySelectorAll('.flex.justify-between.items-center.p-3');
+        staticItems.forEach(item => item.remove());
+    }
+    
+    container.innerHTML = '';
+    const staffs = Object.entries(window.AppState.staffData);
+    
+    if (staffs.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 font-bold text-center py-4">Belum ada data staf terdaftar.</p>';
+        return;
+    }
+    
+    // Loop dan render elemen staf
+    staffs.forEach(([id, staff]) => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center p-3 border border-gray-100 rounded-xl bg-gray-50 font-bold text-xs shadow-sm hover:border-teal-300 transition';
+        div.innerHTML = `
+            <div>
+                <span class="text-gray-900">${staff.name} <span class="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1 tracking-widest uppercase">${staff.type}</span></span><br>
+                <span class="text-teal-600 text-[10px]">PIN: ${staff.pin} | Gaji: ${window.formatRupiah(staff.salaryBase)}/${staff.salaryType}</span>
+            </div>
+            <button onclick="hapusStaff('${id}')" class="text-red-500 w-8 h-8 bg-red-50 rounded-lg hover:bg-red-500 hover:text-white transition shadow-sm"><i class="fa-solid fa-trash"></i></button>
+        `;
+        container.appendChild(div);
+    });
+};
+
+// 3. TAMBAH PROFIL KARYAWAN & STRUKTUR GAJI
+window.tambahStaff = function() {
+    const name = prompt("Nama Lengkap Karyawan / Staf Kasir:");
+    if (!name) return;
+    
+    const pin = prompt("Buat 6 Digit PIN Karyawan (Untuk akses Kasir & Absen):");
+    if (!pin || pin.length < 4) return alert("PIN tidak valid. Minimal 4 angka.");
+    
+    const type = prompt("Tipe Kepegawaian (Tetap / Kontrak / Freelance):", "Tetap");
+    if (!type) return;
+    
+    const salaryType = prompt("Sistem Gaji (Jam / Harian / Mingguan / Bulanan):", "Harian");
+    if (!salaryType) return;
+    
+    const salaryBase = prompt(`Masukkan Nominal Gaji pokok per-${salaryType}:\n(Hanya angka, contoh: 50000)`);
+    if (!salaryBase || isNaN(salaryBase)) return alert("Nominal gaji harus berupa angka.");
+    
+    const staffId = "STF-" + Date.now();
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, set } = module;
+        set(ref(window.db, `staff/${staffId}`), {
+            name: name,
+            pin: pin,
+            type: type,
+            salaryType: salaryType,
+            salaryBase: parseInt(salaryBase),
+            joinedAt: Date.now()
+        }).then(() => alert(`Profil Staf "${name}" berhasil ditambahkan!`));
+    });
+};
+
+// 4. HAPUS KARYAWAN
+window.hapusStaff = function(id) {
+    if (confirm("Hapus profil staf ini dari sistem? (Log absensi dan transaksi masa lalu akan tetap aman sebagai arsip)")) {
+        import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+            const { ref, remove } = module;
+            remove(ref(window.db, `staff/${id}`));
+        });
+    }
+};
+
+// 5. UPDATE DROPDOWN PEMILIH KASIR DI DASHBOARD
+window.updateKasirDropdown = function() {
+    const dropdown = document.getElementById('kasir-staf-dropdown');
+    if (!dropdown) return;
+    
+    dropdown.innerHTML = '';
+    const staffs = Object.values(window.AppState.staffData);
+    
+    if (staffs.length === 0) {
+        dropdown.innerHTML = '<option value="Owner">Master Mode</option>';
+        return;
+    }
+    
+    // Isi otomatis berdasarkan nama staf
+    staffs.forEach(staff => {
+        const opt = document.createElement('option');
+        opt.value = staff.name;
+        opt.innerText = staff.name;
+        dropdown.appendChild(opt);
+    });
+};
+
+// 6. PROSES ABSEN KAMERA (Override Fungsi HTML) -> Upload ke Firebase
+window.prosesAbsen = function(tipe) {
+    const pin = document.getElementById('absen-pin').value.trim();
+    if(!pin) {
+        alert("Masukkan PIN absensi terlebih dahulu!");
+        return;
+    }
+    
+    // Pencocokan PIN dengan Database HRD
+    let staffName = "Unknown";
+    const staffs = Object.values(window.AppState.staffData);
+    const matchedStaff = staffs.find(s => s.pin === pin);
+    
+    if (matchedStaff) {
+        staffName = matchedStaff.name;
+    } else if (pin === "888888") {
+        staffName = "Owner Master";
+    } else {
+        alert("PIN tidak ditemukan dalam database HRD! Silakan hubungi Owner.");
+        return;
+    }
+    
+    // Tangkap Frame Foto dari Video Latar Belakang (Base64)
+    const video = document.getElementById('attendance-video');
+    const canvas = document.getElementById('attendance-canvas');
+    let photoDataUrl = "";
+    
+    if (video && video.videoWidth > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        // Gambar frame dari video feed
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Kompres menjadi JPEG ukuran kecil (Quality 0.4) agar Firebase Realtime Database tidak bengkak
+        photoDataUrl = canvas.toDataURL('image/jpeg', 0.4); 
+    }
+    
+    const todayStr = new Date().toISOString().slice(0,10);
+    const logId = "ATT-" + Date.now();
+    const currentTime = Date.now();
+    
+    // Push Data ke Firebase
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, set } = module;
+        set(ref(window.db, `attendance_logs/${todayStr}/${logId}`), {
+            staffName: staffName,
+            pin: pin,
+            type: tipe, // 'Masuk' atau 'Keluar'
+            timestamp: currentTime,
+            photoBase64: photoDataUrl
+        }).then(() => {
+            // Tutup Kamera Latar
+            window.closeAbsensi();
+            
+            // Tampilkan Modal Review 5 Detik
+            const reviewModal = document.getElementById('modal-absen-review');
+            document.getElementById('review-foto').src = photoDataUrl; // Tampilkan hasil jepretan
+            document.getElementById('review-nama').innerText = staffName;
+            document.getElementById('review-jam').innerText = `Absen ${tipe}: ${new Date(currentTime).toLocaleTimeString('id-ID')} WIB`;
+            
+            reviewModal.classList.remove('hidden');
+            reviewModal.classList.add('flex');
+            
+            // Hilangkan otomatis setelah 5 detik
+            setTimeout(() => {
+                reviewModal.classList.add('hidden');
+                reviewModal.classList.remove('flex');
+            }, 5000);
+        });
+    });
+};
+
+// 7. RENDER LOG ABSENSI (DENGAN FOTO) KE PANEL OWNER
+window.renderAttendanceLogs = function() {
+    const panel = document.getElementById('panel-hrd');
+    if (!panel) return;
+    
+    const h3Log = Array.from(panel.querySelectorAll('h3')).find(el => el.innerText.includes('Log Absensi Hari Ini'));
+    if (!h3Log) return;
+    
+    let container = document.getElementById('dynamic-attendance-list');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'dynamic-attendance-list';
+        container.className = 'space-y-3 mt-3';
+        h3Log.parentElement.appendChild(container);
+        
+        // Hapus dummy statis HTML
+        const staticLogs = h3Log.parentElement.querySelectorAll('.flex.gap-3.items-center');
+        staticLogs.forEach(item => item.remove());
+    }
+    
+    container.innerHTML = '';
+    const logs = Object.values(window.AppState.attendanceLogs);
+    
+    // Urutkan paling baru di atas
+    logs.sort((a, b) => b.timestamp - a.timestamp);
+    
+    if (logs.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 font-bold text-center py-4">Belum ada aktivitas absensi hari ini.</p>';
+        return;
+    }
+    
+    logs.forEach(log => {
+        const timeStr = new Date(log.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+        const badgeColor = log.type === 'Masuk' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600';
+        
+        const div = document.createElement('div');
+        div.className = 'flex gap-3 items-center border border-gray-100 p-2 rounded-xl bg-white shadow-sm';
+        div.innerHTML = `
+            <div class="w-10 h-10 bg-slate-200 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center">
+                ${log.photoBase64 ? `<img src="${log.photoBase64}" class="w-full h-full object-cover transform scale-x-[-1]">` : '<i class="fa-solid fa-user text-gray-400"></i>'}
+            </div>
+            <div class="flex-1">
+                <p class="text-xs font-black text-gray-900">${log.staffName}</p>
+                <p class="text-[9px] font-bold text-gray-500">Absen ${log.type}: ${timeStr} WIB</p>
+            </div>
+            <span class="text-[9px] font-black ${badgeColor} px-2 py-1 rounded tracking-wider uppercase shadow-sm">${log.type}</span>
+        `;
+        container.appendChild(div);
+    });
+};
+
+// 8. BINDING TOMBOL HTML
+document.addEventListener('DOMContentLoaded', () => {
+    const panelHrd = document.getElementById('panel-hrd');
+    if (panelHrd) {
+        const btnTambah = panelHrd.querySelector('button.bg-teal-100'); // Tombol "Tambah Staf"
+        if (btnTambah) btnTambah.setAttribute('onclick', 'tambahStaff()');
+    }
+});
+
+// Otomatis Panggil Saat App JS Berjalan
+setTimeout(() => {
+    if(typeof window.loadHRDData === 'function') window.loadHRDData();
+}, 1200);
+
+console.log("Mainstay POS - Part 10 (HRD & Attendance Logs) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 11: LAPORAN KEUANGAN (LABA/RUGI) & SISTEM BACKUP DATABASE (JSON)
+   -------------------------------------------------------------------------- */
+
+// ==========================================
+// A. MODUL LAPORAN KEUANGAN (FINANCIAL REPORTS)
+// ==========================================
+
+window.loadLaporanKeuangan = function() {
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, get } = module;
+        
+        // Tarik data 'orders' dan 'finance_daily' secara bersamaan untuk kalkulasi Laba/Rugi
+        Promise.all([
+            get(ref(window.db, 'orders')),
+            get(ref(window.db, 'finance_daily'))
+        ]).then(([ordersSnap, financeSnap]) => {
+            const orders = ordersSnap.val() || {};
+            const finance = financeSnap.val() || {};
+            
+            window.renderLaporanBulanIni(orders, finance);
+        });
+    });
+};
+
+window.renderLaporanBulanIni = function(orders, finance) {
+    const panel = document.getElementById('panel-laporan');
+    if (!panel) return;
+    
+    // Identifikasi ID bulan ini (Misal format YYMM: "2609" untuk Sept 2026)
+    const now = new Date();
+    const currentMonthPrefix = now.getFullYear().toString().slice(-2) + String(now.getMonth() + 1).padStart(2, '0');
+    const currentMonthFull = now.toISOString().slice(0,7); // YYYY-MM
+    
+    let totalGross = 0;
+    let totalTx = 0;
+    
+    // 1. Hitung Pendapatan Kotor (Gross Revenue) dari Pesanan Selesai / Terbayar
+    Object.values(orders).forEach(ord => {
+        // Cek jika pesanan terjadi di bulan ini dan tidak berstatus 'batal'
+        if (ord.status !== 'batal' && ord.orderId.includes(`-${currentMonthPrefix}`)) {
+            totalGross += ord.grandTotal;
+            totalTx++;
+        }
+    });
+    
+    // 2. Hitung Total Pengeluaran (Operasional, Bahan Baku, Prive Kasir/Owner)
+    let totalExpenses = 0;
+    Object.keys(finance).forEach(dateStr => {
+        // Jika tanggal diawali dengan bulan ini (contoh: 2026-09-01 masuk ke 2026-09)
+        if (dateStr.startsWith(currentMonthFull)) {
+            const dayData = finance[dateStr];
+            if (dayData.outflows) {
+                Object.values(dayData.outflows).forEach(out => {
+                    totalExpenses += out.amount;
+                });
+            }
+        }
+    });
+    
+    // 3. Kalkulasi Laba Bersih (Net Profit)
+    const labaBersih = totalGross - totalExpenses;
+    
+    // 4. Injeksi Visual ke UI (Kartu Ungu Utama)
+    const h3Target = panel.querySelector('h3');
+    const pTx = panel.querySelector('p.bg-white\\/20');
+    
+    if (h3Target) h3Target.innerText = window.formatRupiah(totalGross);
+    if (pTx) pTx.innerText = `Dari ${totalTx} Transaksi Bulan Ini`;
+    
+    // 5. Injeksi Rincian Penjabaran (Breakdown) ke Bawah Kartu Ungu
+    let breakdownContainer = document.getElementById('finance-breakdown');
+    
+    // Jika wadah belum ada, ciptakan dinamis
+    if (!breakdownContainer) {
+        breakdownContainer = document.createElement('div');
+        breakdownContainer.id = 'finance-breakdown';
+        breakdownContainer.className = 'bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4';
+        
+        // Sisipkan sebelum tombol download excel
+        const btnDownload = panel.querySelector('button.bg-white');
+        if (btnDownload) {
+            btnDownload.parentElement.insertBefore(breakdownContainer, btnDownload);
+        }
+    }
+    
+    // Warna profit (Hijau jika untung, Merah jika rugi)
+    const profitColor = labaBersih >= 0 ? 'text-green-600' : 'text-red-500';
+    
+    breakdownContainer.innerHTML = `
+        <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider border-b border-gray-100 pb-2">Rincian Laba/Rugi (Bulan Ini)</h3>
+        <div class="space-y-3 font-bold text-xs text-gray-700">
+            <div class="flex justify-between"><span>Omzet Kotor (Gross):</span> <span>${window.formatRupiah(totalGross)}</span></div>
+            <div class="flex justify-between"><span>Kas Keluar (Expenses/HPP):</span> <span class="text-red-500">- ${window.formatRupiah(totalExpenses)}</span></div>
+            <div class="border-t border-gray-200 pt-3 mt-1 flex justify-between font-black text-sm">
+                <span>Laba Bersih (Net Profit):</span> <span class="${profitColor}">${window.formatRupiah(labaBersih)}</span>
+            </div>
+        </div>
+    `;
+};
+
+
+// ==========================================
+// B. SISTEM & DATABASE (EKSPOR/IMPOR BACKUP JSON)
+// ==========================================
+
+// 1. EKSPOR FULL DATABASE (Download .json)
+window.exportDatabaseJSON = function() {
+    const pass = prompt("Masukkan Master PIN Owner untuk mengunduh Backup Database Keseluruhan:");
+    if (pass !== "888888") return alert("Otorisasi Gagal! PIN Master salah.");
+    
+    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+        const { ref, get } = module;
+        // Ambil data dari akar '/' seluruh database
+        get(ref(window.db, '/')).then((snapshot) => {
+            const fullData = snapshot.val();
+            if (!fullData) return alert("Database kosong.");
+            
+            // Generate JSON String dan paksa browser untuk mendownloadnya
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            const todayStr = new Date().toISOString().slice(0,10);
+            dlAnchorElem.setAttribute("download", `Backup_DB_Mainstay_${todayStr}.json`);
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            document.body.removeChild(dlAnchorElem);
+        });
+    });
+};
+
+// 2. IMPOR & RESTORE DATABASE (Upload .json)
+window.importDatabaseJSON = function() {
+    const pass = prompt("⚠️ PERINGATAN BAHAYA: Tindakan ini akan MENIMPA seluruh data toko saat ini dengan data dari file backup. Masukkan Master PIN Owner untuk melanjutkan:");
+    if (pass !== "888888") return alert("Otorisasi Gagal!");
+    
+    // Buat elemen input file tersembunyi
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.readAsText(file, 'UTF-8');
+        reader.onload = readerEvent => {
+            try {
+                const content = readerEvent.target.result;
+                const parsedData = JSON.parse(content);
+                
+                if (confirm(`File backup berhasil dibaca. YAKIN INGIN MELAKUKAN RESTORE KESELURUHAN SEKARANG?`)) {
+                    import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then((module) => {
+                        const { ref, set } = module;
+                        // Timpa paksa akar root database '/'
+                        set(ref(window.db, '/'), parsedData).then(() => {
+                            alert("✅ Restore Database BERHASIL! Sistem akan dimuat ulang.");
+                            location.reload();
+                        }).catch(err => alert("Gagal Restore: " + err.message));
+                    });
+                }
+            } catch (error) {
+                alert("Gagal: File JSON tidak valid atau rusak!");
+            }
+        }
+    };
+    
+    // Buka dialog file sistem operasi
+    input.click();
+};
+
+// 3. BINDING TOMBOL HTML (Mengaitkan fungsi ke tombol statis)
+document.addEventListener('DOMContentLoaded', () => {
+    // Binding Panel Sistem (Backup & Restore)
+    const panelSistem = document.getElementById('panel-sistem');
+    if (panelSistem) {
+        const btns = panelSistem.querySelectorAll('button');
+        btns.forEach(btn => {
+            if (btn.innerText.includes('Export JSON')) btn.setAttribute('onclick', 'exportDatabaseJSON()');
+            if (btn.innerText.includes('Import JSON')) btn.setAttribute('onclick', 'importDatabaseJSON()');
+            if (btn.innerText.includes('Sinkronisasi Ulang')) btn.setAttribute('onclick', 'location.reload()');
+        });
+    }
+    
+    // Binding Panel Laporan
+    const panelLaporan = document.getElementById('panel-laporan');
+    if (panelLaporan) {
+        const btnExcel = panelLaporan.querySelector('button');
+        if (btnExcel) btnExcel.setAttribute('onclick', 'alert("Pusat laporan Excel sedang digenerate. File dapat diunduh langsung dari backend Google Sheets Anda.")');
+    }
+});
+
+// Panggil fungsi render secara otomatis saat aplikasi dimuat penuh
+setTimeout(() => {
+    if(typeof window.loadLaporanKeuangan === 'function') window.loadLaporanKeuangan();
+}, 1500);
+
+console.log("Mainstay POS - Part 11 (Finance Reports & Database JSON) Initialized.");
+/* --------------------------------------------------------------------------
+   PART 12: EXTERNAL INTEGRATIONS (GOOGLE SHEETS) & OFFLINE RESILIENCY
+   -------------------------------------------------------------------------- */
+
+// 1. GOOGLE APPS SCRIPT (GAS) INTEGRATION
+// Fungsi universal untuk mem-push data transaksi ke Google Spreadsheet di latar belakang
+window.pushDataToGoogleSheets = function(actionType, payloadData) {
+    const gasUrl = "https://script.google.com/macros/s/AKfycbzI64IPe7yAuN2ogQJ2Vs0Q8y3rBkwNawUXlpJAOHJ3M8yh-YgKaLBAJFqc8NCXSPOZ/exec";
+    
+    // Bungkus data dengan metadata aksi
+    const requestData = {
+        action: actionType,
+        timestamp: new Date().toISOString(),
+        data: payloadData
+    };
+
+    // Kirim menggunakan metode POST (mode 'no-cors' wajib agar tidak diblokir oleh browser keamanan/CORS policy)
+    fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors', 
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    }).then(() => {
+        console.log(`[GAS Sync] Berhasil mengirim instruksi data: ${actionType}`);
+    }).catch(err => {
+        console.error(`[GAS Sync] Gagal mengirim data: ${actionType}`, err);
+        // Fallback: Jika internet putus saat push, simpan ke antrean lokal (LocalStorage)
+        window.saveToOfflineQueue(requestData);
+    });
+};
+
+// 2. OFFLINE QUEUE SYSTEM (Penyangga Data Saat Internet Kedai Putus)
+window.saveToOfflineQueue = function(requestData) {
+    let queue = JSON.parse(localStorage.getItem('mainstay_offline_queue') || '[]');
+    queue.push(requestData);
+    localStorage.setItem('mainstay_offline_queue', JSON.stringify(queue));
+};
+
+// Fungsi untuk memproses ulang antrean data saat internet kembali menyala
+window.processOfflineQueue = function() {
+    let queue = JSON.parse(localStorage.getItem('mainstay_offline_queue') || '[]');
+    if (queue.length === 0) return;
+    
+    console.log(`[Offline Sync] Mencoba memproses ${queue.length} antrean data yang tertunda...`);
+    
+    // Kosongkan antrean lokal (Asumsi akan sukses, jika gagal akan masuk antrean lagi)
+    localStorage.setItem('mainstay_offline_queue', '[]');
+    
+    queue.forEach(req => {
+        window.pushDataToGoogleSheets(req.action, req.data);
+    });
+};
+
+// 3. OFFLINE/ONLINE STATE LISTENER (PWA RESILIENCY)
+// Mengubah indikator di Header UI secara live saat HP / Laptop kehilangan sinyal
+window.addEventListener('online', () => {
+    const statusEl = document.getElementById('store-status');
+    if (statusEl && window.AppState.storeSettings.isOpen) {
+        statusEl.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span> BUKA & ONLINE';
+        statusEl.classList.replace('text-red-600', 'text-green-600');
+    }
+    // Proses sinkronisasi otomatis
+    window.processOfflineQueue();
+});
+
+window.addEventListener('offline', () => {
+    const statusEl = document.getElementById('store-status');
+    if(statusEl) {
+        statusEl.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></span> OFFLINE (NO SIGNAL)';
+        statusEl.classList.replace('text-green-600', 'text-red-600');
+    }
+    console.warn("⚠️ Koneksi terputus! Aplikasi berjalan dalam mode Offline (Local Cache).");
+});
+
+// 4. MENGHUBUNGKAN (HOOK) TRIGGER GOOGLE SHEETS
+// Kita memicu push data ke Google Sheets setiap kali pesanan dinyatakan 'selesai' di dapur
+const originalSelesaikanPesanan = window.selesaikanPesanan;
+window.selesaikanPesanan = function(orderId) {
+    // Eksekusi fungsi asli dari Part 5
+    if (typeof originalSelesaikanPesanan === 'function') {
+        originalSelesaikanPesanan(orderId);
+    }
+    
+    // Tangkap datanya dan kirim ke Spreadsheet
+    const ord = window.AppState.rawOrders[orderId];
+    if (ord) {
+        window.pushDataToGoogleSheets('TRANSAKSI_SELESAI', ord);
+    }
+};
+
+/* ==========================================================================
+   AKHIR DARI SCRIPT APLIKASI APP.JS MAINSTAY DRINK POS
+   ========================================================================== */
+console.log("Mainstay POS - Part 12 (GAS Sync & Offline Modes) Initialized.");
+console.log("🚀 SYSTEM FULLY LOADED & READY TO USE!");
