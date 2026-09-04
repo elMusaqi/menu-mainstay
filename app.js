@@ -326,50 +326,18 @@ window.prosesCheckout = async () => {
     }
 };
 
-// 8. SYSTEM ROUTING & AUTHENTICATION (UPDATED SESUAI BLUEPRINT)
+// 8. SYSTEM ROUTING & STRICT AUTHENTICATION (NO BOTTOM NAV)
 window.switchRoleView = (role) => {
-window.switchRoleView = (role) => {
-    // =========================================================
-    // 🚨 SECURITY GATE: Mencegah Akses Kasir & Owner Tanpa Login
-    // =========================================================
-    if (role === 'owner') {
-        const savedRole = localStorage.getItem('mainstay_session_role');
-        if (savedRole !== 'owner') {
-            window.bukaModalLogin();
-            return; // Hentikan perpindahan layar, paksa buka modal login
-        }
-    }
-    
-    if (role === 'kasir') {
-        const savedRole = localStorage.getItem('mainstay_session_role');
-        if (savedRole !== 'kasir' || !activeStaff) {
-            window.bukaModalLogin();
-            return; // Hentikan perpindahan layar, paksa buka modal login
-        }
-    }
-    // =========================================================
-
-    // Sembunyikan semua section
+    // Sembunyikan semua section layar
     document.getElementById('view-customer').classList.add('hidden');
     document.getElementById('view-kasir').classList.add('hidden');
     document.getElementById('view-owner').classList.add('hidden');
     
-    // Reset Nav Indicator
-    document.querySelectorAll('.nav-indicator').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-amber-500', 'text-gray-400'));
-    
-    // Tampilkan role yang dipilih
+    // Tampilkan layar yang berhak diakses
     currentRole = role;
     document.getElementById(`view-${role}`).classList.remove('hidden');
     
-    // Update active state di Bottom Navigation
-    const activeNav = document.getElementById(`nav-${role}`);
-    if(activeNav) {
-        activeNav.classList.replace('text-gray-400', 'text-amber-500');
-        activeNav.querySelector('.nav-indicator').classList.remove('hidden');
-    }
-
-    // Render data spesifik sesuai role
+    // Render data spesifik jika masuk ke panel
     if(role === 'kasir') renderKasirOrders();
     if(role === 'owner') updateOwnerDashboard();
 };
@@ -390,62 +358,47 @@ window.closeModalLogin = () => {
 window.prosesLogin = async () => {
     const pin = document.getElementById('login-pin').value;
     const errorEl = document.getElementById('login-error');
-    errorEl.classList.add('hidden'); // Reset error state
+    const btnLogin = document.querySelector('#modal-login button[onclick="prosesLogin()"]');
     
-    // 1. MASTER PIN OWNER (PRIORITAS TERTINGGI - Bypass Firebase)
-    // Walaupun Firebase error/kosong, Owner tetap wajib bisa masuk!
-    if (pin === "888888") {
-        localStorage.setItem('mainstay_session_role', 'owner');
-        window.closeModalLogin();
-        window.switchRoleView('owner');
-        return; // Hentikan eksekusi, langsung masuk
-    }
-
+    errorEl.classList.add('hidden'); 
+    btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memvalidasi...';
+    
     try {
-        let emergencyPin = null;
-        let authenticatedStaff = null;
-        
-        // 2. CEK FIREBASE (Dibungkus Try-Catch agar tidak mematikan sistem jika error/kosong)
-        try {
-            const settingsSnap = await get(ref(db, 'store_settings'));
-            if(settingsSnap.exists()) emergencyPin = settingsSnap.val().emergency_pin;
-
-            const staffSnap = await get(ref(db, 'staff'));
-            if(staffSnap.exists()) {
-                const staffData = staffSnap.val();
-                Object.keys(staffData).forEach(key => {
-                    if (staffData[key].pin === pin) {
-                        authenticatedStaff = { id: key, ...staffData[key] };
-                    }
-                });
-            }
-        } catch (fbError) {
-            console.warn("Info: Firebase kosong atau koneksi terputus. Menggunakan UI Logic bawaan web.", fbError);
-        }
-
-        // 3. CEK EMERGENCY PIN DARI FIREBASE (Jika Ada)
-        if (emergencyPin && pin === emergencyPin) {
+        // 1. INSTANT MASTER PIN CHECK (Bypass Database untuk Owner)
+        if (pin === MASTER_PIN) {
             localStorage.setItem('mainstay_session_role', 'owner');
             window.closeModalLogin();
             window.switchRoleView('owner');
+            btnLogin.innerHTML = 'Masuk Sistem';
             return;
         }
 
-        // 4. DEMO / FALLBACK PIN KASIR (KARENA FIREBASE MASIH KOSONG)
-        // Gunakan PIN 123456 untuk mengetes UI Kasir saat masa development!
-        if (!authenticatedStaff && pin === "123456") {
-            authenticatedStaff = { 
-                id: "demo-kasir", 
-                name: "Kasir Demo (Testing)", 
-                pin: "123456" 
-            };
+        // 2. Fetch PIN Darurat & Data Staff dari Firebase
+        const settingsSnap = await get(ref(db, 'store_settings'));
+        const settingsData = settingsSnap.exists() ? settingsSnap.val() : {};
+        
+        if (settingsData.emergency_pin && pin === settingsData.emergency_pin) {
+            localStorage.setItem('mainstay_session_role', 'owner');
+            window.closeModalLogin();
+            window.switchRoleView('owner');
+            btnLogin.innerHTML = 'Masuk Sistem';
+            return;
         }
 
-        // 5. EKSEKUSI MASUK KASIR
+        let authenticatedStaff = null;
+        const staffSnap = await get(ref(db, 'staff'));
+        if (staffSnap.exists()) {
+            const staffData = staffSnap.val();
+            Object.keys(staffData).forEach(key => {
+                if (staffData[key].pin === pin) {
+                    authenticatedStaff = { id: key, ...staffData[key] };
+                }
+            });
+        }
+
+        // 3. Eksekusi Login Kasir
         if (authenticatedStaff) {
             activeStaff = authenticatedStaff;
-            
-            // Simpan sesi agar saat direfresh tidak terlempar
             localStorage.setItem('mainstay_session_role', 'kasir');
             localStorage.setItem('mainstay_session_staff', JSON.stringify(activeStaff));
             
@@ -453,18 +406,18 @@ window.prosesLogin = async () => {
             window.closeModalLogin();
             window.switchRoleView('kasir');
         } else {
-            // PIN Benar-benar tidak valid
-            errorEl.classList.remove('hidden');
+            errorEl.classList.remove('hidden'); // PIN Salah / Tidak Ditemukan
         }
-        
     } catch (error) {
-        console.error("Critical Login Error:", error);
-        errorEl.classList.remove('hidden');
+        console.error("Login Error:", error);
+        alert("Gagal memvalidasi ke database. Pastikan koneksi internet lancar.");
+    } finally {
+        btnLogin.innerHTML = 'Masuk Sistem';
     }
 };
+
 window.prosesLogout = (role) => {
     if(confirm('Yakin ingin keluar dari sistem?')) {
-        // Hapus Persistent Session
         localStorage.removeItem('mainstay_session_role');
         localStorage.removeItem('mainstay_session_staff');
         
@@ -474,7 +427,7 @@ window.prosesLogout = (role) => {
 };
 
 // ============================================================================
-// AUTO-RESTORE SESSION (Tambahkan fungsi ini agar tab/browser refresh tidak logout)
+// AUTO-RESTORE SESSION 
 // ============================================================================
 const restorePersistentSession = () => {
     const savedRole = localStorage.getItem('mainstay_session_role');
@@ -487,10 +440,10 @@ const restorePersistentSession = () => {
         document.getElementById('kasir-active-name').innerText = activeStaff.name;
         window.switchRoleView('kasir');
     } else {
-        // Default Landing (Customer / Blueprint Rule)
         window.switchRoleView('customer');
     }
 };
+
 
 // 9. KASIR VIEW: 3-TAB SYSTEM & ORDER MANAGEMENT
 let activeKasirTab = 'pending';
