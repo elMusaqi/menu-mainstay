@@ -328,6 +328,27 @@ window.prosesCheckout = async () => {
 
 // 8. SYSTEM ROUTING & AUTHENTICATION (UPDATED SESUAI BLUEPRINT)
 window.switchRoleView = (role) => {
+window.switchRoleView = (role) => {
+    // =========================================================
+    // 🚨 SECURITY GATE: Mencegah Akses Kasir & Owner Tanpa Login
+    // =========================================================
+    if (role === 'owner') {
+        const savedRole = localStorage.getItem('mainstay_session_role');
+        if (savedRole !== 'owner') {
+            window.bukaModalLogin();
+            return; // Hentikan perpindahan layar, paksa buka modal login
+        }
+    }
+    
+    if (role === 'kasir') {
+        const savedRole = localStorage.getItem('mainstay_session_role');
+        if (savedRole !== 'kasir' || !activeStaff) {
+            window.bukaModalLogin();
+            return; // Hentikan perpindahan layar, paksa buka modal login
+        }
+    }
+    // =========================================================
+
     // Sembunyikan semua section
     document.getElementById('view-customer').classList.add('hidden');
     document.getElementById('view-kasir').classList.add('hidden');
@@ -348,6 +369,7 @@ window.switchRoleView = (role) => {
         activeNav.querySelector('.nav-indicator').classList.remove('hidden');
     }
 
+    // Render data spesifik sesuai role
     if(role === 'kasir') renderKasirOrders();
     if(role === 'owner') updateOwnerDashboard();
 };
@@ -630,10 +652,181 @@ const updateOwnerDashboard = () => {
     if(profitEl) profitEl.innerText = formatRupiah(todayOmzet * 0.4); 
 };
 
+// ============================================================================
+// 10. OWNER VIEW: DASHBOARD & MODULE PANELS (CRUD KE FIREBASE)
+// ============================================================================
+const updateOwnerDashboard = () => {
+    let todayOmzet = 0;
+    Object.values(globalOrders).forEach(order => {
+        if(order.status === 'selesai' || order.status === 'proses') {
+            todayOmzet += order.totalAmount;
+        }
+    });
+    
+    const omzetEl = document.getElementById('owner-omzet-today');
+    if(omzetEl) omzetEl.innerText = formatRupiah(todayOmzet);
+    
+    // Asumsi HPP 60%, Profit 40%
+    const profitEl = document.getElementById('owner-profit-month');
+    if(profitEl) profitEl.innerText = formatRupiah(todayOmzet * 0.4); 
+};
+
+// FULL CRUD UI UNTUK PANEL OWNER
 window.openPanel = (panelId) => {
-    // Fungsi pembuka Sub-Modal untuk Owner Panel
-    alert(`Membuka ${panelId}. (Modul ini memuat data langsung dari Firebase /${panelId.replace('panel-', '')})`);
-    // Implementasi injeksi DOM untuk panel management ada di sini.
+    const container = document.getElementById('owner-inner-panels-container');
+
+    if (panelId === 'panel-menu') {
+        window.renderPanelMenu();
+    } else {
+        // Fallback untuk panel lain yang belum dibuat
+        container.innerHTML = `
+            <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+                <div class="bg-gray-900 text-white p-4 flex items-center gap-3">
+                    <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h2 class="font-black text-lg">Modul Under Construction</h2>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-5 text-center">
+                    <i class="fa-solid fa-person-digging text-5xl mb-4 text-amber-500"></i>
+                    <p class="font-bold text-sm">Panel ${panelId} sedang dalam antrean pengembangan.</p>
+                </div>
+            </div>
+        `;
+    }
+};
+
+window.closePanel = () => {
+    document.getElementById('owner-inner-panels-container').innerHTML = '';
+};
+
+// RENDER UI MANAJEMEN MENU (KATALOG)
+window.renderPanelMenu = () => {
+    const container = document.getElementById('owner-inner-panels-container');
+    let menuListHtml = '';
+    const menuKeys = Object.keys(globalMenus);
+    
+    if(menuKeys.length === 0) {
+        menuListHtml = '<p class="text-center text-xs font-bold text-gray-400 py-5 bg-slate-50 rounded-xl border border-dashed border-gray-300">Belum ada menu di database.<br>Silakan tambah menu di atas.</p>';
+    } else {
+        menuKeys.forEach(key => {
+            const menu = globalMenus[key];
+            menuListHtml += `
+                <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3 mb-2 transition hover:shadow-md">
+                    <img src="${menu.imageUrl || 'logo-192.png'}" class="w-12 h-12 rounded-lg object-cover bg-slate-100 border border-gray-100">
+                    <div class="flex-1">
+                        <h4 class="text-xs font-black text-gray-900">${menu.name}</h4>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">${menu.category} • <span class="text-amber-500">${formatRupiah(menu.price)}</span></p>
+                    </div>
+                    <button onclick="hapusMenu('${key}')" class="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition shadow-sm border border-red-100"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                </div>
+            `;
+        });
+    }
+
+    container.innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in overflow-hidden">
+            <!-- Header Panel Menu -->
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md relative z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div>
+                    <h2 class="font-black text-lg leading-none">Manajemen Katalog</h2>
+                    <p class="text-[10px] text-amber-400 font-bold">Sinkronisasi Database Aktif</p>
+                </div>
+            </div>
+
+            <!-- Konten Form & List -->
+            <div class="flex-1 overflow-y-auto p-5 pb-safe hide-scrollbar">
+                
+                <!-- Form Insert Database -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
+                    <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 pb-2"><i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Tambah Menu Baru</h3>
+                    
+                    <input type="text" id="form-menu-name" placeholder="Nama Menu (Cth: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold mb-3 focus:outline-none focus:border-amber-500 transition">
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <select id="form-menu-cat" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
+                            <option value="coffee">Coffee</option>
+                            <option value="non-coffee">Non-Coffee</option>
+                            <option value="snack">Snack / Cemilan</option>
+                        </select>
+                        <input type="number" id="form-menu-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
+                    </div>
+                    
+                    <input type="text" id="form-menu-img" placeholder="Link URL Gambar (Opsional)" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold mb-4 focus:outline-none focus:border-amber-500 transition">
+                    
+                    <button onclick="simpanMenuBaru()" id="btn-simpan-menu" class="w-full bg-amber-500 text-white font-black py-3.5 rounded-xl shadow-[0_4px_15px_rgba(245,158,11,0.3)] hover:bg-amber-600 transition text-xs uppercase tracking-widest flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan ke Database
+                    </button>
+                </div>
+
+                <!-- Database List -->
+                <div>
+                    <h3 class="text-xs font-black text-gray-900 mb-3 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-server text-green-500"></i> Katalog Aktif</h3>
+                    <div id="owner-menu-list">
+                        ${menuListHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+// FUNGSI PUSH DATA KE FIREBASE
+window.simpanMenuBaru = async () => {
+    const name = document.getElementById('form-menu-name').value.trim();
+    const category = document.getElementById('form-menu-cat').value;
+    const price = document.getElementById('form-menu-price').value;
+    const img = document.getElementById('form-menu-img').value.trim();
+
+    if(!name || !price) {
+        return alert("Nama dan Harga Menu wajib diisi!");
+    }
+
+    // Payload sesuai struktur database Blueprint
+    const payload = {
+        name: name,
+        category: category,
+        price: Number(price),
+        imageUrl: img || "", // Akan menggunakan fallback logo di Customer View jika kosong
+        isAvailable: true,
+        isBestSeller: false
+    };
+
+    const btn = document.getElementById('btn-simpan-menu');
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        // STRICT ANTI-MOCK: Push langsung ke database URL Firebase
+        await push(ref(db, 'menus'), payload);
+        
+        // Kosongkan form setelah sukses
+        document.getElementById('form-menu-name').value = '';
+        document.getElementById('form-menu-price').value = '';
+        document.getElementById('form-menu-img').value = '';
+        
+        alert("Sukses! Menu berhasil ditambahkan ke Database Firebase.");
+        
+        // Render ulang UI untuk memunculkan item yang baru ditambahkan
+        window.renderPanelMenu();
+    } catch(e) {
+        console.error(e);
+        alert("Gagal menyimpan menu. Periksa koneksi internet Anda.");
+    } finally {
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan ke Database';
+        btn.disabled = false;
+    }
+};
+
+// FUNGSI HAPUS DATA DARI FIREBASE
+window.hapusMenu = async (key) => {
+    if(confirm("PERINGATAN: Yakin ingin menghapus menu ini dari database secara permanen?")) {
+        try {
+            await remove(ref(db, 'menus/' + key));
+            window.renderPanelMenu(); // Render ulang setelah terhapus
+        } catch(e) {
+            alert("Terjadi kesalahan saat menghapus data.");
+        }
+    }
 };
 
 // 11. MODAL STAMP MEMBER
