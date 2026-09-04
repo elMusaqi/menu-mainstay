@@ -978,20 +978,19 @@ window.updateOrderStatus = async (orderKey, newStatus) => {
 };
 
 window.batalOrder = async (orderKey) => {
-    // Sesuai Blueprint Security: Order voids require active Owner PIN
-    const authPin = prompt("Otorisasi Diperlukan!\nMasukkan PIN Owner (6 Digit) untuk membatalkan pesanan (Void):");
-    
-    if (authPin === MASTER_PIN) {
+    // Pop-up konfirmasi biasa tanpa PIN
+    const yakin = confirm("Apakah Anda yakin ingin membatalkan pesanan ini?");
+
+    if (yakin) {
         try {
-            const orderRef = ref(db, `orders/${orderKey}`);
-            await remove(orderRef); // Hapus node dari database secara permanen
-            alert("Berhasil! Pesanan dibatalkan dan dihapus.");
+            // Pastikan tulisan di dalam ref() sama dengan kode asli Anda yang terpotong di gambar
+            const orderRef = ref(db, `orders/${orderKey}`); 
+            await remove(orderRef);
+            alert("Berhasil! Pesanan dibatalkan.");
         } catch(error) {
             console.error("Void Order Error:", error);
-            alert("Gagal menghapus pesanan dari database.");
+            alert("Gagal menghapus pesanan.");
         }
-    } else {
-        alert("Otorisasi Gagal! PIN Salah. Pembatalan pesanan ditolak.");
     }
 };
 
