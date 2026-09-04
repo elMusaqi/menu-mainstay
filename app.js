@@ -92,11 +92,76 @@ window.matikanKamera = () => {
 
 
 // Kerangka fungsi tombol absen (Logika jepret & validasi PIN akan kita kerjakan di tahap 2)
+// Fungsi mengeksekusi jepretan foto dan preview
 window.prosesAbsen = (tipeAbsen) => {
     const pin = document.getElementById('input-pin').value;
-    if(!pin) return alert("PIN tidak boleh kosong!");
+    if(!pin) return alert("PIN wajib diisi!");
+
+    // 1. Ambil elemen video dan canvas
+    const video = document.getElementById('kamera-absen');
+    const canvas = document.getElementById('canvas-foto');
+    const ctx = canvas.getContext('2d');
+
+    // 2. Sesuaikan ukuran canvas dengan video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // 3. Jepret gambar dari stream video ke canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    alert(`Tombol Absen ${tipeAbsen} ditekan! PIN: ${pin} (Tahap validasi & jepret foto akan menyusul)`);
+    // 4. Ubah gambar jadi format Data URL (Base64)
+    const fotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+    // 5. Matikan kamera dan tutup pop-up login
+    tutupMenuAbsen();
+    document.getElementById('input-pin').value = ''; // Kosongkan PIN
+
+    // 6. Siapkan Data Preview
+    const waktuSekarang = new Date();
+    const jam = waktuSekarang.getHours();
+    const menit = waktuSekarang.getMinutes();
+    const waktuFormat = waktuSekarang.toLocaleTimeString('id-ID') + ' WIB';
+
+    document.getElementById('preview-foto').src = fotoBase64;
+    document.getElementById('preview-nama').innerText = "STAF (PIN: " + pin + ")"; // Nanti dicocokkan dengan DB
+    document.getElementById('preview-tipe').innerText = "ABSEN " + tipeAbsen;
+    document.getElementById('preview-jam').innerText = waktuFormat;
+
+    // Logika Terlambat (Contoh: Shift pagi batas jam 09:00)
+    const statusBox = document.getElementById('preview-status-box');
+    const statusTeks = document.getElementById('preview-status-teks');
+    
+    if (tipeAbsen === 'MASUK' && (jam > 9 || (jam === 9 && menit > 0))) {
+        // Terlambat
+        statusBox.className = "w-full p-3 rounded-xl mb-2 bg-red-50 border border-red-200";
+        statusTeks.className = "text-sm font-black text-red-600 uppercase tracking-widest mb-1";
+        statusTeks.innerText = "TERLAMBAT";
+    } else {
+        // Tepat Waktu / Pulang
+        statusBox.className = "w-full p-3 rounded-xl mb-2 bg-green-50 border border-green-200";
+        statusTeks.className = "text-sm font-black text-green-600 uppercase tracking-widest mb-1";
+        statusTeks.innerText = tipeAbsen === 'MASUK' ? "TEPAT WAKTU" : "SELESAI SHIFT";
+    }
+
+    // 7. Tampilkan Pop-up Preview
+    const modalPreview = document.getElementById('modal-preview-absen');
+    modalPreview.classList.remove('hidden');
+
+    // 8. Hitung Mundur 5 Detik
+    let detik = 5;
+    const countdownEl = document.getElementById('preview-countdown');
+    countdownEl.innerText = detik;
+
+    const interval = setInterval(() => {
+        detik--;
+        countdownEl.innerText = detik;
+        if (detik <= 0) {
+            clearInterval(interval);
+            modalPreview.classList.add('hidden');
+            // Di sini nantinya kita sisipkan kode untuk menyimpan data ke Firebase
+            alert("Sistem: Data absen tersimpan!");
+        }
+    }, 1000);
 };
 // Fungsi untuk memunculkan pop-up absensi dan menyalakan kamera
 window.bukaMenuAbsen = () => {
