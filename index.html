@@ -56,7 +56,7 @@
 <body class="bg-slate-100 text-gray-800 antialiased selection:bg-amber-200">
 
     <!-- Container Utama: Dikalibrasi khusus untuk layar Mobile (Infinix Note 30 Pro) -->
-    <main id="app-container" class="w-full max-w-md mx-auto min-h-screen bg-slate-50 relative pb-20 shadow-2xl overflow-x-hidden">
+    <main id="app-container" class="w-full max-w-md mx-auto min-h-screen bg-slate-50 relative shadow-2xl overflow-x-hidden">
         
         <!-- HEADER UTAMA (GLOBAL) -->
         <header class="bg-white px-5 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm border-b border-gray-100">
@@ -90,7 +90,7 @@
         <!-- ========================================== -->
         <!-- TAMPILAN 1: PELANGGAN (CUSTOMER / SELF-ORDER) -->
         <!-- ========================================== -->
-        <section id="view-customer" class="w-full pb-32">
+        <section id="view-customer" class="w-full">
             
             <!-- Marquee Promo -->
             <div id="promo-marquee" class="bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-widest py-1.5 flex items-center border-b border-amber-200">
@@ -394,7 +394,7 @@
         <!-- ========================================== -->
         <!-- TAMPILAN 2: KASIR (POS & 3-TAB SYSTEM)     -->
         <!-- ========================================== -->
-        <section id="view-kasir" class="hidden w-full pb-32">
+        <section id="view-kasir" class="hidden w-full">
             
             <!-- Header Kasir Profile -->
             <div class="bg-gray-900 text-white p-5 pb-8 rounded-b-[2rem] shadow-md relative z-10">
@@ -456,7 +456,7 @@
         <!-- ========================================== -->
         <!-- TAMPILAN 3: OWNER (MASTER PANEL & DASHBOARD) -->
         <!-- ========================================== -->
-        <section id="view-owner" class="hidden w-full pb-32">
+        <section id="view-owner" class="hidden w-full">
             
             <!-- Header Owner -->
             <div class="bg-gray-900 text-white p-5 pb-8 rounded-b-[2rem] shadow-md relative z-10">
@@ -548,28 +548,6 @@
     </main> 
     <!-- Penutup Container App -->
 
-    <!-- ========================================== -->
-    <!-- BOTTOM NAVIGATION (GLOBAL)                 -->
-    <!-- ========================================== -->
-    <nav class="fixed bottom-0 left-0 w-full z-40 bg-white border-t border-gray-100 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.03)] rounded-t-3xl sm:rounded-none px-4">
-        <div class="max-w-md mx-auto flex justify-between">
-            <button onclick="switchRoleView('customer')" id="nav-customer" class="nav-btn flex-1 flex flex-col items-center justify-center py-3 text-amber-500 relative transition group">
-                <i class="fa-solid fa-store text-xl mb-1 group-hover:-translate-y-1 transition-transform"></i>
-                <span class="text-[9px] font-black uppercase tracking-wider">Customer</span>
-                <div class="nav-indicator absolute -top-[1px] w-8 h-1 bg-amber-500 rounded-b-full"></div>
-            </button>
-            <button onclick="switchRoleView('kasir')" id="nav-kasir" class="nav-btn flex-1 flex flex-col items-center justify-center py-3 text-gray-400 relative transition group">
-                <i class="fa-solid fa-cash-register text-xl mb-1 group-hover:-translate-y-1 transition-transform"></i>
-                <span class="text-[9px] font-black uppercase tracking-wider">Kasir</span>
-                <div class="nav-indicator absolute -top-[1px] w-8 h-1 bg-amber-500 rounded-b-full hidden"></div>
-            </button>
-            <button onclick="switchRoleView('owner')" id="nav-owner" class="nav-btn flex-1 flex flex-col items-center justify-center py-3 text-gray-400 relative transition group">
-                <i class="fa-solid fa-user-shield text-xl mb-1 group-hover:-translate-y-1 transition-transform"></i>
-                <span class="text-[9px] font-black uppercase tracking-wider">Owner</span>
-                <div class="nav-indicator absolute -top-[1px] w-8 h-1 bg-amber-500 rounded-b-full hidden"></div>
-            </button>
-        </div>
-    </nav>
 
     <!-- ========================================== -->
     <!-- THERMAL RECEIPT PRINT TEMPLATE (HIDDEN)    -->
