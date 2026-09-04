@@ -90,13 +90,6 @@ window.matikanKamera = () => {
     }
 };
 
-// Saat aplikasi dibuka, langsung otomatis nyalakan kamera
-document.addEventListener('DOMContentLoaded', () => {
-    const modalLogin = document.getElementById('modal-login-absen');
-    if(modalLogin && !modalLogin.classList.contains('hidden')) {
-        mulaiKamera();
-    }
-});
 
 // Kerangka fungsi tombol absen (Logika jepret & validasi PIN akan kita kerjakan di tahap 2)
 window.prosesAbsen = (tipeAbsen) => {
@@ -104,6 +97,17 @@ window.prosesAbsen = (tipeAbsen) => {
     if(!pin) return alert("PIN tidak boleh kosong!");
     
     alert(`Tombol Absen ${tipeAbsen} ditekan! PIN: ${pin} (Tahap validasi & jepret foto akan menyusul)`);
+};
+// Fungsi untuk memunculkan pop-up absensi dan menyalakan kamera
+window.bukaMenuAbsen = () => {
+    document.getElementById('modal-login-absen').classList.remove('hidden');
+    mulaiKamera(); // Kamera baru menyala di sini
+};
+
+// Fungsi untuk menutup pop-up dan mematikan kamera (Hemat Baterai)
+window.tutupMenuAbsen = () => {
+    document.getElementById('modal-login-absen').classList.add('hidden');
+    matikanKamera(); // Matikan lampu kamera
 };
 
 // ============================================================================
