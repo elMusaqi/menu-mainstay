@@ -114,7 +114,7 @@ const startClock = () => {
     }
 };
 
-// Membersihkan Navigasi Bawah & Padding Jika Masih Tersisa
+// Membersihkan Navigasi Bawah, Padding, dan Mengunci Logo Lokal
 const applyLayoutFixes = () => {
     const bottomNav = document.querySelector('nav');
     if (bottomNav) {
@@ -133,6 +133,18 @@ const applyLayoutFixes = () => {
             sec.classList.remove('pb-32');
         }
     });
+
+    // --- KUNCI LOGO LOKAL SECARA PERMANEN ---
+    const logoImg = document.getElementById('header-logo-img');
+    const logoIcon = document.getElementById('header-logo-icon');
+    
+    if (logoImg) {
+        logoImg.src = 'logo-192.png'; // Panggil langsung dari folder lokal
+        logoImg.classList.remove('hidden'); // Paksa gambar untuk selalu tampil
+    }
+    if (logoIcon) {
+        logoIcon.classList.add('hidden'); // Sembunyikan icon dummy bawaan HTML
+    }
 };
 
 // ============================================================================
@@ -823,13 +835,15 @@ window.updateLiveCashDrawer = () => {
     let targetLaciCash = 0; 
     
     Object.values(globalOrders).forEach(order => {
-        // Asumsi pendapatan tercatat jika pesanan sudah diproses atau selesai
-        if (order.status !== 'pending') {
-            totalOmzet += order.totalAmount;
+        // Validasi ketat: Hanya hitung pesanan yang sudah 'proses' atau 'selesai'
+        if (order.status === 'proses' || order.status === 'selesai') {
+            // Pastikan nominal dipaksa menjadi angka bulat (Number) untuk mencegah error "NaN"
+            const amount = Number(order.totalAmount) || 0;
+            totalOmzet += amount;
             
-            // Target kas fisik di laci HANYA menghitung pembayaran uang tunai (Cash)
+            // Laci fisik hanya bertambah jika pelanggan membayar dengan 'Cash'
             if (order.paymentMethod === 'Cash') {
-                targetLaciCash += order.totalAmount;
+                targetLaciCash += amount;
             }
         }
     });
@@ -840,6 +854,7 @@ window.updateLiveCashDrawer = () => {
     if (omzetEl) omzetEl.innerText = formatRupiah(totalOmzet);
     if (drawerEl) drawerEl.innerText = formatRupiah(targetLaciCash);
 };
+
 // ============================================================================
 // MAINSTAY DRINK POS - TAHAP 5: OWNER DASHBOARD & FUNGSI CRUD UNIVERSAL
 // ============================================================================
@@ -847,23 +862,17 @@ window.updateLiveCashDrawer = () => {
 window.updateOwnerDashboard = () => {
     let todayOmzet = 0;
     
-    // Kalkulasi total omzet hari ini (hanya pesanan yang diproses & selesai)
     Object.values(globalOrders).forEach(order => { 
-        if (order.status !== 'pending') {
-            todayOmzet += order.totalAmount; 
+        if (order.status === 'proses' || order.status === 'selesai') {
+            todayOmzet += (Number(order.totalAmount) || 0);
         }
     });
     
     const omzetEl = document.getElementById('owner-omzet-today');
-    if (omzetEl) {
-        omzetEl.innerText = formatRupiah(todayOmzet);
-    }
+    if (omzetEl) omzetEl.innerText = formatRupiah(todayOmzet);
     
-    // Kalkulasi Laba Bersih / Profit (Mockup: Margin 40% dari Omzet)
     const profitEl = document.getElementById('owner-profit-month');
-    if (profitEl) {
-        profitEl.innerText = formatRupiah(todayOmzet * 0.4); 
-    }
+    if (profitEl) profitEl.innerText = formatRupiah(todayOmzet * 0.4); 
 };
 
 window.closePanel = () => {
