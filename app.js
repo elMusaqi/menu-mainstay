@@ -326,7 +326,7 @@ window.prosesCheckout = async () => {
     }
 };
 
-// 8. SYSTEM ROUTING & AUTHENTICATION
+// 8. SYSTEM ROUTING & AUTHENTICATION (UPDATED SESUAI BLUEPRINT)
 window.switchRoleView = (role) => {
     // Sembunyikan semua section
     document.getElementById('view-customer').classList.add('hidden');
@@ -337,13 +337,16 @@ window.switchRoleView = (role) => {
     document.querySelectorAll('.nav-indicator').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-amber-500', 'text-gray-400'));
     
-    // Tampilkan yang dipilih
+    // Tampilkan role yang dipilih
     currentRole = role;
     document.getElementById(`view-${role}`).classList.remove('hidden');
     
+    // Update active state di Bottom Navigation
     const activeNav = document.getElementById(`nav-${role}`);
-    activeNav.classList.replace('text-gray-400', 'text-amber-500');
-    activeNav.querySelector('.nav-indicator').classList.remove('hidden');
+    if(activeNav) {
+        activeNav.classList.replace('text-gray-400', 'text-amber-500');
+        activeNav.querySelector('.nav-indicator').classList.remove('hidden');
+    }
 
     if(role === 'kasir') renderKasirOrders();
     if(role === 'owner') updateOwnerDashboard();
@@ -362,37 +365,88 @@ window.closeModalLogin = () => {
     document.getElementById('modal-login').classList.remove('flex');
 };
 
-window.prosesLogin = () => {
+window.prosesLogin = async () => {
     const pin = document.getElementById('login-pin').value;
+    const errorEl = document.getElementById('login-error');
+    errorEl.classList.add('hidden'); // Reset error state
     
-    // 1. Cek Master Owner PIN (Dari Blueprint)
-    if (pin === MASTER_PIN) {
-        window.closeModalLogin();
-        window.switchRoleView('owner');
-        return;
-    }
+    try {
+        // 1. Fetch Setting Toko untuk Emergency PIN secara Real-time
+        const settingsSnap = await get(ref(db, 'store_settings'));
+        const settingsData = settingsSnap.exists() ? settingsSnap.val() : {};
+        const emergencyPin = settingsData.emergency_pin || null;
 
-    // 2. Cek Staff PIN (Iterasi globalStaff dari Firebase)
-    let authenticatedStaff = null;
-    Object.keys(globalStaff).forEach(key => {
-        if (globalStaff[key].pin === pin) {
-            authenticatedStaff = { id: key, ...globalStaff[key] };
+        // 2. Cek Owner PIN (Master '888888' ATAU Emergency PIN)
+        if (pin === MASTER_PIN || (emergencyPin && pin === emergencyPin)) {
+            // Persistent Session
+            localStorage.setItem('mainstay_session_role', 'owner');
+            
+            window.closeModalLogin();
+            window.switchRoleView('owner');
+            return;
         }
-    });
 
-    if (authenticatedStaff) {
-        activeStaff = authenticatedStaff;
-        document.getElementById('kasir-active-name').innerText = activeStaff.name;
-        window.closeModalLogin();
-        window.switchRoleView('kasir');
-    } else {
-        document.getElementById('login-error').classList.remove('hidden');
+        // 3. Cek Staff PIN (Fallback fetch jika globalStaff belum termuat)
+        let authenticatedStaff = null;
+        
+        // Panggil fetch langsung ke Firebase untuk memastikan validasi aman (Anti-mock)
+        const staffSnap = await get(ref(db, 'staff'));
+        if (staffSnap.exists()) {
+            const staffData = staffSnap.val();
+            Object.keys(staffData).forEach(key => {
+                if (staffData[key].pin === pin) {
+                    authenticatedStaff = { id: key, ...staffData[key] };
+                }
+            });
+        }
+
+        // 4. Eksekusi Login Kasir
+        if (authenticatedStaff) {
+            activeStaff = authenticatedStaff;
+            
+            // Persistent Session
+            localStorage.setItem('mainstay_session_role', 'kasir');
+            localStorage.setItem('mainstay_session_staff', JSON.stringify(activeStaff));
+            
+            document.getElementById('kasir-active-name').innerText = activeStaff.name;
+            window.closeModalLogin();
+            window.switchRoleView('kasir');
+        } else {
+            // PIN Tidak Ditemukan
+            errorEl.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+        alert("Gagal memvalidasi PIN ke Database. Cek koneksi Anda.");
     }
 };
 
 window.prosesLogout = (role) => {
-    if(confirm('Yakin ingin keluar?')) {
+    if(confirm('Yakin ingin keluar dari sistem?')) {
+        // Hapus Persistent Session
+        localStorage.removeItem('mainstay_session_role');
+        localStorage.removeItem('mainstay_session_staff');
+        
         if(role === 'kasir') activeStaff = null;
+        window.switchRoleView('customer');
+    }
+};
+
+// ============================================================================
+// AUTO-RESTORE SESSION (Tambahkan fungsi ini agar tab/browser refresh tidak logout)
+// ============================================================================
+const restorePersistentSession = () => {
+    const savedRole = localStorage.getItem('mainstay_session_role');
+    const savedStaff = localStorage.getItem('mainstay_session_staff');
+
+    if (savedRole === 'owner') {
+        window.switchRoleView('owner');
+    } else if (savedRole === 'kasir' && savedStaff) {
+        activeStaff = JSON.parse(savedStaff);
+        document.getElementById('kasir-active-name').innerText = activeStaff.name;
+        window.switchRoleView('kasir');
+    } else {
+        // Default Landing (Customer / Blueprint Rule)
         window.switchRoleView('customer');
     }
 };
@@ -658,10 +712,12 @@ window.cetakStruk = (orderKey) => {
     window.print();
 };
 
+
 // ============================================================================
 // INISIALISASI SAAT LOAD
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
     startClock();
     initFirebaseListeners();
+    restorePersistentSession(); // <--- TAMBAHKAN BARIS INI
 });
