@@ -1,5 +1,5 @@
 // ============================================================================
-// MAINSTAY DRINK POS - HYBRID WEB & ANDROID CORE ENGINE
+// MAINSTAY DRINK POS - TAHAP 1: INISIALISASI FIREBASE & STATE GLOBAL
 // ============================================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -7,7 +7,7 @@ import {
     getDatabase, ref, onValue, push, set, update, get, remove 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-// 1. FIREBASE CONFIGURATION
+// 1. KONFIGURASI FIREBASE (Sesuai Blueprint)
 const firebaseConfig = {
     apiKey: "AIzaSyAwBNnNulXL2MA1QGUOu1BAEqnihqHFn0o",
     authDomain: "mainstay-pos.firebaseapp.com",
@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 2. GLOBAL STATE & VARIABLES
+// 2. VARIABEL STATE GLOBAL
 let currentRole = 'customer'; 
 let activeStaff = null;
 let activeCategoryFilter = 'all';
@@ -30,21 +30,25 @@ let cart = [];
 let currentDetailMenu = null;
 let detailQty = 1;
 
+// State Sinkronisasi Database
 let globalMenus = {};
-let globalCategories = {};
 let globalOrders = {};
 let globalStaff = {};
+let globalInventory = {};
+let globalExpenses = {};
 
 const MASTER_PIN = "888888";
-const PLACEHOLDER_IMG = "logo-512.png";
+const PLACEHOLDER_IMG = "logo-192.png";
 
-// 3. UTILITY FUNCTIONS
+// Data Dummy Katalog (Hanya muncul jika Database Firebase benar-benar kosong)
+const dummyCatalog = {
+    "dummy_1": { name: "Kopi Susu Aren (Contoh)", category: "coffee", price: 18000, imageUrl: "logo-192.png", isAvailable: true, isBestSeller: true },
+    "dummy_2": { name: "Matcha Latte (Contoh)", category: "non-coffee", price: 20000, imageUrl: "logo-192.png", isAvailable: true, isBestSeller: false }
+};
+
+// 3. FUNGSI UTILITAS UMUM
 const formatRupiah = (number) => {
-    return new Intl.NumberFormat('id-ID', { 
-        style: 'currency', 
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(number);
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
 };
 
 const startClock = () => {
@@ -52,38 +56,49 @@ const startClock = () => {
     if(clockEl) {
         setInterval(() => {
             const now = new Date();
-            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            clockEl.innerHTML = `${timeStr} WIB`;
+            clockEl.innerHTML = `${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} WIB`;
         }, 1000);
     }
 };
 
-// 4. FIREBASE REAL-TIME LISTENERS
+// 4. LISTENER REAL-TIME FIREBASE
 const initFirebaseListeners = () => {
     onValue(ref(db, 'menus'), (snapshot) => {
-        globalMenus = snapshot.val() || {};
+        // Fallback ke dummyCatalog jika database kosong agar toko tidak blank
+        globalMenus = snapshot.exists() ? snapshot.val() : dummyCatalog;
         if(currentRole === 'customer') renderKatalog();
-    });
-
-    onValue(ref(db, 'categories'), (snapshot) => {
-        globalCategories = snapshot.val() || {};
+        if(currentRole === 'owner' && document.getElementById('owner-menu-list')) window.renderPanelMenu();
     });
 
     onValue(ref(db, 'orders'), (snapshot) => {
         globalOrders = snapshot.val() || {};
-        if(currentRole === 'kasir') {
-            renderKasirOrders();
-            updateLiveCashDrawer();
+        if(currentRole === 'kasir' && typeof renderKasirOrders === 'function') { 
+            renderKasirOrders(); 
+            if(typeof updateLiveCashDrawer === 'function') updateLiveCashDrawer(); 
         }
-        if(currentRole === 'owner') updateOwnerDashboard();
+        if(currentRole === 'owner' && typeof updateOwnerDashboard === 'function') updateOwnerDashboard();
     });
 
     onValue(ref(db, 'staff'), (snapshot) => {
         globalStaff = snapshot.val() || {};
+        if(currentRole === 'owner' && document.getElementById('owner-staff-list')) window.renderPanelHRD();
+    });
+
+    onValue(ref(db, 'inventory_raw'), (snapshot) => {
+        globalInventory = snapshot.val() || {};
+        if(currentRole === 'owner' && document.getElementById('owner-inventory-list')) window.renderPanelInventory();
+    });
+
+    onValue(ref(db, 'expenses'), (snapshot) => {
+        globalExpenses = snapshot.val() || {};
+        if(currentRole === 'owner' && document.getElementById('owner-laporan-list')) window.renderPanelLaporan();
     });
 };
 
-// 5. CUSTOMER VIEW: KATALOG & FILTERING
+// ============================================================================
+// MAINSTAY DRINK POS - TAHAP 2: MESIN CUSTOMER & KERANJANG
+// ============================================================================
+
 window.filterKategori = (kategori, btnEl) => {
     activeCategoryFilter = kategori;
     document.querySelectorAll('.cat-btn').forEach(btn => {
@@ -100,7 +115,6 @@ window.filterKategori = (kategori, btnEl) => {
 window.renderKatalog = () => {
     const grid = document.getElementById('menu-grid');
     const searchQuery = (document.getElementById('search-menu').value || '').toLowerCase();
-    
     if(!grid) return;
     grid.innerHTML = ''; 
 
@@ -139,26 +153,18 @@ window.renderKatalog = () => {
     });
 };
 
-// 6. CUSTOMER VIEW: MODAL DETAIL & KERANJANG
 window.bukaModalDetail = (menuKey) => {
     currentDetailMenu = { key: menuKey, ...globalMenus[menuKey] };
     detailQty = 1;
     document.getElementById('detail-name').innerText = currentDetailMenu.name;
-    document.getElementById('detail-desc').innerText = currentDetailMenu.description || "Minuman segar andalan Mainstay.";
     document.getElementById('detail-img').src = currentDetailMenu.imageUrl || PLACEHOLDER_IMG;
     document.getElementById('detail-qty').innerText = detailQty;
     window.hitungTotalHargaDetail();
     
-    const modal = document.getElementById('modal-detail');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    document.getElementById('modal-detail').classList.replace('hidden', 'flex');
 };
 
-window.closeModalDetail = () => {
-    document.getElementById('modal-detail').classList.add('hidden');
-    document.getElementById('modal-detail').classList.remove('flex');
-    currentDetailMenu = null;
-};
+window.closeModalDetail = () => document.getElementById('modal-detail').classList.replace('flex', 'hidden');
 
 window.ubahQtyDetail = (amount) => {
     if (detailQty + amount >= 1) {
@@ -172,11 +178,8 @@ window.hitungTotalHargaDetail = () => {
     if (!currentDetailMenu) return;
     let basePrice = Number(currentDetailMenu.price);
     const sizeInput = document.querySelector('input[name="detail_size"]:checked');
-    if (sizeInput && sizeInput.value.includes('Large')) {
-        basePrice += 3000;
-    }
-    const total = basePrice * detailQty;
-    document.getElementById('detail-total-price').innerText = formatRupiah(total);
+    if (sizeInput && sizeInput.value.includes('Large')) basePrice += 3000;
+    document.getElementById('detail-total-price').innerText = formatRupiah(basePrice * detailQty);
 };
 
 window.tambahKeKeranjang = () => {
@@ -188,12 +191,8 @@ window.tambahKeKeranjang = () => {
     if (size.includes('Large')) itemPrice += 3000;
 
     cart.push({
-        id: currentDetailMenu.key,
-        name: currentDetailMenu.name,
-        qty: detailQty,
-        price: itemPrice,
-        total: itemPrice * detailQty,
-        notes: `${size}, ${sugar}, ${ice}`
+        id: currentDetailMenu.key, name: currentDetailMenu.name, qty: detailQty,
+        price: itemPrice, total: itemPrice * detailQty, notes: `${size}, ${sugar}, ${ice}`
     });
 
     window.updateCartBadge();
@@ -205,17 +204,14 @@ window.updateCartBadge = () => {
     const badge = document.getElementById('cart-badge');
     if(btnCart && badge) {
         if (cart.length > 0) {
-            btnCart.classList.remove('hidden');
-            btnCart.classList.add('flex');
+            btnCart.classList.replace('hidden', 'flex');
             badge.innerText = cart.length;
         } else {
-            btnCart.classList.add('hidden');
-            btnCart.classList.remove('flex');
+            btnCart.classList.replace('flex', 'hidden');
         }
     }
 };
 
-// 7. CHECKOUT ENGINE
 window.bukaModalCheckout = () => {
     const listEl = document.getElementById('checkout-list');
     listEl.innerHTML = '';
@@ -236,48 +232,40 @@ window.bukaModalCheckout = () => {
     });
 
     document.getElementById('checkout-total').innerText = formatRupiah(grandTotal);
-    const modal = document.getElementById('checkout-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    document.getElementById('checkout-modal').classList.replace('hidden', 'flex');
 };
 
-window.closeModalCheckout = () => {
-    document.getElementById('checkout-modal').classList.add('hidden');
-    document.getElementById('checkout-modal').classList.remove('flex');
-};
+window.closeModalCheckout = () => document.getElementById('checkout-modal').classList.replace('flex', 'hidden');
 
 window.hapusItemKeranjang = (index) => {
     cart.splice(index, 1);
     window.updateCartBadge();
-    if(cart.length === 0) {
-        window.closeModalCheckout();
-    } else {
-        window.bukaModalCheckout();
-    }
+    cart.length === 0 ? window.closeModalCheckout() : window.bukaModalCheckout();
 };
 
 window.prosesCheckout = async () => {
     if (cart.length === 0) return alert('Keranjang kosong!');
-    const name = document.getElementById('co-name').value || 'Guest';
-    const phone = document.getElementById('co-phone').value || '-';
-    const paymentMethod = document.querySelector('input[name="co_payment"]:checked').value;
-    const isMemberJoin = document.getElementById('co-member').checked;
-    const grandTotal = cart.reduce((acc, item) => acc + item.total, 0);
-
+    
+    // Auto-Generate Order ID
     const today = new Date();
-    const ddmm = String(today.getDate()).padStart(2, '0') + String(today.getMonth() + 1).padStart(2, '0');
-    const orderSeq = String(Object.keys(globalOrders).length + 1).padStart(3, '0');
-    const orderId = `CSH-${ddmm}${orderSeq}`;
+    const prefixDate = String(today.getDate()).padStart(2, '0') + String(today.getMonth() + 1).padStart(2, '0');
+    const seq = String(Object.keys(globalOrders).length + 1).padStart(3, '0');
+    const orderId = `CSH-${prefixDate}${seq}`;
 
-    const orderPayload = {
-        orderId: orderId, customerName: name, customerPhone: phone,
-        items: cart, totalAmount: grandTotal, paymentMethod: paymentMethod,
-        status: 'pending', timestamp: Date.now(), isNewMember: isMemberJoin
+    const payload = {
+        orderId: orderId,
+        customerName: document.getElementById('co-name').value || 'Guest',
+        customerPhone: document.getElementById('co-phone').value || '-',
+        items: cart,
+        totalAmount: cart.reduce((acc, item) => acc + item.total, 0),
+        paymentMethod: document.querySelector('input[name="co_payment"]:checked').value,
+        status: 'pending',
+        timestamp: Date.now()
     };
 
     try {
-        await push(ref(db, 'orders'), orderPayload);
-        alert(`Pesanan berhasil dikirim ke kasir!\nID: ${orderId}`);
+        await push(ref(db, 'orders'), payload);
+        alert(`Pesanan berhasil dikirim ke kasir!\nID: ${payload.orderId}`);
         cart = [];
         window.updateCartBadge();
         window.closeModalCheckout();
@@ -285,482 +273,274 @@ window.prosesCheckout = async () => {
         alert("Gagal mengirim pesanan. Periksa koneksi.");
     }
 };
+// ============================================================================
+// MAINSTAY DRINK POS - TAHAP 5: FULL 8-PANEL MASTER OWNER & CRUD FIREBASE
+// ============================================================================
 
-// 8. SYSTEM ROUTING & AUTHENTICATION
-window.switchRoleView = (role) => {
-    document.getElementById('view-customer').classList.add('hidden');
-    document.getElementById('view-kasir').classList.add('hidden');
-    document.getElementById('view-owner').classList.add('hidden');
-    
-    // Matikan indikator bawah secara aman jika elemennya tidak ada
-    document.querySelectorAll('.nav-indicator').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-amber-500', 'text-gray-400'));
-    
-    currentRole = role;
-    document.getElementById(`view-${role}`).classList.remove('hidden');
-    
-    const activeNav = document.getElementById(`nav-${role}`);
-    if(activeNav) {
-        activeNav.classList.replace('text-gray-400', 'text-amber-500');
-        const indicator = activeNav.querySelector('.nav-indicator');
-        if(indicator) indicator.classList.remove('hidden');
-    }
-
-    if(role === 'kasir') renderKasirOrders();
-    if(role === 'owner') updateOwnerDashboard();
-};
-
-window.bukaModalLogin = () => {
-    const modal = document.getElementById('modal-login');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.getElementById('login-pin').value = '';
-    document.getElementById('login-error').classList.add('hidden');
-};
-
-window.closeModalLogin = () => {
-    document.getElementById('modal-login').classList.add('hidden');
-    document.getElementById('modal-login').classList.remove('flex');
-};
-
-window.prosesLogin = async () => {
-    const pin = document.getElementById('login-pin').value;
-    const errorEl = document.getElementById('login-error');
-    const btnLogin = document.querySelector('button[onclick="prosesLogin()"]');
-    
-    errorEl.classList.add('hidden'); 
-    if(btnLogin) btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memvalidasi...';
-    
-    try {
-        if (pin === MASTER_PIN) {
-            localStorage.setItem('mainstay_session_role', 'owner');
-            window.closeModalLogin();
-            window.switchRoleView('owner');
-            if(btnLogin) btnLogin.innerHTML = 'Masuk Sistem';
-            return;
-        }
-
-        const settingsSnap = await get(ref(db, 'store_settings'));
-        const settingsData = settingsSnap.exists() ? settingsSnap.val() : {};
-        if (settingsData.emergency_pin && pin === settingsData.emergency_pin) {
-            localStorage.setItem('mainstay_session_role', 'owner');
-            window.closeModalLogin();
-            window.switchRoleView('owner');
-            if(btnLogin) btnLogin.innerHTML = 'Masuk Sistem';
-            return;
-        }
-
-        let authenticatedStaff = null;
-        const staffSnap = await get(ref(db, 'staff'));
-        if (staffSnap.exists()) {
-            const staffData = staffSnap.val();
-            Object.keys(staffData).forEach(key => {
-                if (staffData[key].pin === pin) {
-                    authenticatedStaff = { id: key, ...staffData[key] };
-                }
-            });
-        }
-
-        if (authenticatedStaff) {
-            activeStaff = authenticatedStaff;
-            localStorage.setItem('mainstay_session_role', 'kasir');
-            localStorage.setItem('mainstay_session_staff', JSON.stringify(activeStaff));
-            
-            document.getElementById('kasir-active-name').innerText = activeStaff.name;
-            window.closeModalLogin();
-            window.switchRoleView('kasir');
-        } else {
-            errorEl.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error("Login Error:", error);
-        alert("Gagal memvalidasi ke database. Pastikan koneksi internet lancar.");
-    } finally {
-        if(btnLogin) btnLogin.innerHTML = 'Masuk Sistem';
-    }
-};
-
-window.prosesLogout = (role) => {
-    if(confirm('Yakin ingin keluar dari sistem?')) {
-        localStorage.removeItem('mainstay_session_role');
-        localStorage.removeItem('mainstay_session_staff');
-        if(role === 'kasir') activeStaff = null;
-        window.switchRoleView('customer');
-    }
-};
-
-// 9. KASIR VIEW: 3-TAB SYSTEM
-let activeKasirTab = 'pending';
-window.switchKasirTab = (tabId) => {
-    activeKasirTab = tabId.replace('tab-', ''); 
-    ['pending', 'proses', 'selesai'].forEach(t => {
-        const btn = document.getElementById(`btn-tab-${t}`);
-        if(btn) {
-            if(t === activeKasirTab) {
-                btn.classList.add('bg-amber-500', 'text-white', 'shadow');
-                btn.classList.remove('text-gray-500', 'hover:text-gray-900');
-            } else {
-                btn.classList.remove('bg-amber-500', 'text-white', 'shadow');
-                btn.classList.add('text-gray-500', 'hover:text-gray-900');
-            }
-        }
-    });
-    renderKasirOrders();
-};
-
-const renderKasirOrders = () => {
-    const container = document.getElementById('kasir-orders-container');
-    if(!container) return;
-    
-    container.innerHTML = '';
-    let hasOrders = false;
-    let pendingCount = 0;
-
-    Object.keys(globalOrders).forEach(key => {
-        const order = globalOrders[key];
-        if(order.status === 'pending') pendingCount++;
-
-        if (order.status === activeKasirTab) {
-            hasOrders = true;
-            const itemsHtml = order.items.map(item => `<p class="text-[10px] font-bold text-gray-700">- ${item.qty}x ${item.name} (${item.notes})</p>`).join('');
-            
-            let actionButtons = '';
-            if (activeKasirTab === 'pending') {
-                actionButtons = `
-                    <div class="grid grid-cols-2 gap-2 mt-3">
-                        <button onclick="updateOrderStatus('${key}', 'proses')" class="bg-amber-500 text-white text-[10px] font-black py-2 rounded-lg shadow-sm hover:bg-amber-600 transition"><i class="fa-solid fa-fire-burner"></i> Terima & Masak</button>
-                        <button onclick="batalOrder('${key}')" class="bg-slate-100 text-red-500 text-[10px] font-black py-2 rounded-lg border border-red-200 hover:bg-red-50 transition"><i class="fa-solid fa-ban"></i> Batal</button>
-                    </div>
-                `;
-            } else if (activeKasirTab === 'proses') {
-                actionButtons = `
-                    <div class="grid grid-cols-2 gap-2 mt-3">
-                        <button onclick="cetakStruk('${key}')" class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-black py-2 rounded-lg hover:bg-blue-100 transition"><i class="fa-solid fa-print"></i> Struk</button>
-                        <button onclick="updateOrderStatus('${key}', 'selesai')" class="bg-green-500 text-white text-[10px] font-black py-2 rounded-lg shadow-sm hover:bg-green-600 transition"><i class="fa-solid fa-check-double"></i> Selesai Masak</button>
-                    </div>
-                `;
-            }
-
-            container.insertAdjacentHTML('beforeend', `
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col fade-in">
-                    <div class="flex justify-between items-start mb-2 border-b border-gray-50 pb-2">
-                        <div>
-                            <span class="text-[9px] bg-slate-100 text-slate-600 font-black px-2 py-1 rounded-md uppercase tracking-wider">${order.orderId}</span>
-                            <h3 class="text-xs font-black text-gray-900 mt-1">${order.customerName}</h3>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] text-gray-400 font-bold">${new Date(order.timestamp).toLocaleTimeString('id-ID')}</p>
-                            <p class="text-xs font-black text-amber-500 mt-0.5">${formatRupiah(order.totalAmount)}</p>
-                        </div>
-                    </div>
-                    <div class="mb-1">${itemsHtml}</div>
-                    <p class="text-[9px] text-gray-500 font-bold italic mb-1">Metode: ${order.paymentMethod}</p>
-                    ${actionButtons}
-                </div>
-            `);
-        }
-    });
-
-    if (!hasOrders) {
-        container.innerHTML = `<div class="text-center py-10 flex flex-col items-center justify-center"><i class="fa-solid fa-inbox text-3xl text-gray-300 mb-3"></i><p class="text-xs font-bold text-gray-400">Tidak ada pesanan di tab ini.</p></div>`;
-    }
-
-    const badgePending = document.getElementById('badge-pending');
-    if(badgePending) {
-        if(pendingCount > 0) {
-            badgePending.innerText = pendingCount;
-            badgePending.classList.remove('hidden');
-        } else {
-            badgePending.classList.add('hidden');
-        }
-    }
-};
-
-window.updateOrderStatus = async (orderKey, newStatus) => {
-    try {
-        await update(ref(db, `orders/${orderKey}`), { status: newStatus });
-    } catch (error) {
-        alert("Gagal update status pesanan!");
-    }
-};
-
-window.batalOrder = async (orderKey) => {
-    const authPin = prompt("Masukkan PIN Owner untuk pembatalan:");
-    if(authPin === MASTER_PIN) {
-        try {
-            await remove(ref(db, `orders/${orderKey}`));
-            alert("Pesanan dibatalkan.");
-        } catch(error) {
-            alert("Gagal menghapus pesanan.");
-        }
-    } else {
-        alert("Otorisasi Gagal. Void dibatalkan.");
-    }
-};
-
-const updateLiveCashDrawer = () => {
-    let totalOmzet = 0;
-    let targetLaci = 0; 
-    Object.values(globalOrders).forEach(order => {
-        if (order.status !== 'pending') {
-            totalOmzet += order.totalAmount;
-            if (order.paymentMethod === 'Cash') targetLaci += order.totalAmount;
-        }
-    });
-
-    const omzetEl = document.getElementById('kasir-omzet-total');
-    const drawerEl = document.getElementById('kasir-drawer-target');
-    if(omzetEl) omzetEl.innerText = formatRupiah(totalOmzet);
-    if(drawerEl) drawerEl.innerText = formatRupiah(targetLaci);
-};
-
-// 10. OWNER VIEW & PANEL CRUD
-const updateOwnerDashboard = () => {
+window.updateOwnerDashboard = () => {
     let todayOmzet = 0;
-    Object.values(globalOrders).forEach(order => {
-        if(order.status === 'selesai' || order.status === 'proses') todayOmzet += order.totalAmount;
+    Object.values(globalOrders).forEach(o => { 
+        if(o.status !== 'pending') todayOmzet += o.totalAmount; 
     });
-    
     const omzetEl = document.getElementById('owner-omzet-today');
-    if(omzetEl) omzetEl.innerText = formatRupiah(todayOmzet);
-    
     const profitEl = document.getElementById('owner-profit-month');
-    if(profitEl) profitEl.innerText = formatRupiah(todayOmzet * 0.4); 
-};
-
-window.openPanel = (panelId) => {
-    const container = document.getElementById('owner-inner-panels-container');
-    if (panelId === 'panel-menu') {
-        window.renderPanelMenu();
-    } else {
-        container.innerHTML = `
-            <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
-                <div class="bg-gray-900 text-white p-4 flex items-center gap-3">
-                    <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition"><i class="fa-solid fa-arrow-left"></i></button>
-                    <h2 class="font-black text-lg">Modul Under Construction</h2>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-5 text-center">
-                    <i class="fa-solid fa-person-digging text-5xl mb-4 text-amber-500"></i>
-                    <p class="font-bold text-sm">Panel ${panelId} sedang dalam antrean pengembangan.</p>
-                </div>
-            </div>
-        `;
-    }
+    if(omzetEl) omzetEl.innerText = formatRupiah(todayOmzet);
+    if(profitEl) profitEl.innerText = formatRupiah(todayOmzet * 0.4); // Asumsi Net 40%
 };
 
 window.closePanel = () => {
     document.getElementById('owner-inner-panels-container').innerHTML = '';
 };
 
-window.renderPanelMenu = () => {
-    const container = document.getElementById('owner-inner-panels-container');
-    let menuListHtml = '';
-    const menuKeys = Object.keys(globalMenus);
-    
-    if(menuKeys.length === 0) {
-        menuListHtml = '<p class="text-center text-xs font-bold text-gray-400 py-5 bg-slate-50 rounded-xl border border-dashed border-gray-300">Belum ada menu di database.</p>';
-    } else {
-        menuKeys.forEach(key => {
-            const menu = globalMenus[key];
-            menuListHtml += `
-                <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3 mb-2 transition hover:shadow-md">
-                    <img src="${menu.imageUrl || 'logo-192.png'}" class="w-12 h-12 rounded-lg object-cover bg-slate-100 border border-gray-100">
-                    <div class="flex-1">
-                        <h4 class="text-xs font-black text-gray-900">${menu.name}</h4>
-                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">${menu.category} • <span class="text-amber-500">${formatRupiah(menu.price)}</span></p>
-                    </div>
-                    <button onclick="hapusMenu('${key}')" class="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition shadow-sm border border-red-100"><i class="fa-solid fa-trash text-[10px]"></i></button>
-                </div>
-            `;
-        });
-    }
-
-    container.innerHTML = `
-        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in overflow-hidden">
-            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md relative z-10">
-                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
-                <div>
-                    <h2 class="font-black text-lg leading-none">Manajemen Katalog</h2>
-                    <p class="text-[10px] text-amber-400 font-bold">Sinkronisasi Database Aktif</p>
-                </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-5 pb-safe hide-scrollbar">
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
-                    <h3 class="text-xs font-black text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 pb-2"><i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Tambah Menu Baru</h3>
-                    <input type="text" id="form-menu-name" placeholder="Nama Menu (Cth: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold mb-3 focus:outline-none focus:border-amber-500 transition">
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <select id="form-menu-cat" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
-                            <option value="coffee">Coffee</option>
-                            <option value="non-coffee">Non-Coffee</option>
-                            <option value="snack">Snack / Cemilan</option>
-                        </select>
-                        <input type="number" id="form-menu-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
-                    </div>
-                    <input type="text" id="form-menu-img" placeholder="Link URL Gambar (Opsional)" class="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 text-xs font-bold mb-4 focus:outline-none focus:border-amber-500 transition">
-                    <button onclick="simpanMenuBaru()" id="btn-simpan-menu" class="w-full bg-amber-500 text-white font-black py-3.5 rounded-xl shadow-[0_4px_15px_rgba(245,158,11,0.3)] hover:bg-amber-600 transition text-xs uppercase tracking-widest flex justify-center items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Simpan ke Database
-                    </button>
-                </div>
-                <div>
-                    <h3 class="text-xs font-black text-gray-900 mb-3 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-server text-green-500"></i> Katalog Aktif</h3>
-                    <div id="owner-menu-list">${menuListHtml}</div>
-                </div>
-            </div>
-        </div>
-    `;
-};
-
-window.simpanMenuBaru = async () => {
-    const name = document.getElementById('form-menu-name').value.trim();
-    const category = document.getElementById('form-menu-cat').value;
-    const price = document.getElementById('form-menu-price').value;
-    const img = document.getElementById('form-menu-img').value.trim();
-
-    if(!name || !price) return alert("Nama dan Harga Menu wajib diisi!");
-
-    const payload = {
-        name: name, category: category, price: Number(price),
-        imageUrl: img || "", isAvailable: true, isBestSeller: false
+// Router Pembuka 8 Panel Owner
+window.openPanel = (panelId) => {
+    const fnMap = {
+        'panel-menu': window.renderPanelMenu,
+        'panel-hrd': window.renderPanelHRD,
+        'panel-inventory': window.renderPanelInventory,
+        'panel-laporan': window.renderPanelLaporan,
+        'panel-promo': window.renderPanelPromo,
+        'panel-settings': window.renderPanelSettings,
+        'panel-member': window.renderPanelMember,
+        'panel-database': window.renderPanelDatabase
     };
+    if(fnMap[panelId]) fnMap[panelId]();
+};
 
-    const btn = document.getElementById('btn-simpan-menu');
+// Global Reusable CRUD Handlers untuk Owner Panel
+window.simpanNodeData = async (node, payload, callback) => {
+    const btn = event.target.closest('button');
+    const oriText = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...';
-    btn.disabled = true;
-
     try {
-        await push(ref(db, 'menus'), payload);
-        document.getElementById('form-menu-name').value = '';
-        document.getElementById('form-menu-price').value = '';
-        document.getElementById('form-menu-img').value = '';
-        alert("Sukses! Menu ditambahkan ke Firebase.");
-        window.renderPanelMenu();
+        await push(ref(db, node), payload);
+        alert("Sukses! Data disimpan ke Database.");
+        if(callback) callback();
     } catch(e) {
-        alert("Gagal menyimpan menu. Periksa koneksi.");
+        alert("Gagal menyimpan data.");
     } finally {
-        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan ke Database';
-        btn.disabled = false;
+        btn.innerHTML = oriText;
     }
 };
 
-window.hapusMenu = async (key) => {
-    if(confirm("PERINGATAN: Yakin ingin menghapus menu ini?")) {
+window.hapusNodeData = async (node, key, callback) => {
+    if(confirm("PERINGATAN: Yakin ingin menghapus data ini secara permanen?")) {
         try {
-            await remove(ref(db, 'menus/' + key));
-            window.renderPanelMenu(); 
-        } catch(e) {
-            alert("Gagal menghapus data.");
-        }
+            await remove(ref(db, `${node}/${key}`));
+            if(callback) callback();
+        } catch(e) { alert("Gagal menghapus."); }
     }
 };
 
-// 11. MODAL STAMP MEMBER
-window.bukaModalStamp = () => {
-    document.getElementById('modal-stamp').classList.remove('hidden');
-    document.getElementById('modal-stamp').classList.add('flex');
-    document.getElementById('stamp-result-area').classList.add('hidden');
+// --- PANEL 1: KATALOG MENU ---
+window.renderPanelMenu = () => {
+    let listHtml = Object.keys(globalMenus).map(key => `
+        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-2">
+            <div>
+                <h4 class="text-xs font-black text-gray-900">${globalMenus[key].name}</h4>
+                <p class="text-[10px] text-gray-500 font-bold uppercase">${globalMenus[key].category} • <span class="text-amber-500">${formatRupiah(globalMenus[key].price)}</span></p>
+            </div>
+            <button onclick="hapusNodeData('menus', '${key}', renderPanelMenu)" class="w-8 h-8 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+        </div>`).join('') || '<p class="text-[10px] text-center text-gray-400">Database Menu Kosong</p>';
+
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Katalog Menu</h2><p class="text-[10px] text-amber-400 font-bold">Sinkronisasi Real-time</p></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 pb-safe">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 mb-4 shadow-sm">
+                    <input type="text" id="fm-name" placeholder="Nama Menu (Cth: Kopi Aren)" class="w-full bg-slate-50 border p-3 rounded-xl mb-2 text-xs font-bold focus:border-amber-500 outline-none">
+                    <input type="number" id="fm-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border p-3 rounded-xl mb-2 text-xs font-bold focus:border-amber-500 outline-none">
+                    <select id="fm-cat" class="w-full bg-slate-50 border p-3 rounded-xl mb-3 text-xs font-bold focus:border-amber-500 outline-none">
+                        <option value="coffee">Coffee</option><option value="non-coffee">Non-Coffee</option><option value="snack">Snack</option>
+                    </select>
+                    <button onclick="simpanNodeData('menus', {name: document.getElementById('fm-name').value, price: Number(document.getElementById('fm-price').value), category: document.getElementById('fm-cat').value, isAvailable: true}, renderPanelMenu)" class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-wider"><i class="fa-solid fa-plus"></i> Tambah Menu</button>
+                </div>
+                <h3 class="text-xs font-black text-gray-900 mb-3 border-b pb-2">Menu Tersimpan</h3>
+                <div>${listHtml}</div>
+            </div>
+        </div>`;
 };
 
-window.closeModalStamp = () => {
-    document.getElementById('modal-stamp').classList.add('hidden');
-    document.getElementById('modal-stamp').classList.remove('flex');
+// --- PANEL 2: HRD STAFF ---
+window.renderPanelHRD = () => {
+    let listHtml = Object.keys(globalStaff).map(key => `
+        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-2 border-l-4 border-l-purple-500">
+            <div>
+                <h4 class="text-xs font-black text-gray-900">${globalStaff[key].name}</h4>
+                <p class="text-[10px] text-gray-500 font-bold bg-slate-100 px-2 py-0.5 rounded mt-1 w-fit">PIN Kasir: ${globalStaff[key].pin}</p>
+            </div>
+            <button onclick="hapusNodeData('staff', '${key}', renderPanelHRD)" class="w-8 h-8 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+        </div>`).join('') || '<p class="text-[10px] text-center text-gray-400">Belum Ada Karyawan</p>';
+
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">HRD & Karyawan</h2><p class="text-[10px] text-purple-400 font-bold">Atur PIN Login Kasir</p></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 pb-safe">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 mb-4 shadow-sm">
+                    <input type="text" id="fs-name" placeholder="Nama Karyawan" class="w-full bg-slate-50 border p-3 rounded-xl mb-2 text-xs font-bold focus:border-purple-500 outline-none">
+                    <input type="number" id="fs-pin" placeholder="Buat 6 Digit PIN" class="w-full bg-slate-50 border p-3 rounded-xl mb-3 text-xs font-bold tracking-widest focus:border-purple-500 outline-none">
+                    <button onclick="simpanNodeData('staff', {name: document.getElementById('fs-name').value, pin: document.getElementById('fs-pin').value, role: 'Kasir'}, renderPanelHRD)" class="w-full bg-purple-600 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-wider"><i class="fa-solid fa-user-plus"></i> Daftarkan</button>
+                </div>
+                <h3 class="text-xs font-black text-gray-900 mb-3 border-b pb-2">Karyawan Aktif</h3>
+                <div>${listHtml}</div>
+            </div>
+        </div>`;
 };
 
-window.cekStampMember = async () => {
-    const phone = document.getElementById('stamp-phone-check').value;
-    if(!phone) return alert('Masukkan nomor WA!');
+// --- PANEL 3: INVENTORY (GUDANG) ---
+window.renderPanelInventory = () => {
+    let listHtml = Object.keys(globalInventory).map(key => `
+        <div class="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center mb-2 shadow-sm">
+            <div>
+                <h4 class="text-xs font-black text-gray-900">${globalInventory[key].name}</h4>
+                <p class="text-xs font-black text-orange-500 mt-1">${globalInventory[key].qty} ${globalInventory[key].unit}</p>
+            </div>
+            <button onclick="hapusNodeData('inventory_raw', '${key}', renderPanelInventory)" class="text-red-400 p-2"><i class="fa-solid fa-trash text-sm"></i></button>
+        </div>`).join('') || '<p class="text-[10px] text-center text-gray-400">Gudang Kosong</p>';
+
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Stok Gudang</h2><p class="text-[10px] text-orange-400 font-bold">Bahan Baku (Raw)</p></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 pb-safe">
+                <div class="bg-white p-4 rounded-xl border mb-4 shadow-sm">
+                    <input type="text" id="fi-name" placeholder="Nama Bahan (Cup, Susu, dll)" class="w-full bg-slate-50 border p-3 rounded-xl mb-2 text-xs font-bold outline-none">
+                    <div class="flex gap-2 mb-3">
+                        <input type="number" id="fi-qty" placeholder="Jumlah" class="w-1/2 bg-slate-50 border p-3 rounded-xl text-xs font-bold outline-none">
+                        <input type="text" id="fi-unit" placeholder="Satuan (Pcs/L)" class="w-1/2 bg-slate-50 border p-3 rounded-xl text-xs font-bold outline-none">
+                    </div>
+                    <button onclick="simpanNodeData('inventory_raw', {name: document.getElementById('fi-name').value, qty: document.getElementById('fi-qty').value, unit: document.getElementById('fi-unit').value}, renderPanelInventory)" class="w-full bg-orange-500 text-white py-3.5 rounded-xl font-black text-xs uppercase"><i class="fa-solid fa-box-open"></i> Input Stok</button>
+                </div>
+                <div>${listHtml}</div>
+            </div>
+        </div>`;
+};
+
+// --- PANEL 4: LAPORAN (PENGELUARAN) ---
+window.renderPanelLaporan = () => {
+    let listHtml = Object.keys(globalExpenses).map(key => `
+        <div class="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center mb-2 shadow-sm border-l-4 border-l-red-500">
+            <div>
+                <h4 class="text-xs font-black text-gray-900">${globalExpenses[key].desc}</h4>
+                <p class="text-[9px] text-gray-400">${new Date(globalExpenses[key].date).toLocaleDateString()}</p>
+            </div>
+            <div class="text-right flex items-center gap-3">
+                <span class="text-xs font-black text-red-500">-${formatRupiah(globalExpenses[key].amount)}</span>
+                <button onclick="hapusNodeData('expenses', '${key}', renderPanelLaporan)" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>`).join('') || '<p class="text-[10px] text-center text-gray-400">Belum ada pengeluaran dicatat.</p>';
+
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Keuangan & Kasbon</h2><p class="text-[10px] text-green-400 font-bold">Catat Pengeluaran Operasional</p></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 pb-safe">
+                <div class="bg-white p-4 rounded-xl border mb-4 shadow-sm">
+                    <input type="text" id="fe-desc" placeholder="Keperluan (Cth: Token Listrik)" class="w-full bg-slate-50 border p-3 rounded-xl mb-2 text-xs font-bold outline-none focus:border-green-500">
+                    <input type="number" id="fe-amount" placeholder="Nominal Rp" class="w-full bg-slate-50 border p-3 rounded-xl mb-3 text-xs font-bold outline-none focus:border-green-500">
+                    <button onclick="simpanNodeData('expenses', {desc: document.getElementById('fe-desc').value, amount: Number(document.getElementById('fe-amount').value), date: Date.now()}, renderPanelLaporan)" class="w-full bg-green-500 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-wider"><i class="fa-solid fa-money-bill-transfer"></i> Catat Pengeluaran</button>
+                </div>
+                <h3 class="text-xs font-black text-gray-900 mb-3 border-b pb-2">Riwayat Pengeluaran</h3>
+                <div>${listHtml}</div>
+            </div>
+        </div>`;
+};
+
+// --- PANEL 5: PROMO & VOUCHER ---
+window.renderPanelPromo = async () => {
+    // Ambil data voucher on the fly
+    const snap = await get(ref(db, 'vouchers'));
+    const vouchers = snap.exists() ? snap.val() : {};
     
-    document.getElementById('stamp-result-area').classList.remove('hidden');
-    document.getElementById('stamp-member-name').innerText = `Member WA: ${phone}`;
-    document.getElementById('stamp-count-text').innerText = `3/5`;
-    
-    let dotsHtml = '';
-    for(let i=1; i<=5; i++) {
-        dotsHtml += i<=3 ? `<i class="fa-solid fa-circle text-amber-500 text-sm"></i>` : `<i class="fa-solid fa-circle text-gray-200 text-sm"></i>`;
-    }
-    document.getElementById('stamp-visual-dots').innerHTML = dotsHtml;
+    let listHtml = Object.keys(vouchers).map(key => `
+        <div class="bg-white p-3 rounded-xl border border-dashed border-pink-300 flex justify-between items-center mb-2 bg-pink-50/30">
+            <div>
+                <h4 class="text-xs font-black text-pink-600">${vouchers[key].code}</h4>
+                <p class="text-[9px] font-bold text-gray-600">Diskon: Rp ${vouchers[key].discount}</p>
+            </div>
+            <button onclick="hapusNodeData('vouchers', '${key}', window.renderPanelPromo)" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
+        </div>`).join('') || '<p class="text-[10px] text-center text-gray-400">Tidak ada Promo Aktif</p>';
+
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Promo & Voucher</h2><p class="text-[10px] text-pink-400 font-bold">Sebar kode ke pelanggan</p></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 pb-safe">
+                <div class="bg-white p-4 rounded-xl border mb-4 shadow-sm border-pink-100">
+                    <input type="text" id="fv-code" placeholder="Kode Unik (Cth: JUMATBERKAH)" class="w-full bg-slate-50 border p-3 rounded-xl mb-2 text-xs font-black uppercase outline-none">
+                    <input type="number" id="fv-disc" placeholder="Nominal Diskon (Cth: 5000)" class="w-full bg-slate-50 border p-3 rounded-xl mb-3 text-xs font-bold outline-none">
+                    <button onclick="simpanNodeData('vouchers', {code: document.getElementById('fv-code').value.toUpperCase(), discount: Number(document.getElementById('fv-disc').value), active: true}, window.renderPanelPromo)" class="w-full bg-pink-500 text-white py-3.5 rounded-xl font-black text-xs uppercase"><i class="fa-solid fa-ticket"></i> Buat Voucher</button>
+                </div>
+                <div>${listHtml}</div>
+            </div>
+        </div>`;
 };
 
-// 12. ABSENSI KAMERA (Kasir)
-window.bukaModalAbsensi = async () => {
-    const modal = document.getElementById('modal-absensi');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-        const video = document.getElementById('attendance-video');
-        video.srcObject = stream;
-        video.classList.remove('hidden');
-        document.getElementById('camera-loading').classList.add('hidden');
-    } catch (err) {
-        alert("Gagal mengakses kamera: " + err.message);
-    }
+// --- PANEL 6: SETTINGS TOKO ---
+window.renderPanelSettings = async () => {
+    const snap = await get(ref(db, 'store_settings'));
+    const settings = snap.exists() ? snap.val() : { emergency_pin: '', store_name: 'Mainstay Drink' };
+
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Setting Toko</h2><p class="text-[10px] text-slate-400 font-bold">Konfigurasi Sistem</p></div>
+            </div>
+            <div class="flex-1 p-5 pb-safe">
+                <div class="bg-white p-4 rounded-xl border shadow-sm">
+                    <label class="text-[10px] font-bold text-gray-500 mb-1 block">PIN Darurat (Backup Master)</label>
+                    <input type="text" id="fset-pin" value="${settings.emergency_pin || ''}" placeholder="PIN Darurat" class="w-full bg-slate-50 border p-3 rounded-xl mb-4 text-xs font-bold tracking-widest outline-none">
+                    
+                    <button onclick="update(ref(db, 'store_settings'), {emergency_pin: document.getElementById('fset-pin').value}); alert('Setelan Disimpan!'); closePanel();" class="w-full bg-slate-800 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-wider"><i class="fa-solid fa-save"></i> Simpan Setelan</button>
+                </div>
+            </div>
+        </div>`;
 };
 
-window.closeModalAbsensi = () => {
-    const modal = document.getElementById('modal-absensi');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    
-    const video = document.getElementById('attendance-video');
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
-    }
+// --- PANEL 7: MEMBER & STAMP ---
+window.renderPanelMember = () => {
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Database Member</h2><p class="text-[10px] text-amber-400 font-bold">Loyalty & Stamp</p></div>
+            </div>
+            <div class="flex-1 p-5 text-center text-gray-500 text-xs font-bold flex flex-col items-center justify-center mt-10">
+                <i class="fa-solid fa-users text-4xl text-amber-500 mb-4 opacity-50"></i>
+                <p>Database Member terekam otomatis saat pelanggan melakukan checkout dan memasukkan nomor WhatsApp.</p>
+            </div>
+        </div>`;
 };
 
-window.prosesAbsensiCam = () => {
-    alert("Absensi berhasil direkam ke Firebase /attendance");
-    window.closeModalAbsensi();
+// --- PANEL 8: DATABASE & BACKUP ---
+window.renderPanelDatabase = () => {
+    document.getElementById('owner-inner-panels-container').innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md z-10">
+                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                <div><h2 class="font-black text-lg leading-none">Data & Backup</h2><p class="text-[10px] text-cyan-400 font-bold">Wipe & Export Data</p></div>
+            </div>
+            <div class="flex-1 p-5 pb-safe flex flex-col gap-4 mt-4">
+                <div class="bg-red-50 p-4 rounded-xl border border-red-200">
+                    <h3 class="text-xs font-black text-red-600 mb-1">Tutup Buku (Harian)</h3>
+                    <p class="text-[10px] text-red-500 mb-3">Tindakan ini akan menghapus seluruh data antrean pesanan di layar Kasir agar siap untuk esok hari.</p>
+                    <button onclick="if(confirm('Wipe semua pesanan hari ini?')) { remove(ref(db, 'orders')); alert('Antrean Bersih!'); closePanel(); }" class="w-full bg-red-500 text-white py-3.5 rounded-xl font-black text-xs uppercase shadow-sm"><i class="fa-solid fa-broom"></i> Bersihkan Antrean</button>
+                </div>
+            </div>
+        </div>`;
 };
 
-// 13. THERMAL PRINTER STUB
-window.cetakStruk = (orderKey) => {
-    const order = globalOrders[orderKey];
-    if(!order) return;
-    
-    const receiptHtml = `
-        <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
-            <b>MAINSTAY DRINK SHOP</b><br>
-            Tlp: 628977099557
-        </div>
-        <div>
-            ID: ${order.orderId}<br>
-            Tgl: ${new Date(order.timestamp).toLocaleString('id-ID')}<br>
-            Plg: ${order.customerName}
-        </div>
-        <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px;">
-            ${order.items.map(i => `${i.qty}x ${i.name}<br>&nbsp;&nbsp;${formatRupiah(i.price)} = ${formatRupiah(i.total)}`).join('<br>')}
-        </div>
-        <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; font-weight: bold;">
-            TOTAL: ${formatRupiah(order.totalAmount)}<br>
-            BAYAR: ${order.paymentMethod}
-        </div>
-    `;
-    
-    const printArea = document.getElementById('printable-receipt');
-    printArea.innerHTML = receiptHtml;
-    window.print();
-};
-
-// 14. INISIALISASI & SESSION RESTORE
-const restorePersistentSession = () => {
-    const savedRole = localStorage.getItem('mainstay_session_role');
-    const savedStaff = localStorage.getItem('mainstay_session_staff');
-
-    if (savedRole === 'owner') {
-        window.switchRoleView('owner');
-    } else if (savedRole === 'kasir' && savedStaff) {
-        activeStaff = JSON.parse(savedStaff);
-        const nameEl = document.getElementById('kasir-active-name');
-        if(nameEl) nameEl.innerText = activeStaff.name;
-        window.switchRoleView('kasir');
-    } else {
-        window.switchRoleView('customer');
-    }
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-    startClock();
-    initFirebaseListeners();
-    restorePersistentSession();
-});
+// ==============================================================
