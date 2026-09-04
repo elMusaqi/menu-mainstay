@@ -45,6 +45,7 @@ let globalOrders = {};
 let globalStaff = {};
 let globalInventory = {};
 let globalExpenses = {};
+let isStoreOpen = true; // Status operasional toko
 
 // Hardcoded Values sesuai Blueprint
 const MASTER_PIN = "888888";
@@ -222,7 +223,42 @@ const initFirebaseListeners = () => {
             window.renderPanelLaporan();
         }
     });
-};// ============================================================================
+
+    // 5F. Listener Setelan Toko (Status Buka/Tutup & Indikator)
+    onValue(ref(db, 'store_settings'), (snapshot) => {
+        if (snapshot.exists()) {
+            const settings = snapshot.val();
+            
+            // A. Update Variabel Global Status
+            isStoreOpen = settings.isStoreOpen !== false; // Default true jika kosong
+            
+            // B. Deteksi dan Ubah Teks/Warna Indikator di Sebelah Jam
+            const clockEl = document.getElementById('live-clock');
+            if (clockEl && clockEl.nextElementSibling) {
+                const statusEl = clockEl.nextElementSibling;
+                if (isStoreOpen) {
+                    statusEl.className = "text-[9px] text-green-500 font-bold uppercase tracking-wider";
+                    statusEl.innerHTML = '<i class="fa-solid fa-circle text-[7px] animate-pulse"></i> Buka';
+                } else {
+                    statusEl.className = "text-[9px] text-red-500 font-bold uppercase tracking-wider";
+                    statusEl.innerHTML = '<i class="fa-solid fa-circle text-[7px]"></i> Tutup';
+                }
+            }
+            
+            // C. Tampilkan Banner Merah Melintang "Toko Tutup"
+            const bannerTutup = document.getElementById('store-closed-banner');
+            if (bannerTutup) {
+                isStoreOpen ? bannerTutup.classList.add('hidden') : bannerTutup.classList.remove('hidden');
+            }
+            
+            // D. Render ulang sakelar jika panel setting owner sedang terbuka
+            if (currentRole === 'owner' && document.getElementById('toggle-toko-btn')) {
+                window.renderPanelSettings();
+            }
+        }
+    });
+}; // <-- Kurung ini sangat penting untuk menutup fungsi utama initFirebaseListeners
+// ============================================================================
 // MAINSTAY DRINK POS - TAHAP 2: SISTEM KATALOG PELANGGAN & KERANJANG (CART)
 // ============================================================================
 
@@ -314,6 +350,11 @@ window.renderKatalog = () => {
 // 2C. MODAL DETAIL & KUSTOMISASI MINUMAN
 // ---------------------------------------------------------
 window.bukaModalDetail = (menuKey) => {
+    // BLOKIR AKSES JIKA TOKO TUTUP
+    if (!isStoreOpen) {
+        return alert("Mohon maaf, Mainstay Drink sedang tutup. Silakan datang kembali di jam operasional kami!");
+    }
+    
     currentDetailMenu = { key: menuKey, ...globalMenus[menuKey] };
     detailQty = 1;
     
@@ -1270,8 +1311,16 @@ window.renderPanelPromo = () => {
 };
 
 // ---------------------------------------------------------
-// MODUL 6: PENGATURAN TOKO (Emergency PIN)
+// MODUL 6: PENGATURAN TOKO (Buka/Tutup & PIN)
 // ---------------------------------------------------------
+window.toggleStatusToko = async () => {
+    try {
+        await update(ref(db, 'store_settings'), { isStoreOpen: !isStoreOpen });
+    } catch(e) {
+        alert("Gagal mengubah status toko! Periksa koneksi internet.");
+    }
+};
+
 window.renderPanelSettings = () => {
     document.getElementById('owner-inner-panels-container').innerHTML = `
         <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in pb-safe">
@@ -1282,18 +1331,33 @@ window.renderPanelSettings = () => {
                 <h2 class="font-black text-lg leading-none">Setelan Toko</h2>
             </div>
             <div class="flex-1 p-5 overflow-y-auto">
+                
+                <!-- Toggle Buka / Tutup Toko -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-4">
+                    <div class="flex justify-between items-center border-b border-gray-50 pb-3 mb-3">
+                        <div>
+                            <h3 class="text-xs font-black uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-store text-blue-500"></i> Status Operasional
+                            </h3>
+                            <p class="text-[9px] font-bold text-gray-500 mt-1">Matikan untuk memblokir pesanan masuk dari pelanggan.</p>
+                        </div>
+                        <button id="toggle-toko-btn" onclick="toggleStatusToko()" class="w-14 h-8 rounded-full transition-colors duration-300 ${isStoreOpen ? 'bg-green-500' : 'bg-gray-300'} relative shadow-inner flex items-center px-1 shrink-0">
+                            <div class="w-6 h-6 bg-white rounded-full shadow-sm transform transition-transform duration-300 ${isStoreOpen ? 'translate-x-6' : 'translate-x-0'}"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Keamanan PIN -->
                 <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                     <h3 class="text-xs font-black mb-4 uppercase tracking-wider border-b border-gray-50 pb-2 flex items-center gap-2">
                         <i class="fa-solid fa-shield-halved text-slate-700"></i> Konfigurasi PIN Darurat
                     </h3>
-                    <p class="text-[9px] font-bold text-gray-500 mb-3">PIN ini bisa digunakan Owner untuk masuk jika Master PIN lupa, tanpa harus hardcode di script.</p>
-                    
                     <input type="number" id="fset-pin" placeholder="Masukkan 6 Digit PIN Baru" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-bold tracking-widest focus:outline-none focus:border-slate-500 transition">
-                    
-                    <button onclick="update(ref(db, 'store_settings'), { emergency_pin: document.getElementById('fset-pin').value }); alert('Berhasil! PIN Darurat tersimpan di Firebase.'); document.getElementById('fset-pin').value = '';" class="w-full bg-slate-800 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-slate-900 transition tracking-widest uppercase">
+                    <button onclick="update(ref(db, 'store_settings'), { emergency_pin: document.getElementById('fset-pin').value }); alert('Berhasil! PIN Darurat tersimpan.'); document.getElementById('fset-pin').value = '';" class="w-full bg-slate-800 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-slate-900 transition tracking-widest uppercase">
                         <i class="fa-solid fa-lock mr-1"></i> Simpan Keamanan
                     </button>
                 </div>
+                
             </div>
         </div>
     `;
