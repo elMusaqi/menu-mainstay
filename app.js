@@ -1693,3 +1693,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initFirebaseListeners(); // Koneksi real-time ke Firebase
     restorePersistentSession(); // Amankan navigasi via Session
 });
+
+// ==========================================
+// MODUL SAKELAR: PELANGGAN <-> KASIR
+// ==========================================
+
+window.loginKeKasir = () => {
+    // Buka layar kasir
+    document.getElementById('layar-kasir').classList.remove('hidden');
+};
+
+window.keluarDariKasir = () => {
+    // Tutup layar kasir dan kembali ke mode pelanggan
+    document.getElementById('layar-kasir').classList.add('hidden');
+    // Matikan kamera jika sebelumnya menyala
+    if (typeof matikanKamera === 'function') matikanKamera();
+};
