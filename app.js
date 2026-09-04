@@ -51,6 +51,61 @@ let isStoreOpen = true; // Status operasional toko
 const MASTER_PIN = "888888";
 const PLACEHOLDER_IMG = "logo-192.png";
 
+// ==========================================
+// MODUL 0: MESIN KAMERA & ABSENSI
+// ==========================================
+let streamKamera = null;
+
+// Fungsi menyalakan kamera depan HP
+window.mulaiKamera = async () => {
+    const videoEl = document.getElementById('kamera-absen');
+    const loadingEl = document.getElementById('kamera-loading');
+    
+    try {
+        // Minta akses kamera depan (facingMode: "user")
+        streamKamera = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" }, 
+            audio: false 
+        });
+        
+        videoEl.srcObject = streamKamera;
+        
+        // Hilangkan layar loading saat kamera sudah berhasil memancarkan gambar
+        videoEl.onloadedmetadata = () => {
+            loadingEl.classList.add('hidden');
+        };
+    } catch (err) {
+        console.error("Kamera gagal diakses:", err);
+        loadingEl.innerHTML = `
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl mb-3"></i>
+            <span class="text-[10px] font-bold text-red-400 uppercase text-center px-4">Gagal akses kamera.<br>Pastikan izin kamera diizinkan di browser/HP Anda!</span>
+        `;
+    }
+};
+
+// Fungsi mematikan kamera (Penting agar baterai HP tidak bocor saat layar kasir sudah terbuka)
+window.matikanKamera = () => {
+    if (streamKamera) {
+        streamKamera.getTracks().forEach(track => track.stop());
+    }
+};
+
+// Saat aplikasi dibuka, langsung otomatis nyalakan kamera
+document.addEventListener('DOMContentLoaded', () => {
+    const modalLogin = document.getElementById('modal-login-absen');
+    if(modalLogin && !modalLogin.classList.contains('hidden')) {
+        mulaiKamera();
+    }
+});
+
+// Kerangka fungsi tombol absen (Logika jepret & validasi PIN akan kita kerjakan di tahap 2)
+window.prosesAbsen = (tipeAbsen) => {
+    const pin = document.getElementById('input-pin').value;
+    if(!pin) return alert("PIN tidak boleh kosong!");
+    
+    alert(`Tombol Absen ${tipeAbsen} ditekan! PIN: ${pin} (Tahap validasi & jepret foto akan menyusul)`);
+};
+
 // ============================================================================
 // 3. DUMMY DATA FALLBACK (Ditampilkan HANYA jika database kosong)
 // ============================================================================
