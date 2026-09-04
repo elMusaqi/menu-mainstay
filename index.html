@@ -649,6 +649,44 @@
         <!-- Struk Thermal 58/80mm akan masuk kesini via JS -->
     </div>
 
+<!-- ========================================== -->
+<!-- LAYAR KASIR (Ruang Kerja Khusus Staf)      -->
+<!-- ========================================== -->
+<div id="layar-kasir" class="hidden fixed inset-0 bg-slate-100 z-[900] flex flex-col md:flex-row overflow-hidden">
+    
+    <!-- Tombol Keluar dari Kasir kembali ke mode pelanggan -->
+    <button onclick="keluarDariKasir()" class="absolute top-4 right-4 bg-red-500 text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-50 hover:bg-red-600 transition">
+        <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+
+    <!-- Panel Kiri (Dashboard Kasir & Tombol Absen Asli) -->
+    <div class="w-full md:w-2/3 h-full p-6 overflow-y-auto flex flex-col justify-between">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 mb-2">DASHBOARD KASIR</h1>
+            <p class="text-xs text-gray-500 mb-6">Sistem Absensi & Operasional Mainstay Drink</p>
+            
+            <!-- TOMBOL ABSEN UTAMA (Hanya ada di dalam ruang kasir) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                <h2 class="text-sm font-black text-slate-700 uppercase tracking-wider mb-3">Absensi Karyawan</h2>
+                <button onclick="bukaMenuAbsen()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl shadow-md font-black tracking-widest uppercase flex items-center gap-3 transition w-full justify-center">
+                    <i class="fa-solid fa-camera fa-lg"></i> Buka Kamera Absen (Masuk / Pulang)
+                </button>
+            </div>
+        </div>
+
+        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">Mainstay POS System v2.0</p>
+    </div>
+
+    <!-- Panel Kanan (Informasi Shift / Ringkasan) -->
+    <div class="w-full md:w-1/3 h-full bg-white border-l border-gray-200 p-6 shadow-2xl flex flex-col">
+        <h2 class="text-sm font-black text-slate-800 tracking-widest uppercase mb-4 border-b pb-2">Status Shift</h2>
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <p class="text-xs font-bold text-gray-500">Status Anda:</p>
+            <p id="info-status-staf" class="text-sm font-black text-blue-600 mt-1 uppercase">BELUM ABSEN</p>
+        </div>
+    </div>
+</div>
+    
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
     <script type="module" src="app.js?v=141"></script>
 </body>
