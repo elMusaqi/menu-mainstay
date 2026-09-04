@@ -686,6 +686,40 @@
         </div>
     </div>
 </div>
+    <!-- ========================================== -->
+<!-- IKON GEMBOK RAHASIA & POPUP PIN STAF/OWNER -->
+<!-- ========================================== -->
+<!-- Ikon gembok tersembunyi di pojok bawah footer -->
+<div class="p-4 text-center">
+    <button onclick="bukaModalPin()" class="text-gray-300 hover:text-gray-500 transition p-2" title="Area Staf">
+        <i class="fa-solid fa-lock text-xs"></i>
+    </button>
+</div>
+
+<!-- Modal / Kotak Popup Masukkan PIN -->
+<div id="modal-pin-staf" class="hidden fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-xs p-6 shadow-2xl relative text-center">
+        <!-- Tombol Tutup (X) -->
+        <button onclick="tutupModalPin()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <i class="fa-solid fa-xmark fa-lg"></i>
+        </button>
+
+        <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-700">
+            <i class="fa-solid fa-key"></i>
+        </div>
+        
+        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">Akses Kasir</h3>
+        <p class="text-[11px] text-gray-500 mb-4">Masukkan PIN Akses Anda</p>
+
+        <!-- Input PIN -->
+        <input type="password" id="input-pin-kasir" inputmode="numeric" maxlength="6" placeholder="******" class="w-full text-center text-2xl font-black tracking-widest py-3 border-2 border-slate-200 rounded-xl mb-4 focus:border-blue-500 focus:outline-none bg-slate-50">
+
+        <!-- Tombol Submit PIN -->
+        <button onclick="prosesVerifikasiPin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl tracking-wider uppercase text-xs transition shadow-md">
+            Masuk Kasir
+        </button>
+    </div>
+</div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
     <script type="module" src="app.js?v=143"></script>
