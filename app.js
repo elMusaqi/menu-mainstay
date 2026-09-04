@@ -1709,3 +1709,40 @@ window.keluarDariKasir = () => {
     // Matikan kamera jika sebelumnya menyala
     if (typeof matikanKamera === 'function') matikanKamera();
 };
+// ==========================================
+// MODUL VERIFIKASI PIN GEMBOK RAHASIA
+// ==========================================
+
+window.bukaModalPin = () => {
+    document.getElementById('modal-pin-staf').classList.remove('hidden');
+    document.getElementById('input-pin-kasir').value = '';
+    document.getElementById('input-pin-kasir').focus();
+};
+
+window.tutupModalPin = () => {
+    document.getElementById('modal-pin-staf').classList.add('hidden');
+};
+
+window.prosesVerifikasiPin = () => {
+    const pin = document.getElementById('input-pin-kasir').value;
+    
+    if (!pin) {
+        alert("Silakan masukkan PIN terlebih dahulu!");
+        return;
+    }
+
+    // PIN Sementera (Nanti bisa disesuaikan dengan PIN Owner / Staf Anda)
+    // Contoh: PIN Master Owner "123456", PIN Staf "1111"
+    if (pin === "123456" || pin === "1111") {
+        tutupModalPin();
+        // Panggil fungsi pembuka layar kasir yang sudah kita buat sebelumnya
+        if (typeof loginKeKasir === 'function') {
+            loginKeKasir();
+        } else {
+            document.getElementById('layar-kasir').classList.remove('hidden');
+        }
+    } else {
+        alert("PIN Salah! Akses ditolak.");
+        document.getElementById('input-pin-kasir').value = '';
+    }
+};
