@@ -370,41 +370,60 @@ window.prosesLogin = async () => {
     const errorEl = document.getElementById('login-error');
     errorEl.classList.add('hidden'); // Reset error state
     
-    try {
-        // 1. Fetch Setting Toko untuk Emergency PIN secara Real-time
-        const settingsSnap = await get(ref(db, 'store_settings'));
-        const settingsData = settingsSnap.exists() ? settingsSnap.val() : {};
-        const emergencyPin = settingsData.emergency_pin || null;
+    // 1. MASTER PIN OWNER (PRIORITAS TERTINGGI - Bypass Firebase)
+    // Walaupun Firebase error/kosong, Owner tetap wajib bisa masuk!
+    if (pin === "888888") {
+        localStorage.setItem('mainstay_session_role', 'owner');
+        window.closeModalLogin();
+        window.switchRoleView('owner');
+        return; // Hentikan eksekusi, langsung masuk
+    }
 
-        // 2. Cek Owner PIN (Master '888888' ATAU Emergency PIN)
-        if (pin === MASTER_PIN || (emergencyPin && pin === emergencyPin)) {
-            // Persistent Session
+    try {
+        let emergencyPin = null;
+        let authenticatedStaff = null;
+        
+        // 2. CEK FIREBASE (Dibungkus Try-Catch agar tidak mematikan sistem jika error/kosong)
+        try {
+            const settingsSnap = await get(ref(db, 'store_settings'));
+            if(settingsSnap.exists()) emergencyPin = settingsSnap.val().emergency_pin;
+
+            const staffSnap = await get(ref(db, 'staff'));
+            if(staffSnap.exists()) {
+                const staffData = staffSnap.val();
+                Object.keys(staffData).forEach(key => {
+                    if (staffData[key].pin === pin) {
+                        authenticatedStaff = { id: key, ...staffData[key] };
+                    }
+                });
+            }
+        } catch (fbError) {
+            console.warn("Info: Firebase kosong atau koneksi terputus. Menggunakan UI Logic bawaan web.", fbError);
+        }
+
+        // 3. CEK EMERGENCY PIN DARI FIREBASE (Jika Ada)
+        if (emergencyPin && pin === emergencyPin) {
             localStorage.setItem('mainstay_session_role', 'owner');
-            
             window.closeModalLogin();
             window.switchRoleView('owner');
             return;
         }
 
-        // 3. Cek Staff PIN (Fallback fetch jika globalStaff belum termuat)
-        let authenticatedStaff = null;
-        
-        // Panggil fetch langsung ke Firebase untuk memastikan validasi aman (Anti-mock)
-        const staffSnap = await get(ref(db, 'staff'));
-        if (staffSnap.exists()) {
-            const staffData = staffSnap.val();
-            Object.keys(staffData).forEach(key => {
-                if (staffData[key].pin === pin) {
-                    authenticatedStaff = { id: key, ...staffData[key] };
-                }
-            });
+        // 4. DEMO / FALLBACK PIN KASIR (KARENA FIREBASE MASIH KOSONG)
+        // Gunakan PIN 123456 untuk mengetes UI Kasir saat masa development!
+        if (!authenticatedStaff && pin === "123456") {
+            authenticatedStaff = { 
+                id: "demo-kasir", 
+                name: "Kasir Demo (Testing)", 
+                pin: "123456" 
+            };
         }
 
-        // 4. Eksekusi Login Kasir
+        // 5. EKSEKUSI MASUK KASIR
         if (authenticatedStaff) {
             activeStaff = authenticatedStaff;
             
-            // Persistent Session
+            // Simpan sesi agar saat direfresh tidak terlempar
             localStorage.setItem('mainstay_session_role', 'kasir');
             localStorage.setItem('mainstay_session_staff', JSON.stringify(activeStaff));
             
@@ -412,15 +431,15 @@ window.prosesLogin = async () => {
             window.closeModalLogin();
             window.switchRoleView('kasir');
         } else {
-            // PIN Tidak Ditemukan
+            // PIN Benar-benar tidak valid
             errorEl.classList.remove('hidden');
         }
+        
     } catch (error) {
-        console.error("Error during login:", error);
-        alert("Gagal memvalidasi PIN ke Database. Cek koneksi Anda.");
+        console.error("Critical Login Error:", error);
+        errorEl.classList.remove('hidden');
     }
 };
-
 window.prosesLogout = (role) => {
     if(confirm('Yakin ingin keluar dari sistem?')) {
         // Hapus Persistent Session
