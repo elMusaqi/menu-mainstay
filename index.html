@@ -502,9 +502,16 @@
                     <div class="flex items-center gap-2">
                  </div>
                     <!-- 1. Tombol Status Kedai (Duplikat dari Panel Owner) -->
-    <button onclick="ubahStatusKedai()" id="btn-status-kasir" class="bg-green-600 hover:bg-green-700 text-white px-3 h-9 rounded-lg shadow-sm flex items-center justify-center transition text-xs font-bold" title="Buka/Tutup Kedai">
-        <i class="fa-solid fa-store mr-1"></i> Buka
-    </button>
+    <!-- 1. Toggle Status Kedai (On/Off) -->
+<div class="flex items-center gap-2 bg-slate-100 px-3 h-9 rounded-lg shadow-sm border border-slate-200 cursor-pointer" onclick="ubahStatusKedai()">
+    <span id="label-status-kedai" class="text-[10px] font-black text-green-600 uppercase tracking-widest">Buka</span>
+    
+    <!-- Wadah Toggle -->
+    <div id="bg-toggle-kedai" class="w-10 h-5 bg-green-500 rounded-full relative transition-colors duration-300">
+        <!-- Lingkaran Putih (Knob) -->
+        <div id="knob-toggle-kedai" class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transition-transform duration-300 translate-x-5"></div>
+    </div>
+</div>
     
     <!-- 2. Tombol Buka Ruang Kerja -->
     <button onclick="bukaHalamanKerja()" class="bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Buka Ruang Kerja">
