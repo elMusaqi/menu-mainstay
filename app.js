@@ -386,46 +386,33 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 }; // <-- Kurung ini sangat penting untuk menutup fungsi utama initFirebaseListeners
 
 // ==========================================
-// MODUL TOGGLE STATUS KEDAI (ANIMASI INSTAN)
+// MODUL TOGGLE STATUS KEDAI (VERSI CHECKBOX)
 // ==========================================
 
+// 1. Menerima instruksi dari Firebase (Menyesuaikan posisi awal)
 window.updateVisualToggle = (statusBuka) => {
-    const bgToggle = document.getElementById('bg-toggle-kedai');
-    const knobToggle = document.getElementById('knob-toggle-kedai');
-    if (!bgToggle || !knobToggle) return;
-
-    if (statusBuka) {
-        // Mode BUKA: Hijau, geser 16px
-        bgToggle.classList.remove('bg-red-500');
-        bgToggle.classList.add('bg-green-500');
-        knobToggle.style.transform = 'translateX(16px)';
-    } else {
-        // Mode TUTUP: Merah, geser kembali ke 0px
-        bgToggle.classList.remove('bg-green-500');
-        bgToggle.classList.add('bg-red-500');
-        knobToggle.style.transform = 'translateX(0px)';
+    const checkbox = document.getElementById('checkbox-status-kedai');
+    if (checkbox) {
+        checkbox.checked = statusBuka; // Centang otomatis jika di Firebase "Buka"
     }
 };
 
+// 2. Mengirim instruksi ke Firebase saat diklik
 window.ubahStatusKedai = async () => {
-    const bgToggle = document.getElementById('bg-toggle-kedai');
-    if (!bgToggle) return;
+    const checkbox = document.getElementById('checkbox-status-kedai');
+    if (!checkbox) return;
 
-    // 1. Cek dari warna: Kalau lagi hijau berarti Buka, kita mau ubah jadi Tutup (dan sebaliknya)
-    const isLagiBuka = bgToggle.classList.contains('bg-green-500');
-    const statusBaru = !isLagiBuka;
-
-    // 2. LANGSUNG JALANKAN ANIMASI (Tanpa nunggu Firebase)
-    updateVisualToggle(statusBaru);
-
-    // 3. Baru kirim perubahan ke database secara diam-diam
+    // Baca posisi sakelar saat ini (true/false)
+    const statusBaru = checkbox.checked; 
+    
     try {
         const setelanRef = ref(db, 'store_settings');
         await update(setelanRef, { isStoreOpen: statusBaru });
     } catch (error) {
         console.error("Gagal update Firebase:", error);
-        // Kalau internet putus/gagal, animasinya kita balikkan lagi
-        updateVisualToggle(isLagiBuka);
+        // Jika internet putus, kembalikan posisi sakelarnya
+        checkbox.checked = !statusBaru; 
+        alert("Koneksi gagal. Status tidak berubah.");
     }
 };
 
