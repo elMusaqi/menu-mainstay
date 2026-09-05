@@ -490,21 +490,44 @@
         <section id="view-kasir" class="hidden w-full">
             
             <!-- Header Kasir Profile -->
-            <div class="bg-gray-900 text-white p-5 pb-8 rounded-b-[2rem] shadow-md relative z-10"><!-- Lingkaran Putih / Knob -->
-<div id="knob-toggle-kedai" class="w-4 h-4 bg-white rounded-full absolute top-0 left-0 shadow-md border border-gray-100 transform transition-transform duration-300 translate-x-4"></div>
-    </div>
-</div>
-    
-    <!-- 2. Tombol Buka Ruang Kerja -->
-    <button onclick="bukaHalamanKerja()" class="bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Buka Ruang Kerja">
-        <i class="fa-solid fa-briefcase"></i>
-    </button>
-    
-    <!-- 3. Tombol Logout Asli Anda (Baris 502) -->
-                    <button onclick="prosesLogout('kasir')" class="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center border border-red-500/20 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-right-from-bracket"></i></button>
+    <div class="bg-gray-900 text-white p-5 pb-8 rounded-b-[40px] shadow-lg relative z-10">
+        <div class="flex justify-between items-center">
+            
+            <!-- KIRI: Profil Kasir -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700">
+                    <i class="fa-solid fa-user-tie text-gray-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Kasir Bertugas</p>
+                    <h2 id="kasir-active-name" class="text-sm font-black text-amber-400 tracking-wide">Nama Staf</h2>
                 </div>
             </div>
 
+            <!-- KANAN: Kelompok Tombol (Toggle, Koper, Logout) -->
+            <div class="flex items-center gap-2">
+                
+                <!-- 1. Toggle Status Kedai -->
+                <div class="flex items-center cursor-pointer mr-1" onclick="ubahStatusKedai()" title="Buka/Tutup Kedai">
+                    <div id="bg-toggle-kedai" class="w-8 h-4 bg-green-500 rounded-full relative transition-colors duration-300 shadow-inner">
+                        <div id="knob-toggle-kedai" class="w-4 h-4 bg-white rounded-full absolute top-0 left-0 shadow-md border border-gray-100 transform transition-transform duration-300 translate-x-4"></div>
+                    </div>
+                </div>
+                
+                <!-- 2. Tombol Ruang Kerja -->
+                <button onclick="bukaHalamanKerja()" class="bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Buka Ruang Kerja">
+                    <i class="fa-solid fa-briefcase"></i>
+                </button>
+                
+                <!-- 3. Tombol Logout -->
+                <button onclick="prosesLogout('kasir')" class="bg-red-50 hover:bg-red-100 text-red-500 w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Keluar">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+
+            </div>
+            
+        </div>
+    </div>         
             <!-- Live Cash Drawer Monitor (Widget) -->
             <div class="px-5 -mt-5 relative z-20 mb-6">
                 <div class="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex flex-col gap-3">
