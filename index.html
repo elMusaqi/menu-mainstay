@@ -507,13 +507,14 @@
             <!-- KANAN: Kelompok Tombol (Toggle, Koper, Logout) -->
             <div class="flex items-center gap-2">
                 
-                <!-- 1. Toggle Status Kedai (Bersih dari penahan) -->
-<div class="flex items-center cursor-pointer mr-1" onclick="ubahStatusKedai()" title="Buka/Tutup Kedai">
-    <div id="bg-toggle-kedai" class="w-8 h-4 bg-red-500 rounded-full relative transition-colors duration-300 shadow-inner">
-        <!-- Lingkaran Putih -->
-        <div id="knob-toggle-kedai" class="w-4 h-4 bg-white rounded-full absolute top-0 left-0 shadow-md border border-gray-100 transition-transform duration-300" style="transform: translateX(0px);"></div>
-    </div>
-</div>
+                <!-- 1. Toggle Status Kedai (Versi Pure CSS / Anti-Macet) -->
+<label class="relative flex items-center cursor-pointer mr-2" title="Buka/Tutup Kedai">
+    <!-- Checkbox Asli (Disembunyikan dari layar, tapi mengatur klik) -->
+    <input type="checkbox" id="checkbox-status-kedai" class="sr-only peer" onchange="ubahStatusKedai()">
+    
+    <!-- Desain Kapsul & Lingkaran (Bergerak otomatis mengikuti checkbox) -->
+    <div class="w-8 h-4 bg-red-500 rounded-full peer peer-checked:bg-green-500 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0 after:left-0 after:bg-white after:border-gray-100 after:border after:rounded-full after:h-4 after:w-4 after:transition-all after:shadow-md"></div>
+</label>
                 
                 <!-- 2. Tombol Ruang Kerja -->
                 <button onclick="bukaHalamanKerja()" class="bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Buka Ruang Kerja">
@@ -749,6 +750,6 @@
 </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=160"></script>
+    <script type="module" src="app.js?v=161"></script>
 </body>
 </html>
