@@ -391,12 +391,11 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 
 // 1. Sinkronisasi SEMUA Sakelar di Halaman (Owner & Kasir)
 window.updateVisualToggle = (statusBuka) => {
-    // Cari semua elemen input yang memiliki perintah ubahStatusKedai()
     const semuaSakelar = document.querySelectorAll('input[onchange="ubahStatusKedai()"]');
     
-    // Centang/hapus centang semuanya secara massal
     semuaSakelar.forEach(sakelar => {
-        sakelar.checked = statusBuka;
+        // LOGIKA DIBALIK: Menggunakan tanda seru (!) agar Hijau = Buka, Merah = Tutup
+        sakelar.checked = !statusBuka; 
     });
 };
 
