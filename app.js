@@ -949,18 +949,22 @@ window.renderKasirOrders = () => {
     
     container.innerHTML = ''; // Kosongkan kontainer
     let pendingCount = 0;
+    let dapurCount = 0;
 
     const orderKeys = Object.keys(globalOrders);
 
     orderKeys.forEach(key => {
         const order = globalOrders[key];
-        
-        // Hitung badge notifikasi untuk tab Baru (Pending) untuk peringatan visual
+
+        // Hitung badge notifikasi untuk tab Baru dan Dapur
         if (order.status === 'pending') {
             pendingCount++;
         }
+        if (order.status === 'proses') {
+            dapurCount++;
+        }
 
-        // Render pesanan HANYA jika statusnya cocok dengan tab yang sedang dibuka
+        // Render pesanan HANYA jika statusnya cocok
         if (order.status === activeKasirTab) {
             
             // Rancang List Item pesanan (minuman apa saja yang dibeli)
@@ -1040,6 +1044,16 @@ window.renderKasirOrders = () => {
         }
     }
 };
+// Update Badge Angka Merah (Notifikasi Tab Dapur / Sedang Diproses)
+        const badgeDapur = document.getElementById('badge-dapur');
+        if (badgeDapur) {
+            badgeDapur.innerText = dapurCount;
+            if (dapurCount > 0) {
+                badgeDapur.classList.remove('hidden');
+            } else {
+                badgeDapur.classList.add('hidden');
+            }
+        }
 
 window.updateVisualToggle = (statusBuka) => {
     const bgToggle = document.getElementById('bg-toggle-kedai');
