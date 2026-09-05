@@ -745,15 +745,23 @@ window.switchRoleView = (role) => {
     // Tampilkan layar yang dituju
     document.getElementById(`view-${role}`).classList.remove('hidden');
 
-    // Memicu render data spesifik jika pengguna masuk ke Panel Kasir / Owner
-    if (role === 'kasir') {
-        if (typeof window.renderKasirOrders === 'function') {
-            window.renderKasirOrders();
+    // Memicu render data spesifik jika perlu
+        if (role === 'kasir') {
+            if (typeof window.renderKasirOrders === 'function') {
+                window.renderKasirOrders();
+            }
+            if (typeof window.updateLiveCashDrawer === 'function') {
+                window.updateLiveCashDrawer();
+            }
+            
+            // --- KODE PANCINGAN TOGGLE DITARUH DI SINI ---
+            setTimeout(() => {
+                if (typeof isStoreOpen !== 'undefined') {
+                    updateVisualToggle(isStoreOpen);
+                }
+            }, 300);
+            // ---------------------------------------------
         }
-        if (typeof window.updateLiveCashDrawer === 'function') {
-            window.updateLiveCashDrawer();
-        }
-    }
     
     if (role === 'owner') {
         if (typeof window.updateOwnerDashboard === 'function') {
