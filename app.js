@@ -354,7 +354,8 @@ const initFirebaseListeners = () => {
             const settings = snapshot.val();
             
             // A. Update Variabel Global Status
-            isStoreOpen = settings.isStoreOpen !== false; // Default true jika kosong
+isStoreOpen = settings.isStoreOpen !== false; // (Atau sesuaikan dengan ujung kode asli Anda)
+updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
             
             // B. Deteksi dan Ubah Teks/Warna Indikator di Sebelah Jam
             const clockEl = document.getElementById('live-clock');
