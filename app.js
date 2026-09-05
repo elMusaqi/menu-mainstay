@@ -386,38 +386,46 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 }; // <-- Kurung ini sangat penting untuk menutup fungsi utama initFirebaseListeners
 
 // ==========================================
-// MODUL TOGGLE STATUS KEDAI
+// MODUL TOGGLE STATUS KEDAI (ANIMASI INSTAN)
 // ==========================================
 
-// 1. Fungsi Animasi Visual Toggle (Versi Paksa Geser)
 window.updateVisualToggle = (statusBuka) => {
     const bgToggle = document.getElementById('bg-toggle-kedai');
     const knobToggle = document.getElementById('knob-toggle-kedai');
-
     if (!bgToggle || !knobToggle) return;
 
     if (statusBuka) {
-        // Mode BUKA: Warna Hijau, Paksa geser sejauh 16 pixel ke kanan
+        // Mode BUKA: Hijau, geser 16px
         bgToggle.classList.remove('bg-red-500');
         bgToggle.classList.add('bg-green-500');
         knobToggle.style.transform = 'translateX(16px)';
     } else {
-        // Mode TUTUP: Warna Merah, Paksa kembali ke titik 0
+        // Mode TUTUP: Merah, geser kembali ke 0px
         bgToggle.classList.remove('bg-green-500');
         bgToggle.classList.add('bg-red-500');
         knobToggle.style.transform = 'translateX(0px)';
     }
 };
 
-// 2. Fungsi Tombol Sakelar Diklik
 window.ubahStatusKedai = async () => {
+    const bgToggle = document.getElementById('bg-toggle-kedai');
+    if (!bgToggle) return;
+
+    // 1. Cek dari warna: Kalau lagi hijau berarti Buka, kita mau ubah jadi Tutup (dan sebaliknya)
+    const isLagiBuka = bgToggle.classList.contains('bg-green-500');
+    const statusBaru = !isLagiBuka;
+
+    // 2. LANGSUNG JALANKAN ANIMASI (Tanpa nunggu Firebase)
+    updateVisualToggle(statusBaru);
+
+    // 3. Baru kirim perubahan ke database secara diam-diam
     try {
-        const statusBaru = !isStoreOpen; 
         const setelanRef = ref(db, 'store_settings');
         await update(setelanRef, { isStoreOpen: statusBaru });
     } catch (error) {
-        console.error("Gagal mengubah status:", error);
-        alert("Gagal mengubah status kedai.");
+        console.error("Gagal update Firebase:", error);
+        // Kalau internet putus/gagal, animasinya kita balikkan lagi
+        updateVisualToggle(isLagiBuka);
     }
 };
 
