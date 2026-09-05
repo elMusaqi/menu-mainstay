@@ -357,21 +357,6 @@ const initFirebaseListeners = () => {
 isStoreOpen = settings.isStoreOpen !== false; // (Atau sesuaikan dengan ujung kode asli Anda)
 updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 
-            // Fungsi untuk membalikkan status Buka/Tutup ke Firebase
-window.ubahStatusKedai = async () => {
-    try {
-        // Membalikkan status saat ini (jika Buka jadi Tutup, jika Tutup jadi Buka)
-        const statusBaru = !isStoreOpen; 
-        
-        // Kirim perubahan ke database (sesuai jalur 'store_settings' milik Anda)
-        const setelanRef = ref(db, 'store_settings');
-        await update(setelanRef, { isStoreOpen: statusBaru });
-        
-    } catch (error) {
-        console.error("Gagal mengubah status:", error);
-        alert("Gagal mengubah status kedai. Pastikan koneksi internet stabil.");
-    }
-};
             
             // B. Deteksi dan Ubah Teks/Warna Indikator di Sebelah Jam
             const clockEl = document.getElementById('live-clock');
@@ -399,6 +384,41 @@ window.ubahStatusKedai = async () => {
         }
     });
 }; // <-- Kurung ini sangat penting untuk menutup fungsi utama initFirebaseListeners
+
+// ==========================================
+// MODUL TOGGLE STATUS KEDAI
+// ==========================================
+
+// 1. Fungsi Animasi Visual Toggle
+window.updateVisualToggle = (statusBuka) => {
+    const bgToggle = document.getElementById('bg-toggle-kedai');
+    const knobToggle = document.getElementById('knob-toggle-kedai');
+
+    if (!bgToggle || !knobToggle) return;
+
+    if (statusBuka) {
+        // BUKA: Warna Hijau, Geser ke Kanan
+        bgToggle.classList.replace('bg-red-500', 'bg-green-500');
+        knobToggle.classList.replace('translate-x-0', 'translate-x-4');
+    } else {
+        // TUTUP: Warna Merah, Geser ke Kiri
+        bgToggle.classList.replace('bg-green-500', 'bg-red-500');
+        knobToggle.classList.replace('translate-x-4', 'translate-x-0');
+    }
+};
+
+// 2. Fungsi Tombol Sakelar Diklik
+window.ubahStatusKedai = async () => {
+    try {
+        const statusBaru = !isStoreOpen; 
+        const setelanRef = ref(db, 'store_settings');
+        await update(setelanRef, { isStoreOpen: statusBaru });
+    } catch (error) {
+        console.error("Gagal mengubah status:", error);
+        alert("Gagal mengubah status kedai.");
+    }
+};
+
 // ============================================================================
 // MAINSTAY DRINK POS - TAHAP 2: SISTEM KATALOG PELANGGAN & KERANJANG (CART)
 // ============================================================================
