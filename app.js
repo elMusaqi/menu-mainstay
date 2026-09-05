@@ -1034,17 +1034,18 @@ window.renderKasirOrders = () => {
     }
 
     // Update Badge Angka Merah (Notifikasi Tab Pending / Pesanan Baru masuk)
-    const badgePending = document.getElementById('badge-pending');
-    if (badgePending) {
-        badgePending.innerText = pendingCount;
-        if (pendingCount > 0) {
-            badgePending.classList.remove('hidden');
-        } else {
-            badgePending.classList.add('hidden');
+    // Update Badge Angka Merah (Notifikasi Tab Pending / Pesanan Baru masuk)
+        const badgePending = document.getElementById('badge-pending');
+        if (badgePending) {
+            badgePending.innerText = pendingCount;
+            if (pendingCount > 0) {
+                badgePending.classList.remove('hidden');
+            } else {
+                badgePending.classList.add('hidden');
+            }
         }
-    }
-};
-// Update Badge Angka Merah (Notifikasi Tab Dapur / Sedang Diproses)
+
+        // Update Badge Angka Merah (Notifikasi Tab Dapur / Sedang Diproses)
         const badgeDapur = document.getElementById('badge-dapur');
         if (badgeDapur) {
             badgeDapur.innerText = dapurCount;
@@ -1054,6 +1055,7 @@ window.renderKasirOrders = () => {
                 badgeDapur.classList.add('hidden');
             }
         }
+    };
 
 window.updateVisualToggle = (statusBuka) => {
     const bgToggle = document.getElementById('bg-toggle-kedai');
