@@ -770,12 +770,6 @@ window.switchRoleView = (role) => {
                 window.renderMenuCustomer();
             }
             
-            // Memaksa matikan animasi loading (jika elemennya nyangkut)
-            const loadingKatalog = document.getElementById('loading-katalog');
-            if (loadingKatalog) {
-                loadingKatalog.classList.add('hidden');
-                loadingKatalog.style.display = 'none';
-            }
         }
 
         // 2. JIKA MASUK KE LAYAR KASIR (LOGIN)
