@@ -353,9 +353,23 @@ const initFirebaseListeners = () => {
         if (snapshot.exists()) {
             const settings = snapshot.val();
             
-            // A. Update Variabel Global Status
-isStoreOpen = settings.isStoreOpen !== false; // (Atau sesuaikan dengan ujung kode asli Anda)
-updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
+            // A. Update Variabel Global
+        isStoreOpen = settings.isStoreOpen !== false;
+        window.statusTokoRealtime = isStoreOpen; // Simpanan ekstra untuk pancingan
+
+        // --- TEMBAK LANGSUNG KE FISIK SAKELAR (GARANSI 100%) ---
+        // Kita beri jeda 300 milidetik agar HTML pasti sudah muncul di layar
+        setTimeout(() => {
+            // 1. Jalankan fungsi utama
+            if (typeof window.updateVisualToggle === 'function') {
+                window.updateVisualToggle(isStoreOpen);
+            }
+            // 2. Paksa centang langsung ke wujud fisik HTML-nya!
+            document.querySelectorAll('.toggle-kedai').forEach(sakelar => {
+                sakelar.checked = isStoreOpen;
+            });
+        }, 300);
+        // -----------------------------------------------------
 
             
             // B. Deteksi dan Ubah Teks/Warna Indikator di Sebelah Jam
