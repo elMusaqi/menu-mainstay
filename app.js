@@ -391,8 +391,6 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 
 // 1. Fungsi Animasi Visual Toggle
 window.updateVisualToggle = (statusBuka) => {
-// 1. Fungsi Animasi Visual Toggle
-window.updateVisualToggle = (statusBuka) => {
     const bgToggle = document.getElementById('bg-toggle-kedai');
     const knobToggle = document.getElementById('knob-toggle-kedai');
 
