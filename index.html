@@ -516,13 +516,13 @@
     <div class="w-8 h-4 bg-red-500 rounded-full peer peer-checked:bg-green-500 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0 after:left-0 after:bg-white after:border-gray-100 after:border after:rounded-full after:h-4 after:w-4 after:transition-all after:shadow-md"></div>
 </label>
                 
-                <!-- 2. Tombol Ruang Kerja -->
-                <button onclick="bukaHalamanKerja()" class="bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Buka Ruang Kerja">
-                    <i class="fa-solid fa-briefcase"></i>
-                </button>
-                
-                <!-- 3. Tombol Logout -->
-<button onclick="prosesLogout('kasir')" class="bg-red-600 hover:bg-red-700 text-white w-9 h-9 rounded-lg shadow-sm flex items-center justify-center transition" title="Keluar">
+                <!-- 2. Tombol Ruang Kerja (Semi-Transparan Biru) -->
+<button onclick="bukaHalamanKerja()" class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 w-9 h-9 rounded-lg flex items-center justify-center transition" title="Buka Ruang Kerja">
+    <i class="fa-solid fa-briefcase"></i>
+</button>
+
+<!-- 3. Tombol Logout (Semi-Transparan Merah) -->
+<button onclick="prosesLogout('kasir')" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 w-9 h-9 rounded-lg flex items-center justify-center transition" title="Keluar">
     <i class="fa-solid fa-right-from-bracket"></i>
 </button>
 
@@ -750,6 +750,6 @@
 </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=162"></script>
+    <script type="module" src="app.js?v=164"></script>
 </body>
 </html>
