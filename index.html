@@ -650,42 +650,77 @@
     </div>
 
 <!-- ========================================== -->
-<!-- LAYAR KASIR (Ruang Kerja Khusus Staf)      -->
+<!-- RUANG KERJA KASIR (SISTEM TAB NAVIGASI)    -->
 <!-- ========================================== -->
-<div id="layar-kasir" class="hidden fixed inset-0 bg-slate-100 z-[900] flex flex-col md:flex-row overflow-hidden">
-    
-    <!-- Tombol Keluar dari Kasir kembali ke mode pelanggan -->
-    <button onclick="keluarDariKasir()" class="absolute top-4 right-4 bg-red-500 text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-50 hover:bg-red-600 transition">
-        <i class="fa-solid fa-right-from-bracket"></i>
-    </button>
+<div id="ruang-kerja-kasir" class="hidden fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-2xl h-[85vh] sm:h-[80vh] flex flex-col shadow-2xl relative overflow-hidden">
+        
+        <!-- Header & Tombol Tutup -->
+        <div class="flex justify-between items-center p-4 sm:p-5 border-b border-gray-100 bg-white z-10">
+            <h2 class="text-lg font-black text-gray-800 uppercase tracking-wide">
+                <i class="fa-solid fa-briefcase text-blue-600 mr-2"></i> Ruang Kerja
+            </h2>
+            <button onclick="tutupRuangKerja()" class="text-gray-400 hover:text-red-500 transition p-2 bg-gray-50 rounded-full w-8 h-8 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
 
-    <!-- Panel Kiri (Dashboard Kasir & Tombol Absen Asli) -->
-    <div class="w-full md:w-2/3 h-full p-6 overflow-y-auto flex flex-col justify-between">
-        <div>
-            <h1 class="text-2xl font-black text-slate-800 mb-2">DASHBOARD KASIR</h1>
-            <p class="text-xs text-gray-500 mb-6">Sistem Absensi & Operasional Mainstay Drink</p>
+        <!-- DERETAN TAB MENU -->
+        <div class="flex border-b border-gray-200 bg-slate-50 overflow-x-auto custom-scrollbar">
+            <!-- Tab 1: Absensi (Aktif Pertama) -->
+            <button onclick="switchTabKerja('absensi')" id="btn-tab-absensi" class="flex-1 min-w-[90px] py-3 px-2 text-xs font-bold text-blue-600 border-b-2 border-blue-600 transition">
+                <i class="fa-solid fa-camera mb-1 sm:mr-1 block sm:inline"></i> Absensi
+            </button>
             
-            <!-- TOMBOL ABSEN UTAMA (Hanya ada di dalam ruang kasir) -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                <h2 class="text-sm font-black text-slate-700 uppercase tracking-wider mb-3">Absensi Karyawan</h2>
-                <button onclick="bukaMenuAbsen()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl shadow-md font-black tracking-widest uppercase flex items-center gap-3 transition w-full justify-center">
-                    <i class="fa-solid fa-camera fa-lg"></i> Buka Kamera Absen (Masuk / Pulang)
-                </button>
+            <!-- Tab 2: Arus Kas -->
+            <button onclick="switchTabKerja('aruskas')" id="btn-tab-aruskas" class="flex-1 min-w-[90px] py-3 px-2 text-xs font-bold text-gray-400 border-b-2 border-transparent transition hover:text-gray-600">
+                <i class="fa-solid fa-money-bill-transfer mb-1 sm:mr-1 block sm:inline"></i> Arus Kas
+            </button>
+            
+            <!-- Tab 3: Stok -->
+            <button onclick="switchTabKerja('stok')" id="btn-tab-stok" class="flex-1 min-w-[90px] py-3 px-2 text-xs font-bold text-gray-400 border-b-2 border-transparent transition hover:text-gray-600">
+                <i class="fa-solid fa-boxes-stacked mb-1 sm:mr-1 block sm:inline"></i> Stok
+            </button>
+            
+            <!-- Tab 4: Tutup Shift -->
+            <button onclick="switchTabKerja('shift')" id="btn-tab-shift" class="flex-1 min-w-[90px] py-3 px-2 text-xs font-bold text-gray-400 border-b-2 border-transparent transition hover:text-gray-600">
+                <i class="fa-solid fa-cash-register mb-1 sm:mr-1 block sm:inline"></i> Shift
+            </button>
+        </div>
+
+        <!-- AREA KONTEN (HALAMAN DI BAWAH TAB) -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+            
+            <!-- Halaman Konten 1: Absensi -->
+            <div id="content-tab-absensi" class="block">
+                <div class="border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-2xl p-10 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
+                    <i class="fa-solid fa-camera text-4xl text-blue-300 mb-3"></i>
+                    <p class="text-sm font-bold text-blue-800">Layar Kamera Absensi</p>
+                    <p class="text-xs text-blue-500 mt-1">Video kamera akan muncul di sini.</p>
+                </div>
             </div>
-        </div>
 
-        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">Mainstay POS System v2.0</p>
-    </div>
+            <!-- Halaman Konten 2: Arus Kas -->
+            <div id="content-tab-aruskas" class="hidden">
+                <h3 class="font-bold text-gray-700 mb-4 text-sm">Pencatatan Arus Kas</h3>
+                <p class="text-xs text-gray-500">Form input uang masuk (modal) dan uang keluar (pengeluaran) akan dibuat di sini.</p>
+            </div>
 
-    <!-- Panel Kanan (Informasi Shift / Ringkasan) -->
-    <div class="w-full md:w-1/3 h-full bg-white border-l border-gray-200 p-6 shadow-2xl flex flex-col">
-        <h2 class="text-sm font-black text-slate-800 tracking-widest uppercase mb-4 border-b pb-2">Status Shift</h2>
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-            <p class="text-xs font-bold text-gray-500">Status Anda:</p>
-            <p id="info-status-staf" class="text-sm font-black text-blue-600 mt-1 uppercase">BELUM ABSEN</p>
+            <!-- Halaman Konten 3: Stok -->
+            <div id="content-tab-stok" class="hidden">
+                <h3 class="font-bold text-gray-700 mb-4 text-sm">Manajemen Stok</h3>
+                <p class="text-xs text-gray-500">Daftar bahan baku dan fitur update stok harian akan dibuat di sini.</p>
+            </div>
+
+            <!-- Halaman Konten 4: Shift -->
+            <div id="content-tab-shift" class="hidden">
+                <h3 class="font-bold text-gray-700 mb-4 text-sm">Rekap Tutup Shift</h3>
+                <p class="text-xs text-gray-500">Ringkasan pendapatan kasir dan form laporan tutup toko akan dibuat di sini.</p>
+            </div>
+
         </div>
     </div>
-</div>
+</div>a
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
     <script type="module" src="app.js?v=147"></script>
