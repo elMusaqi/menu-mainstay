@@ -391,19 +391,27 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 
 // 1. Fungsi Animasi Visual Toggle
 window.updateVisualToggle = (statusBuka) => {
+// 1. Fungsi Animasi Visual Toggle
+window.updateVisualToggle = (statusBuka) => {
     const bgToggle = document.getElementById('bg-toggle-kedai');
     const knobToggle = document.getElementById('knob-toggle-kedai');
 
     if (!bgToggle || !knobToggle) return;
 
     if (statusBuka) {
-        // BUKA: Warna Hijau, Geser ke Kanan
-        bgToggle.classList.replace('bg-red-500', 'bg-green-500');
-        knobToggle.classList.replace('translate-x-0', 'translate-x-4');
+        // BUKA: Paksa Hijau, Paksa Geser Kanan
+        bgToggle.classList.remove('bg-red-500');
+        bgToggle.classList.add('bg-green-500');
+        
+        knobToggle.classList.remove('translate-x-0');
+        knobToggle.classList.add('translate-x-4');
     } else {
-        // TUTUP: Warna Merah, Geser ke Kiri
-        bgToggle.classList.replace('bg-green-500', 'bg-red-500');
-        knobToggle.classList.replace('translate-x-4', 'translate-x-0');
+        // TUTUP: Paksa Merah, Paksa Geser Kiri
+        bgToggle.classList.remove('bg-green-500');
+        bgToggle.classList.add('bg-red-500');
+        
+        knobToggle.classList.remove('translate-x-4');
+        knobToggle.classList.add('translate-x-0');
     }
 };
 
