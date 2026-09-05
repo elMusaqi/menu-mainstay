@@ -967,6 +967,21 @@ window.renderKasirOrders = () => {
     }
 };
 
+window.updateVisualToggle = (statusBuka) => {
+    const bgToggle = document.getElementById('bg-toggle-kedai');
+    const knobToggle = document.getElementById('knob-toggle-kedai');
+
+    if (!bgToggle || !knobToggle) return;
+
+    if (statusBuka) {
+        bgToggle.classList.replace('bg-red-500', 'bg-green-500');
+        knobToggle.classList.replace('translate-x-0', 'translate-x-3.5');
+    } else {
+        bgToggle.classList.replace('bg-green-500', 'bg-red-500');
+        knobToggle.classList.replace('translate-x-3.5', 'translate-x-0');
+    }
+};
+
 window.updateOrderStatus = async (orderKey, newStatus) => {
     try {
         const orderRef = ref(db, `orders/${orderKey}`);
