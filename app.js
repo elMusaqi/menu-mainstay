@@ -386,35 +386,33 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 }; // <-- Kurung ini sangat penting untuk menutup fungsi utama initFirebaseListeners
 
 // ==========================================
-// MODUL TOGGLE STATUS KEDAI (ANTI-BUG)
+// MODUL TOGGLE STATUS KEDAI (FINAL STABIL)
 // ==========================================
 
-// 1. Sinkronisasi SEMUA Sakelar di Halaman (Owner & Kasir)
 window.updateVisualToggle = (statusBuka) => {
-    const semuaSakelar = document.querySelectorAll('input[onchange="ubahStatusKedai()"]');
+    // Cari semua sakelar di halaman yang memakai class toggle-kedai
+    const semuaSakelar = document.querySelectorAll('.toggle-kedai');
     
     semuaSakelar.forEach(sakelar => {
-        // LOGIKA DIBALIK: Menggunakan tanda seru (!) agar Hijau = Buka, Merah = Tutup
-        sakelar.checked = !statusBuka; 
+        // Sinkronkan fisik sakelar dengan data asli dari database
+        sakelar.checked = (statusBuka === true); 
     });
 };
 
-// 2. Fungsi Klik Sakelar
-window.ubahStatusKedai = async () => {
-    // Pastikan variabel isStoreOpen dari Firebase sudah tersedia
-    if (typeof isStoreOpen === 'undefined') return;
+window.ubahStatusKedai = async (elemenSakelar) => {
+    // 1. Ambil status langsung dari fisik sakelar yang baru saja diklik
+    // (Jika hijau = true, jika merah = false)
+    const statusBaru = elemenSakelar.checked; 
     
-    // Langsung balikkan status aslinya (Jika true jadi false, jika false jadi true)
-    const statusBaru = !isStoreOpen; 
-    
+    // 2. Langsung tembak nilainya ke Firebase
     try {
         const setelanRef = ref(db, 'store_settings');
         await update(setelanRef, { isStoreOpen: statusBaru });
     } catch (error) {
         console.error("Gagal update Firebase:", error);
         alert("Koneksi gagal. Status tidak berubah.");
-        // Kembalikan posisi sakelar jika internet putus
-        updateVisualToggle(isStoreOpen); 
+        // Kembalikan warna sakelar jika internet putus
+        elemenSakelar.checked = !statusBaru; 
     }
 };
 
