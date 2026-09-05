@@ -386,33 +386,36 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 }; // <-- Kurung ini sangat penting untuk menutup fungsi utama initFirebaseListeners
 
 // ==========================================
-// MODUL TOGGLE STATUS KEDAI (VERSI CHECKBOX)
+// MODUL TOGGLE STATUS KEDAI (ANTI-BUG)
 // ==========================================
 
-// 1. Menerima instruksi dari Firebase (Menyesuaikan posisi awal)
+// 1. Sinkronisasi SEMUA Sakelar di Halaman (Owner & Kasir)
 window.updateVisualToggle = (statusBuka) => {
-    const checkbox = document.getElementById('checkbox-status-kedai');
-    if (checkbox) {
-        checkbox.checked = statusBuka; // Centang otomatis jika di Firebase "Buka"
-    }
+    // Cari semua elemen input yang memiliki perintah ubahStatusKedai()
+    const semuaSakelar = document.querySelectorAll('input[onchange="ubahStatusKedai()"]');
+    
+    // Centang/hapus centang semuanya secara massal
+    semuaSakelar.forEach(sakelar => {
+        sakelar.checked = statusBuka;
+    });
 };
 
-// 2. Mengirim instruksi ke Firebase saat diklik
+// 2. Fungsi Klik Sakelar
 window.ubahStatusKedai = async () => {
-    const checkbox = document.getElementById('checkbox-status-kedai');
-    if (!checkbox) return;
-
-    // Baca posisi sakelar saat ini (true/false)
-    const statusBaru = checkbox.checked; 
+    // Pastikan variabel isStoreOpen dari Firebase sudah tersedia
+    if (typeof isStoreOpen === 'undefined') return;
+    
+    // Langsung balikkan status aslinya (Jika true jadi false, jika false jadi true)
+    const statusBaru = !isStoreOpen; 
     
     try {
         const setelanRef = ref(db, 'store_settings');
         await update(setelanRef, { isStoreOpen: statusBaru });
     } catch (error) {
         console.error("Gagal update Firebase:", error);
-        // Jika internet putus, kembalikan posisi sakelarnya
-        checkbox.checked = !statusBaru; 
         alert("Koneksi gagal. Status tidak berubah.");
+        // Kembalikan posisi sakelar jika internet putus
+        updateVisualToggle(isStoreOpen); 
     }
 };
 
