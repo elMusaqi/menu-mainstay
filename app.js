@@ -1708,3 +1708,41 @@ window.keluarDariKasir = () => {
     // Matikan kamera jika sebelumnya menyala
     if (typeof matikanKamera === 'function') matikanKamera();
 };
+// ==========================================
+// MODUL RUANG KERJA KASIR (TAB NAVIGASI)
+// ==========================================
+
+window.bukaHalamanKerja = () => {
+    document.getElementById('ruang-kerja-kasir').classList.remove('hidden');
+    // Buka tab absensi secara otomatis saat ruang kerja pertama kali dibuka
+    switchTabKerja('absensi'); 
+};
+
+window.tutupRuangKerja = () => {
+    document.getElementById('ruang-kerja-kasir').classList.add('hidden');
+};
+
+// Fungsi untuk memindah tab dan konten
+window.switchTabKerja = (tabName) => {
+    const tabs = ['absensi', 'aruskas', 'stok', 'shift'];
+    
+    tabs.forEach(t => {
+        // 1. Sembunyikan semua halaman konten
+        document.getElementById(`content-tab-${t}`).classList.add('hidden');
+        document.getElementById(`content-tab-${t}`).classList.remove('block');
+        
+        // 2. Matikan warna aktif di semua tombol tab (jadikan abu-abu)
+        const btn = document.getElementById(`btn-tab-${t}`);
+        btn.classList.remove('text-blue-600', 'border-blue-600');
+        btn.classList.add('text-gray-400', 'border-transparent');
+    });
+
+    // 3. Tampilkan halaman konten yang sedang dipilih
+    document.getElementById(`content-tab-${tabName}`).classList.remove('hidden');
+    document.getElementById(`content-tab-${tabName}`).classList.add('block');
+    
+    // 4. Warnai tombol tab yang sedang dipilih menjadi biru aktif
+    const activeBtn = document.getElementById(`btn-tab-${tabName}`);
+    activeBtn.classList.remove('text-gray-400', 'border-transparent');
+    activeBtn.classList.add('text-blue-600', 'border-blue-600');
+};
