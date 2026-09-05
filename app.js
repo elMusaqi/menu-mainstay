@@ -746,6 +746,25 @@ window.switchRoleView = (role) => {
     document.getElementById(`view-${role}`).classList.remove('hidden');
 
     // Memicu render data spesifik jika perlu
+        
+        // 1. JIKA BALIK KE LAYAR PELANGGAN (LOGOUT)
+        if (role === 'customer') {
+            // Memaksa render ulang katalog agar tidak muter-muter
+            if (typeof window.renderKatalog === 'function') {
+                window.renderKatalog();
+            } else if (typeof window.renderMenuCustomer === 'function') {
+                window.renderMenuCustomer();
+            }
+            
+            // Memaksa matikan animasi loading (jika elemennya nyangkut)
+            const loadingKatalog = document.getElementById('loading-katalog');
+            if (loadingKatalog) {
+                loadingKatalog.classList.add('hidden');
+                loadingKatalog.style.display = 'none';
+            }
+        }
+
+        // 2. JIKA MASUK KE LAYAR KASIR (LOGIN)
         if (role === 'kasir') {
             if (typeof window.renderKasirOrders === 'function') {
                 window.renderKasirOrders();
@@ -754,13 +773,18 @@ window.switchRoleView = (role) => {
                 window.updateLiveCashDrawer();
             }
             
-            // --- KODE PANCINGAN TOGGLE DITARUH DI SINI ---
-            setTimeout(() => {
-                if (typeof isStoreOpen !== 'undefined') {
-                    updateVisualToggle(isStoreOpen);
+            // --- PANCINGAN SUPER TOGGLE (ANTI-GAGAL) ---
+            let hitunganPancingan = 0;
+            const paksaSinkron = setInterval(() => {
+                if (typeof window.updateVisualToggle === 'function' && typeof isStoreOpen !== 'undefined') {
+                    window.updateVisualToggle(isStoreOpen);
                 }
-            }, 300);
-            // ---------------------------------------------
+                hitunganPancingan++;
+                if (hitunganPancingan >= 4) {
+                    clearInterval(paksaSinkron);
+                }
+            }, 250); 
+            // ------------------------------------
         }
     
     if (role === 'owner') {
