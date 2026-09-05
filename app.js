@@ -356,6 +356,22 @@ const initFirebaseListeners = () => {
             // A. Update Variabel Global Status
 isStoreOpen = settings.isStoreOpen !== false; // (Atau sesuaikan dengan ujung kode asli Anda)
 updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
+
+            // Fungsi untuk membalikkan status Buka/Tutup ke Firebase
+window.ubahStatusKedai = async () => {
+    try {
+        // Membalikkan status saat ini (jika Buka jadi Tutup, jika Tutup jadi Buka)
+        const statusBaru = !isStoreOpen; 
+        
+        // Kirim perubahan ke database (sesuai jalur 'store_settings' milik Anda)
+        const setelanRef = ref(db, 'store_settings');
+        await update(setelanRef, { isStoreOpen: statusBaru });
+        
+    } catch (error) {
+        console.error("Gagal mengubah status:", error);
+        alert("Gagal mengubah status kedai. Pastikan koneksi internet stabil.");
+    }
+};
             
             // B. Deteksi dan Ubah Teks/Warna Indikator di Sebelah Jam
             const clockEl = document.getElementById('live-clock');
