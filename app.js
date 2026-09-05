@@ -389,7 +389,7 @@ updateVisualToggle(isStoreOpen); // <--- KODE BARU DITARUH DI SINI
 // MODUL TOGGLE STATUS KEDAI
 // ==========================================
 
-// 1. Fungsi Animasi Visual Toggle
+// 1. Fungsi Animasi Visual Toggle (Versi Paksa Geser)
 window.updateVisualToggle = (statusBuka) => {
     const bgToggle = document.getElementById('bg-toggle-kedai');
     const knobToggle = document.getElementById('knob-toggle-kedai');
@@ -397,19 +397,15 @@ window.updateVisualToggle = (statusBuka) => {
     if (!bgToggle || !knobToggle) return;
 
     if (statusBuka) {
-        // BUKA: Paksa Hijau, Paksa Geser Kanan
+        // Mode BUKA: Warna Hijau, Paksa geser sejauh 16 pixel ke kanan
         bgToggle.classList.remove('bg-red-500');
         bgToggle.classList.add('bg-green-500');
-        
-        knobToggle.classList.remove('translate-x-0');
-        knobToggle.classList.add('translate-x-4');
+        knobToggle.style.transform = 'translateX(16px)';
     } else {
-        // TUTUP: Paksa Merah, Paksa Geser Kiri
+        // Mode TUTUP: Warna Merah, Paksa kembali ke titik 0
         bgToggle.classList.remove('bg-green-500');
         bgToggle.classList.add('bg-red-500');
-        
-        knobToggle.classList.remove('translate-x-4');
-        knobToggle.classList.add('translate-x-0');
+        knobToggle.style.transform = 'translateX(0px)';
     }
 };
 
