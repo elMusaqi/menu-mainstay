@@ -745,6 +745,82 @@
         </div>
     </div>
 </div>
+
+<!-- ========================================== -->
+    <!-- MODAL STRUK DIGITAL (KERTAS KASIR) -->
+    <!-- ========================================== -->
+    <div id="modal-struk" class="hidden fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-5 backdrop-blur-sm">
+        <div class="flex flex-col items-center w-full max-w-sm">
+            
+            <!-- Area Kertas Struk -->
+            <div class="bg-white w-full shadow-2xl p-6 text-slate-800 font-mono text-sm relative">
+                <!-- Efek zigzag kertas di bagian atas (Opsional, pemanis visual) -->
+                <div class="absolute -top-1 left-0 right-0 h-2 bg-white" style="mask-image: radial-gradient(circle at 4px 4px, transparent 4px, black 5px); mask-size: 8px 8px; mask-position: -4px -4px;"></div>
+
+                <!-- Header Toko -->
+                <div class="text-center mb-5">
+                    <h2 class="font-black text-xl tracking-wider">MAINSTAY DRINK</h2>
+                    <p class="text-[10px] text-slate-500 mt-1">Sistem Kasir Terpadu</p>
+                </div>
+                
+                <div class="border-b-2 border-dashed border-slate-300 mb-3"></div>
+                
+                <!-- Info Transaksi -->
+                <div class="text-[11px] mb-3 flex justify-between font-semibold">
+                    <div class="flex flex-col gap-1">
+                        <p>No: CSH-0609013</p>
+                        <p>Ksr: elmusaqi</p>
+                    </div>
+                    <div class="text-right flex flex-col gap-1">
+                        <p>06 Sep 2026</p>
+                        <p>20:04 WIB</p>
+                    </div>
+                </div>
+                
+                <div class="border-b-2 border-dashed border-slate-300 mb-4"></div>
+                
+                <!-- Daftar Pesanan (Hardcode untuk preview) -->
+                <div class="text-[12px] mb-4 flex flex-col gap-2">
+                    <div>
+                        <div class="flex justify-between font-bold">
+                            <span>1x Thai Tea (R)</span>
+                            <span>Rp 7.000</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 ml-4">Normal, Normal</p>
+                    </div>
+                    <!-- Kalau ada item kedua, nambah di sini -->
+                </div>
+                
+                <div class="border-b-2 border-dashed border-slate-300 mb-3"></div>
+                
+                <!-- Total & Pembayaran -->
+                <div class="flex justify-between font-black text-[16px] mb-1">
+                    <span>TOTAL</span>
+                    <span>Rp 7.000</span>
+                </div>
+                <div class="flex justify-between text-[11px] text-slate-600 mb-5 font-bold">
+                    <span>Metode Bayar</span>
+                    <span>CASH</span>
+                </div>
+                
+                <!-- Footer Pesan -->
+                <div class="text-center text-[10px] text-slate-500 font-bold">
+                    <p>Terima kasih atas kunjungan Anda!</p>
+                    <p class="mt-1">-- LUNAS --</p>
+                </div>
+            </div>
+
+            <!-- Tombol Aksi di Luar Kertas -->
+            <div class="flex gap-3 mt-6 w-full">
+                <button onclick="tutupStruk()" class="flex-1 bg-slate-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-slate-700 transition">
+                    Tutup
+                </button>
+                <button onclick="cetakStruk()" class="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-green-600 transition shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Struk
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
     <script type="module" src="app.js?v=177"></script>
