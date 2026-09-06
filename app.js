@@ -1851,3 +1851,11 @@ window.switchTabKerja = (tabName) => {
     activeBtn.classList.remove('text-gray-400', 'border-transparent');
     activeBtn.classList.add('text-blue-600', 'border-blue-600');
 };
+
+// Fungsi Buka Tutup Struk Digital
+window.bukaStruk = () => document.getElementById('modal-struk').classList.remove('hidden');
+window.tutupStruk = () => document.getElementById('modal-struk').classList.add('hidden');
+
+window.cetakStruk = () => {
+    alert("Sistem: Meneruskan perintah cetak ke Printer Bluetooth ESC/POS...");
+};
