@@ -1085,12 +1085,47 @@ window.switchKasirTab = (tabId) => {
 window.renderKasirOrders = () => {
     const container = document.getElementById('kasir-orders-container');
     if (!container) return;
-    
-    container.innerHTML = ''; // Kosongkan kontainer
+
+    container.innerHTML = ''; 
     let pendingCount = 0;
     let dapurCount = 0;
 
     const orderKeys = Object.keys(globalOrders);
+
+    // ==========================================
+    // MESIN RADAR SUARA PESANAN BARU
+    // ==========================================
+    // Buat memori ingatan agar tidak bunyi saat pertama kali web dibuka
+    if (typeof window.idPesananLama === 'undefined') {
+        window.idPesananLama = new Set();
+        window.pertamaKaliMuat = true;
+    }
+
+    let adaPesananBaru = false;
+    
+    orderKeys.forEach(key => {
+        // Jika ada ID pesanan yang belum pernah terekam di memori
+        if (!window.idPesananLama.has(key)) {
+            window.idPesananLama.add(key);
+            
+            // Jika ini bukan loading pertama dan statusnya "pending" (baru masuk)
+            if (!window.pertamaKaliMuat && globalOrders[key].status === 'pending') {
+                adaPesananBaru = true;
+            }
+        }
+    });
+
+    // Jika radar mendeteksi pesanan baru, bunyikan alarm!
+    if (adaPesananBaru) {
+        // NAMA FILE DISESUAIKAN PERSIS DENGAN YANG ADA DI GITHUB
+        const suaraNotif = new Audio('notif-mainstay.mp3');
+        // Fitur .catch untuk mencegah error jika browser memblokir suara
+        suaraNotif.play().catch(error => console.log('Menunggu interaksi layar dari kasir...'));
+    }
+
+    // Matikan mode pertama kali muat
+    window.pertamaKaliMuat = false;
+    // ==========================================
 
     orderKeys.forEach(key => {
         const order = globalOrders[key];
