@@ -670,33 +670,54 @@ window.hapusItemKeranjang = (index) => {
 // ---------------------------------------------------------
 window.bukaModalCheckout = () => {
     const listEl = document.getElementById('checkout-list');
-    listEl.innerHTML = '';
+    if (listEl) listEl.innerHTML = '';
     
     let grandTotal = 0;
-
+    
     cart.forEach((item, index) => {
         grandTotal += item.total;
+        
+        // Coba ambil gambar dari database, kalau kosong pakai logo toko sebagai gambar pengganti (fallback)
+        const imgUrl = (typeof globalMenus !== 'undefined' && globalMenus[item.id] && globalMenus[item.id].image) ? globalMenus[item.id].image : 'logo-192.png';
+
         listEl.insertAdjacentHTML('beforeend', `
-            <div class="flex justify-between items-center mb-3 border-b border-gray-50 pb-2">
-                <div>
-                    <p class="text-xs font-black text-gray-900">${item.name}</p>
-                    <p class="text-[9px] text-gray-500 font-bold">${item.notes}</p>
-                    <p class="text-[10px] text-amber-500 font-black mt-0.5">${item.qty} x ${formatRupiah(item.price)}</p>
+            <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-0 relative">
+                
+                <!-- Kotak Gambar Mini di Kiri -->
+                <div class="w-14 h-14 bg-slate-50 rounded-xl overflow-hidden shrink-0 shadow-sm border border-slate-200/60 p-0.5">
+                    <img src="${imgUrl}" alt="${item.name}" class="w-full h-full object-cover rounded-lg" onerror="this.src='logo-192.png'">
                 </div>
-                <button onclick="hapusItemKeranjang(${index})" class="text-red-400 hover:text-red-600 transition p-1">
-                    <i class="fa-solid fa-trash text-sm"></i>
+                
+                <!-- Area Teks Utama -->
+                <div class="flex-1 pr-8">
+                    <h4 class="text-xs font-black text-slate-800 leading-tight mb-0.5">${item.name}</h4>
+                    ${item.notes && item.notes !== '-' ? `<p class="text-[9px] text-slate-500 font-medium leading-snug mb-1 line-clamp-2">${item.notes}</p>` : ''}
+                    
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span class="text-[10px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100/50">${item.qty}x</span>
+                        <span class="text-[11px] font-black text-slate-800">Rp ${item.total.toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+
+                <!-- Tombol Hapus (Tong Sampah) -->
+                <button onclick="window.hapusItemKeranjang(${index})" class="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full flex justify-center items-center transition">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
                 </button>
             </div>
         `);
     });
-
-    document.getElementById('checkout-total').innerText = formatRupiah(grandTotal);
     
+    // Perbarui Total Harga
+    const totalEl = document.getElementById('checkout-total');
+    if (totalEl) totalEl.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+    
+    // Munculkan Layar Modal Keranjang
     const modal = document.getElementById('checkout-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 };
-
 window.closeModalCheckout = () => {
     const modal = document.getElementById('checkout-modal');
     modal.classList.add('hidden');
