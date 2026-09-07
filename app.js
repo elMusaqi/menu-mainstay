@@ -52,22 +52,23 @@ const MASTER_PIN = "888888";
 const PLACEHOLDER_IMG = "logo-192.png";
 
 // --- JURUS SULAP: GANTI SEMUA ALERT BAWAAN JADI NOTIFIKASI MELAYANG ---
+// --- JURUS SULAP: GANTI SEMUA ALERT BAWAAN JADI NOTIFIKASI MELAYANG ---
 window.alert = (pesan) => {
     // Hapus notif lama kalau masih ada yang nyangkut
     const notifLama = document.getElementById('notif-global');
     if (notifLama) notifLama.remove();
     
-    // Buat kapsul notifikasi baru
+    // Buat kapsul notifikasi baru (Posisi diubah ke left-0 right-0 mx-auto)
     const notif = document.createElement('div');
     notif.id = 'notif-global';
-    notif.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-2xl z-[99999] font-bold text-xs flex items-center gap-2 animate-bounce w-max max-w-[90vw] text-center';
+    notif.className = 'fixed top-10 left-0 right-0 mx-auto w-[90%] max-w-sm bg-red-600 text-white px-4 py-3 rounded-full shadow-2xl z-[99999] font-bold text-xs flex items-center justify-center gap-2 animate-bounce text-center';
     notif.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-sm"></i> <span>${pesan}</span>`;
     
     // Tampilkan ke layar
     document.body.appendChild(notif);
     
     // Hilangkan otomatis dalam 3 detik
-    setTimeout(() => { if (notif) notif.remove(); }, 3000);
+    setTimeout(() => { if (notif) notif.remove(); }, 5000);
 };
 // ----------------------------------------------------------------------
 
