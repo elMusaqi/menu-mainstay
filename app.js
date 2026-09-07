@@ -990,7 +990,7 @@ window.renderKasirOrders = () => {
             } else if (activeKasirTab === 'proses') {
                 actionButtons = `
                     <div class="grid grid-cols-2 gap-2 mt-3">
-                        <button onclick="bukaStruk('${key}'" class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-black py-2 rounded-lg hover:bg-blue-100 transition">
+                        <button onclick="bukaStruk('${key}')" class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-black py-2 rounded-lg hover:bg-blue-100 transition">
                             <i class="fa-solid fa-print"></i> Struk Kasir
                         </button>
                         <button onclick="updateOrderStatus('${key}', 'selesai')" class="bg-green-500 text-white text-[10px] font-black py-2 rounded-lg shadow-sm hover:bg-green-600 transition">
