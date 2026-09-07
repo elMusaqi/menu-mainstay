@@ -1039,7 +1039,7 @@ window.renderKasirOrders = () => {
                 const linkTembusWa = "https://wa.me/" + hpAsli + "?text=" + encodeURIComponent(sapaan);
                 
                 htmlTombolCekWa = `
-                    <a href="${linkTembusWa}" target="_blank" class="w-full bg-blue-50 text-blue-600 border border-blue-200 p-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition flex items-center justify-center gap-2 shadow-sm">
+                    <a href="${linkTembusWa}" target="_blank" class="w-full bg-green-50 text-green-600 border border-green-200 p-2 rounded-xl text-xs font-bold hover:bg-green-100 transition flex items-center justify-center gap-2 shadow-sm">
                         <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
                     </a>`;
             } else {
