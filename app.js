@@ -2053,8 +2053,9 @@ window.kirimStrukWA = () => {
 
     let noWA = orderAktif.customerPhone || orderAktif.wa || ""; 
     
-    if (!noWA) {
-        noWA = prompt("Nomor WA pelanggan belum ada.\nSilakan ketik manual (contoh: 0812...):");
+    // PERBAIKAN: Cek juga apakah isinya cuma strip "-" atau kosong
+    if (!noWA || noWA === "-" || noWA.trim() === "") {
+        noWA = prompt("Nomor WA belum ada.\nSilakan ketik manual (contoh: 0812...):");
         if (!noWA) return; 
     }
 
