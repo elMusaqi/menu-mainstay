@@ -2019,7 +2019,7 @@ window.downloadStruk = async () => {
     const teksAsli = btn ? btn.innerHTML : 'Download Gambar';
     
     if (btn) {
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
         btn.disabled = true;
     }
 
