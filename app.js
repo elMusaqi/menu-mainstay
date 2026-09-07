@@ -665,10 +665,9 @@ window.hapusItemKeranjang = (index) => {
     }
 };
 
-// ---------------------------------------------------------
-// 2E. MODAL CHECKOUT & PUSH KE FIREBASE
-// ---------------------------------------------------------
-// 1. FUNGSI MERENDER KERANJANG (DENGAN TOMBOL PLUS MINUS)
+// ==========================================
+// 1. MODAL CHECKOUT & RENDER KERANJANG
+// ==========================================
 window.bukaModalCheckout = () => {
     const listEl = document.getElementById('checkout-list');
     if (listEl) listEl.innerHTML = '';
@@ -676,7 +675,9 @@ window.bukaModalCheckout = () => {
     let grandTotal = 0;
     
     cart.forEach((item, index) => {
-        grandTotal += item.total;
+        // Mencegah error jika total harganya belum terbaca
+        const hargaTotal = Number(item.total) || 0;
+        grandTotal += hargaTotal;
         
         const imgUrl = (typeof globalMenus !== 'undefined' && globalMenus[item.id] && globalMenus[item.id].image) ? globalMenus[item.id].image : 'logo-192.png';
 
@@ -691,18 +692,17 @@ window.bukaModalCheckout = () => {
                     <h4 class="text-xs font-black text-slate-800 leading-tight mb-0.5">${item.name}</h4>
                     ${item.notes && item.notes !== '-' ? `<p class="text-[9px] text-slate-500 font-medium leading-snug mb-1 line-clamp-2">${item.notes}</p>` : ''}
                     
-                    <!-- DESAIN BARU: TOMBOL PLUS MINUS & HARGA -->
                     <div class="flex items-center gap-3 mt-1.5">
                         <div class="flex items-center bg-slate-100 rounded-lg border border-slate-200 shadow-sm">
-                            <button onclick="window.ubahQtyKeranjang(${index}, -1)" class="w-6 h-6 flex justify-center items-center text-slate-600 hover:text-amber-500 hover:bg-slate-200 rounded-l-lg transition">
+                            <button onclick="window.ubahQtyKeranjang(${index}, -1)" class="w-7 h-6 flex justify-center items-center text-slate-600 hover:text-amber-500 hover:bg-slate-200 rounded-l-lg transition">
                                 <i class="fa-solid fa-minus text-[9px]"></i>
                             </button>
                             <span class="text-[10px] font-black text-slate-800 w-5 text-center">${item.qty}</span>
-                            <button onclick="window.ubahQtyKeranjang(${index}, 1)" class="w-6 h-6 flex justify-center items-center text-slate-600 hover:text-amber-500 hover:bg-slate-200 rounded-r-lg transition">
+                            <button onclick="window.ubahQtyKeranjang(${index}, 1)" class="w-7 h-6 flex justify-center items-center text-slate-600 hover:text-amber-500 hover:bg-slate-200 rounded-r-lg transition">
                                 <i class="fa-solid fa-plus text-[9px]"></i>
                             </button>
                         </div>
-                        <span class="text-[11px] font-black text-slate-800">Rp ${item.total.toLocaleString('id-ID')}</span>
+                        <span class="text-[11px] font-black text-slate-800">Rp ${hargaTotal.toLocaleString('id-ID')}</span>
                     </div>
                 </div>
 
@@ -714,7 +714,7 @@ window.bukaModalCheckout = () => {
     });
     
     const totalEl = document.getElementById('checkout-total');
-    if (totalEl) totalEl.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+    if (totalEl) totalEl.innerText = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
     
     const modal = document.getElementById('checkout-modal');
     if (modal) {
@@ -723,45 +723,37 @@ window.bukaModalCheckout = () => {
     }
 };
 
+// ==========================================
 // 2. MESIN PENGHITUNG PLUS MINUS
+// ==========================================
 window.ubahQtyKeranjang = (index, perubahan) => {
-    // Ambil data menu yang mau diubah
     const item = cart[index];
     if (!item) return;
 
-    // Tambah atau kurangi Qty
     item.qty += perubahan;
 
-    // Kalau Qty menyentuh angka 0, langsung hapus menunya dari keranjang
     if (item.qty <= 0) {
-        window.hapusItemKeranjang(index);
+        if (typeof window.hapusItemKeranjang === 'function') {
+            window.hapusItemKeranjang(index);
+        }
     } else {
-        // Hitung ulang total harganya (Harga Satuan * Qty Baru)
-        item.total = item.price * item.qty;
-        
-        // Segarkan keranjang dan lencana angka di tombol keranjang bawah
+        item.total = Number(item.price) * Number(item.qty);
         window.bukaModalCheckout();
         if (typeof window.updateCartBadge === 'function') {
             window.updateCartBadge();
         }
     }
 };
-    
-    // Perbarui Total Harga
-    const totalEl = document.getElementById('checkout-total');
-    if (totalEl) totalEl.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
-    
-    // Munculkan Layar Modal Keranjang
-    const modal = document.getElementById('checkout-modal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-};
+
+// ==========================================
+// 3. FUNGSI TUTUP MODAL (BAWAAN ASLI)
+// ==========================================
 window.closeModalCheckout = () => {
     const modal = document.getElementById('checkout-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 };
 
 window.prosesCheckout = async () => {
