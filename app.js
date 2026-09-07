@@ -1754,7 +1754,7 @@ window.cetakStruk = (orderKey) => {
         <div style="font-family: monospace;">
             ID: ${order.orderId}<br>
             Tgl: ${new Date(order.timestamp).toLocaleString('id-ID')}<br>
-            Plg: ${order.customerName}
+            Pelanggan: ${order.customerName}
         </div>
         <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; font-family: monospace;">
             ${order.items.map(i => `
@@ -1873,7 +1873,7 @@ window.bukaStruk = (orderKey) => {
 
     // 2. Suntikkan data ke teks HTML Struk
     document.getElementById('struk-no').innerText = "No: " + orderAktif.orderId;
-    document.getElementById('struk-plg').innerText = "Plg: " + (orderAktif.customerName || "Umum");
+    document.getElementById('struk-plg').innerText = "Pelanggan: " + (orderAktif.customerName || "Umum");
     document.getElementById('struk-tgl').innerText = new Date(orderAktif.timestamp).toLocaleString('id-ID');
     
     // 3. Render daftar menu sesuai yang dibeli
@@ -1925,7 +1925,7 @@ Terima kasih sudah jajan di *Mainstay Drink*.
 
 *🧾 RINCIAN PESANAN*
 No: ${orderAktif.orderId}
-Plg: ${orderAktif.customerName || "Umum"}
+Pelanggan: ${orderAktif.customerName || "Umum"}
 Waktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}
 -----------------------------------
 ${daftarMenuWA}
@@ -1956,7 +1956,7 @@ window.prosesCetakStruk = () => {
             <div style="margin-bottom: 5px;">
                 ID : ${orderAktif.orderId} <b>${tandaReprint}</b><br>
                 Tgl: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}<br>
-                Plg: ${orderAktif.customerName || 'Umum'}
+                Pelanggan: ${orderAktif.customerName || 'Umum'}
             </div>
             
             <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px;">
