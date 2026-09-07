@@ -1856,3 +1856,40 @@ window.switchTabKerja = (tabName) => {
 window.bukaStruk = () => document.getElementById('modal-struk').classList.remove('hidden');
 window.tutupStruk = () => document.getElementById('modal-struk').classList.add('hidden');
 
+// Data sementara (Nanti akan otomatis terisi dari database)
+let nomorWAPelanggan = ""; 
+
+window.kirimStrukWA = () => {
+    let noWA = nomorWAPelanggan;
+
+    // Jika nomor WA kosong, munculkan form pop-up ketik manual
+    if (!noWA || noWA === "") {
+        noWA = prompt("Pelanggan tidak mencantumkan nomor WA.\n\nSilakan ketik nomor WA manual di bawah ini (contoh: 0812...):");
+        
+        // Batal jika kasir tidak mengisi apa-apa atau klik Cancel
+        if (!noWA || noWA.trim() === "") return; 
+    }
+
+    // Format nomor WA jadi +62
+    noWA = noWA.trim();
+    if (noWA.startsWith("0")) noWA = "62" + noWA.substring(1);
+
+    // Draft Pesan Teks (Format Struk Rapi)
+    const pesan = `Halo kak! 👋
+Terima kasih sudah jajan di *Mainstay Drink*.
+
+*🧾 RINCIAN PESANAN*
+No: CSH-0609013
+Waktu: 07 Sep 2026, 10:00 WIB
+-----------------------------------
+1x Thai Tea (R) - Rp 7.000
+(Normal, Normal)
+-----------------------------------
+*TOTAL: Rp 7.000*
+Metode Bayar: CASH
+
+Ditunggu kedatangannya kembali ya kak! ✨`;
+    
+    // Buka aplikasi WA
+    window.open(`https://wa.me/${noWA}?text=${encodeURIComponent(pesan)}`, '_blank');
+};
