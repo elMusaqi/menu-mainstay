@@ -756,7 +756,8 @@ window.prosesCheckout = async () => {
         // STRICT ANTI-MOCK: Push transaksi langsung ke node /orders di Firebase Realtime DB
         await push(ref(db, 'orders'), payload);
         
-        alert(`Pesanan berhasil dikirim ke kasir!\nNomor Antrean Anda: ${payload.orderId}`);
+        // Panggil popup elegan sesuai metode pembayarannya
+        window.tampilkanPopupBerhasil(orderId, paymentMethod, grandTotal, customerName);
         
         // Reset Keranjang & Form
         cart = [];
@@ -2158,3 +2159,83 @@ window.jalankanKirimWA = (noWA) => {
 
     window.location.href = `whatsapp://send?phone=${noWA}&text=${encodeURIComponent(pesan)}`;
 };
+
+// --- FUNGSI POPUP SUKSES (CASH & QRIS) ---
+window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
+    // 1. Bersihkan popup lama jika ada
+    const popupLama = document.getElementById('popup-sukses-order');
+    if (popupLama) popupLama.remove();
+
+    // 2. Siapkan layar gelap
+    const modal = document.createElement('div');
+    modal.id = 'popup-sukses-order';
+    modal.className = 'fixed inset-0 z-[999999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-5';
+
+    let htmlKonten = '';
+
+    // 3A. DESAIN POPUP JIKA BAYAR TUNAI (CASH)
+    if (metode === 'Cash') {
+        htmlKonten = `
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl">
+                <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-3xl mb-4">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <h2 class="text-xl font-black text-slate-800 mb-1">Pesanan Tercatat!</h2>
+                <p class="text-xs text-slate-500 font-bold mb-4">Atas Nama: <span class="text-amber-500 uppercase">${nama}</span><br>Kode: ${orderId}</p>
+
+                <div class="w-full bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3 mb-4">
+                    <p class="text-xs text-slate-500 mb-1">Total Tagihan Tunai</p>
+                    <p class="text-2xl font-black text-slate-800">${formatRupiah(total)}</p>
+                </div>
+
+                <p class="text-[11px] text-slate-600 font-bold mb-6 bg-amber-50 text-amber-700 p-3 rounded-xl border border-amber-100">
+                    <i class="fa-solid fa-cash-register mr-1"></i> Silakan menuju kasir dan sebutkan nama Anda untuk melakukan pembayaran tunai.
+                </p>
+
+                <button onclick="tutupLaluRefresh()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl transition active:scale-95">Selesai & Tutup</button>
+            </div>
+        `;
+    } 
+    // 3B. DESAIN POPUP JIKA BAYAR QRIS
+    else {
+        // PERHATIAN: Masukkan nomor WA HP Kasir Utama di sini (Gunakan format awalan 628...)
+        const nomorWaToko = "628977099557"; 
+        const pesanWa = `Halo Kasir, saya atas nama *${nama}* (Kode: ${orderId}) ingin mengirimkan bukti transfer QRIS.`;
+        const linkWa = `https://wa.me/${nomorWaToko}?text=${encodeURIComponent(pesanWa)}`;
+
+        htmlKonten = `
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl">
+                <h2 class="text-xl font-black text-slate-800 mb-1">Pembayaran QRIS</h2>
+                <p class="text-xs text-slate-500 font-bold mb-4">Atas Nama: <span class="text-blue-500 uppercase">${nama}</span><br>Tagihan: <span class="text-amber-500">${formatRupiah(total)}</span></p>
+
+                <div class="w-full flex justify-center mb-5">
+                    <!-- Memanggil gambar Qris-mainstay.png dari aset -->
+                    <img src="Qris-mainstay.png" alt="QRIS Mainstay" class="w-48 h-48 rounded-2xl border-2 border-slate-100 shadow-sm object-contain p-2">
+                </div>
+
+                <div class="flex gap-2 w-full mb-4">
+                    <a href="qris-mainstay.png" download="qris-mainstay.png" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl flex flex-col justify-center items-center gap-1 text-[10px] border border-slate-200 transition active:scale-95">
+                        <i class="fa-solid fa-download text-lg mb-0.5"></i> Simpan
+                    </a>
+                    <a href="${linkWa}" target="_blank" class="flex-[2] bg-green-500 text-white font-bold py-3 rounded-xl flex flex-col justify-center items-center gap-1 text-[10px] shadow-sm transition active:scale-95">
+                        <i class="fa-brands fa-whatsapp text-lg mb-0.5"></i> Kirim Bukti via WA
+                    </a>
+                </div>
+
+                <button onclick="tutupLaluRefresh()" class="w-full text-slate-400 font-bold text-xs py-2">Tutup</button>
+            </div>
+        `;
+    }
+
+    // 4. Suntikkan HTML ke layar
+    modal.innerHTML = htmlKonten;
+    document.body.appendChild(modal);
+};
+
+// Fungsi pembantu untuk mereset layar setelah ditutup
+window.tutupLaluRefresh = () => {
+    const modal = document.getElementById('popup-sukses-order');
+    if (modal) modal.remove();
+    window.location.reload();
+};
+// ----------------------------------------
