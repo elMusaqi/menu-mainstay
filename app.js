@@ -987,18 +987,20 @@ window.renderKasirOrders = () => {
                             <i class="fa-solid fa-ban"></i> Batal
                         </button>
                     </div>`;
-            } else if (activeKasirTab === 'selesai') {
-                actionButtons = `
-                    <div class="grid grid-cols-2 gap-2 mt-3">
-                        <button onclick="bukaStruk('${key}')" class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-black py-2 rounded-lg hover:bg-blue-100 transition">
-                            <i class="fa-solid fa-print"></i> Struk Kasir
-                        </button>
-                        <button onclick="updateOrderStatus('${key}', 'selesai')" class="bg-green-500 text-white text-[10px] font-black py-2 rounded-lg shadow-sm hover:bg-green-600 transition">
-                            <i class="fa-solid fa-check-double"></i> Selesai Masak
-                        </button>
-                    </div>`;
+            } else if (activeKasirTab === 'proses') {
+        actionButtons = `
+            <div class="grid grid-cols-2 gap-2 mt-3">
+                <button onclick="bukaStruk('${key}')" class="bg-blue-500 text-white p-2 rounded text-xs font-bold flex justify-center items-center gap-1"><i class="fa-solid fa-print"></i> Struk</button>
+                <button onclick="updateOrderStatus('${key}', 'selesai')" class="bg-green-500 text-white p-2 rounded text-xs font-bold flex justify-center items-center gap-1"><i class="fa-solid fa-check-double"></i> Selesai</button>
+            </div>`;
+    } else if (activeKasirTab === 'selesai') {
+        actionButtons = `
+            <div class="mt-3">
+                <button onclick="bukaStruk('${key}')" class="bg-slate-600 text-white p-2 rounded text-xs font-bold w-full flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Ulang Struk
+                </button>
+            </div>`;
             }
-
             // Injeksi Card HTML ke dalam kontainer kasir
             container.insertAdjacentHTML('beforeend', `
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col mb-3 fade-in">
