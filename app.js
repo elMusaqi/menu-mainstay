@@ -686,8 +686,17 @@ window.prosesCheckout = async () => {
     if (cart.length === 0) {
         return alert('Keranjang masih kosong!');
     }
-    
-    const inputName = document.getElementById('co-name').value;
+
+    // --- GEMBOK WAJIB ISI NAMA ---
+    const elemenNama = document.getElementById('co-name');
+    if (elemenNama && elemenNama.value.trim() === '') {
+        alert('Tunggu dulu! Nama Pelanggan wajib diisi.');
+        elemenNama.focus(); // Arahkan kursor otomatis ke kolom nama
+        return; // Hentikan proses checkout agar tidak lolos
+    }
+    // -----------------------------
+
+    const inputName = elemenNama.value;
     const inputPhone = document.getElementById('co-phone').value;
     const paymentRadio = document.querySelector('input[name="co_payment"]:checked');
     const isMemberJoin = document.getElementById('co-member') ? document.getElementById('co-member').checked : false;
