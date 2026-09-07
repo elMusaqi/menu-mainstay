@@ -1018,10 +1018,24 @@ window.renderKasirOrders = () => {
             let htmlTombolCekWa = '';
             
             if (adaNoHp) {
+                // 1. Rapikan Nomor HP
                 let hpAsli = noHpRaw.replace(/[^0-9]/g, '');
                 if (hpAsli.startsWith('0')) hpAsli = '62' + hpAsli.substring(1);
                 
-                const sapaan = "Halo Kak " + order.customerName + ", pesanan dengan kode *" + key + "* sudah masuk di kasir Mainstay Drink. Boleh konfirmasi atau kirimkan bukti pembayarannya ke sini ya Kak? Terima kasih!";
+                // 2. Gunakan Order ID rapi (CSH-...) atau ambil 5 huruf terakhir jika pakai ID Firebase
+                const idPesanan = order.orderId ? order.orderId : key.slice(-5).toUpperCase();
+                
+                // 3. Susun daftar minuman yang dipesan
+                let rincianMenu = '';
+                if (order.items && order.items.length > 0) {
+                    order.items.forEach(item => {
+                        rincianMenu += `▪️ ${item.qty}x ${item.name}\n`;
+                    });
+                }
+                
+                // 4. Rakit Pesan WA Super Rapi
+                const sapaan = `Halo Kak *${order.customerName}* 👋\n\nPesanan Kakak sudah masuk di kasir *Mainstay Drink* dengan detail berikut:\n\n*Kode Pesanan:* ${idPesanan}\n*Rincian:*\n${rincianMenu}\n*Total Tagihan:* *${formatRupiah(order.totalAmount)}*\n\nBoleh minta tolong konfirmasi atau kirimkan foto bukti pembayarannya ke sini ya Kak? Terima kasih banyak! 🙏`;
+                
                 const linkTembusWa = "https://wa.me/" + hpAsli + "?text=" + encodeURIComponent(sapaan);
                 
                 htmlTombolCekWa = `
@@ -1029,10 +1043,11 @@ window.renderKasirOrders = () => {
                         <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
                     </a>`;
             } else {
+                // USULAN BARU: Langsung buka aplikasi WA ke nomor resto agar kasir bisa langsung cek Inbox
                 htmlTombolCekWa = `
-                    <button onclick="alert('Nomor WA Pelanggan tidak ada. Silakan cek manual di Inbox WhatsApp Resto (628977099557).')" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-[11px] font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
-                        <i class="fa-solid fa-inbox text-sm"></i> Cek Manual di Inbox Resto
-                    </button>`;
+                    <a href="https://wa.me/628977099557" target="_blank" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-sm text-slate-400"></i> Buka Inbox WA Resto
+                    </a>`;
             }
 
             actionButtons = `
