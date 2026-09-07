@@ -1012,16 +1012,38 @@ window.renderKasirOrders = () => {
             let actionButtons = '';
             
             if (activeKasirTab === 'pending') {
-                actionButtons = `
-                    <div class="grid grid-cols-2 gap-2 mt-3">
-                        <button onclick="updateOrderStatus('${key}', 'proses')" class="bg-amber-500 text-white text-[10px] font-black py-2 rounded-lg shadow-sm hover:bg-amber-600 transition">
-                            <i class="fa-solid fa-fire-burner"></i> Terima & Masak
-                        </button>
-                        <button onclick="batalOrder('${key}')" class="bg-slate-100 text-red-500 text-[10px] font-black py-2 rounded-lg border border-red-200 hover:bg-red-50 transition">
-                            <i class="fa-solid fa-ban"></i> Batal
-                        </button>
-                    </div>`;
-            } else if (activeKasirTab === 'proses') {
+            // Cek ketersediaan nomor HP Pelanggan dari database
+            const adaNoHp = order.customerPhone && order.customerPhone !== '-' && order.customerPhone.trim() !== '';
+            let linkWaPelanggan = '#';
+            
+            if (adaNoHp) {
+                // Ubah format otomatis awalan 08 menjadi 628 agar link WA tidak error
+                let hp = order.customerPhone.replace(/[^0-9]/g, '');
+                if (hp.startsWith('0')) hp = '62' + hp.substring(1);
+                
+                const pesanSapaan = `Halo Kak ${order.customerName}, pesanan dengan kode *${key}* sudah masuk di kasir Mainstay Drink. Boleh konfirmasi atau kirimkan bukti pembayarannya ke sini ya Kak? Terima kasih! 🙏`;
+                linkWaPelanggan = `https://wa.me/${hp}?text=${encodeURIComponent(pesanSapaan)}`;
+            }
+
+            actionButtons = `
+                <div class="flex flex-col gap-2 mt-3">
+                    <!-- TOMBOL BARU: CEK BUKTI WA -->
+                    ${adaNoHp 
+                        ? `<a href="${linkWaPelanggan}" target="_blank" class="w-full bg-blue-50 text-blue-600 border border-blue-200 p-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
+                           </a>`
+                        : `<button onclick="alert('Pelanggan tidak mencantumkan nomor saat Checkout. Silakan buka aplikasi WhatsApp Resto (628977099557) untuk mengecek apakah pelanggan atas nama ${order.customerName} sudah mengirim bukti secara manual.')" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-[11px] font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-inbox text-sm"></i> Cek Manual di Inbox Resto
+                           </button>`
+                    }
+                    
+                    <!-- TOMBOL ASLI: TERIMA & BATAL -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="updateOrderStatus('${key}', 'proses')" class="bg-amber-500 text-white p-2 rounded-xl text-xs font-bold hover:bg-amber-600 transition flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-fire-burner"></i> Terima & Masak</button>
+                        <button onclick="batalOrder('${key}')" class="bg-slate-100 text-red-500 p-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-ban"></i> Batal</button>
+                    </div>
+                </div>`;
+        }
         // Tab 2 (Dapur): Ada 2 Tombol
         actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
@@ -2161,17 +2183,25 @@ window.jalankanKirimWA = (noWA) => {
 };
 
 // ==========================================
-// MESIN POP-UP BERHASIL (CASH & QRIS) - FINAL REVISI
+// MESIN POP-UP BERHASIL (CASH & QRIS) - FINAL (NO WA RESTO AKTIF)
 // ==========================================
 window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
     const popupLama = document.getElementById('popup-sukses-order');
     if (popupLama) popupLama.remove();
+
+    // 1. Sistem mengintip otomatis apakah kolom WA di form kasir kosong atau diisi
+    const elemenHp = document.getElementById('co-phone');
+    const noHpPelanggan = elemenHp ? elemenHp.value.trim() : '';
+    const belumAdaWa = (noHpPelanggan === '' || noHpPelanggan === '-');
 
     const modal = document.createElement('div');
     modal.id = 'popup-sukses-order';
     modal.className = 'fixed inset-0 z-[999999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-5';
 
     let htmlKonten = '';
+    
+    const safeNama = nama.replace(/'/g, "\\'"); // Mencegah error jika nama pelanggan pakai petik
+    const totalRp = formatRupiah(total);
 
     if (metode === 'Cash') {
         htmlKonten = `
@@ -2188,7 +2218,7 @@ window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
 
                 <div class="w-full bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3 mb-4 shadow-inner">
                     <p class="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-wider">Total Tagihan Tunai</p>
-                    <p class="text-xl font-black text-amber-500">${formatRupiah(total)}</p>
+                    <p class="text-xl font-black text-amber-500">${totalRp}</p>
                 </div>
 
                 <p class="text-[10px] text-slate-600 font-medium mb-5 bg-amber-50 text-amber-700 p-2.5 rounded-lg border border-amber-100 leading-relaxed">
@@ -2199,13 +2229,23 @@ window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
             </div>
         `;
     } else {
-        // GANTI DENGAN NOMOR WA KASIR (Gunakan awalan 628...)
+        // SUDAH TERSAMBUNG KE NO WA RESTO MAINSTAY
         const nomorWaToko = "628977099557"; 
-        const pesanWa = `Halo Kasir, saya atas nama *${nama}* (Kode: ${orderId}) sudah melakukan pembayaran QRIS sebesar *${formatRupiah(total)}*. Berikut bukti pembayarannya.`;
-        const linkWa = `https://wa.me/${nomorWaToko}?text=${encodeURIComponent(pesanWa)}`;
-
-        // PERBAIKAN: Nama file disesuaikan persis dengan di Github (pakai strip)
+        
+        // Draft WA jika nomor WA sudah ada dari awal
+        const pesanWaAsli = `Halo Kasir, saya atas nama *${nama}* (Kode: ${orderId}, No. WA: ${noHpPelanggan}) sudah melakukan pembayaran QRIS sebesar *${totalRp}*. Berikut bukti pembayarannya.`;
+        const linkWaAsli = `https://wa.me/${nomorWaToko}?text=${encodeURIComponent(pesanWaAsli)}`;
+        
         const linkGambarQris = "qris-mainstay.png"; 
+
+        // 2. Logika Pintar Tombol WA: Langsung Link ATAU Buka Laci
+        const tombolWaHtml = belumAdaWa 
+            ? `<button id="tombol-wa-awal" onclick="bukaLaciWa()" class="flex-[1.5] bg-green-500 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition active:scale-95">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Bukti WA
+               </button>`
+            : `<a href="${linkWaAsli}" target="_blank" class="flex-[1.5] bg-green-500 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition active:scale-95">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Bukti WA
+               </a>`;
 
         htmlKonten = `
             <div class="bg-white w-full max-w-sm rounded-2xl p-5 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
@@ -2217,27 +2257,32 @@ window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
                 <h2 class="text-lg font-black text-slate-800 mb-1">Pembayaran QRIS</h2>
                 <div class="flex flex-col items-center gap-1 mb-4">
                     <p class="text-xs text-slate-500 font-bold">Atas Nama: <span class="text-blue-600 uppercase">${nama}</span></p>
-                    <p class="text-sm font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-lg border border-amber-100">${formatRupiah(total)}</p>
+                    <p class="text-sm font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-lg border border-amber-100">${totalRp}</p>
                 </div>
 
-                <!-- Area Barcode QRIS -->
                 <div class="w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-2 mb-3 relative flex justify-center shadow-inner">
                     <img src="${linkGambarQris}" alt="QRIS Mainstay" class="w-full max-w-[170px] h-auto object-contain rounded-lg">
                 </div>
 
-                <!-- Teks Instruksi Baru Sesuai Permintaan -->
                 <p class="text-[10px] text-slate-600 font-medium mb-4 bg-blue-50 text-blue-700 p-2.5 rounded-lg border border-blue-100 leading-relaxed w-full">
                     <i class="fa-solid fa-circle-info mr-1"></i> Silakan tunjukkan bukti pembayaran langsung ke kasir atau kirim via WA lewat tombol di bawah.
                 </p>
 
-                <!-- Tombol Aksi Ramping -->
+                <!-- Laci Input WA Susulan -->
+                <div id="laci-wa" class="hidden w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mb-3 shadow-inner">
+                    <p class="text-[10px] text-slate-600 font-bold mb-2 text-left"><i class="fa-solid fa-phone mr-1"></i> Masukkan No. WA Pelanggan:</p>
+                    <div class="flex gap-2">
+                        <input type="tel" id="input-wa-susulan" placeholder="Contoh: 0812345..." class="flex-1 text-xs border border-slate-300 rounded-lg px-2 py-1.5 outline-none focus:border-green-500 font-medium bg-white">
+                        <button onclick="prosesWaSusulan('${safeNama}', '${orderId}', '${totalRp}')" class="bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition shadow-sm">Kirim WA</button>
+                    </div>
+                </div>
+
+                <!-- Area Tombol Aksi -->
                 <div class="flex gap-2 w-full mb-2">
                     <a href="${linkGambarQris}" download="QRIS-Mainstay.png" class="flex-1 bg-white text-slate-700 font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs border-2 border-slate-200 transition active:scale-95 shadow-sm">
                         <i class="fa-solid fa-download"></i> Simpan
                     </a>
-                    <a href="${linkWa}" target="_blank" class="flex-[1.5] bg-green-500 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition active:scale-95">
-                        <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Bukti WA
-                    </a>
+                    ${tombolWaHtml}
                 </div>
 
                 <button onclick="tutupLaluRefresh()" class="w-full text-slate-400 font-semibold text-[11px] py-2 mt-1 hover:text-slate-600 transition">Tutup Peringatan Ini</button>
@@ -2247,6 +2292,34 @@ window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
 
     modal.innerHTML = htmlKonten;
     document.body.appendChild(modal);
+};
+
+// ==========================================
+// FUNGSI PEMBANTU UNTUK LACI & PENUTUPAN
+// ==========================================
+window.bukaLaciWa = () => {
+    document.getElementById('laci-wa').classList.remove('hidden');
+    document.getElementById('tombol-wa-awal').style.display = 'none';
+};
+
+window.prosesWaSusulan = (nama, orderId, totalRp) => {
+    const inputSusulan = document.getElementById('input-wa-susulan');
+    const noBaru = inputSusulan ? inputSusulan.value.trim() : '';
+    
+    if (noBaru === '') {
+        alert('Nomor WA wajib diisi terlebih dahulu!');
+        if (inputSusulan) inputSusulan.focus();
+        return;
+    }
+
+    // SUDAH TERSAMBUNG KE NO WA RESTO MAINSTAY
+    const nomorWaToko = "628977099557"; 
+    
+    // Draft ini dirakit menggunakan nomor yang baru saja diketik di laci
+    const pesanWaBaru = `Halo Kasir, saya atas nama *${nama}* (Kode: ${orderId}, No. WA: ${noBaru}) sudah melakukan pembayaran QRIS sebesar *${totalRp}*. Berikut bukti pembayarannya.`;
+    const linkWaBaru = `https://wa.me/${nomorWaToko}?text=${encodeURIComponent(pesanWaBaru)}`;
+    
+    window.open(linkWaBaru, '_blank');
 };
 
 window.tutupLaluRefresh = () => {
