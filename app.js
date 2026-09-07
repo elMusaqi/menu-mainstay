@@ -1943,13 +1943,11 @@ window.prosesCetakStruk = () => {
 
     // 1. Sistem memori penghitung cetak otomatis
     orderAktif.printCount = (orderAktif.printCount || 0) + 1;
-    
-    // 2. Penanda super simpel: "[Copy #2]" atau kosong jika cetakan pertama
     const tandaReprint = orderAktif.printCount > 1 ? `[Copy #${orderAktif.printCount}]` : ``;
 
-    // 3. Desain Struk Khusus Thermal
+    // 2. Desain Struk Khusus Thermal
     const receiptHtml = `
-        <div style="font-family: monospace; font-size: 12px; color: #000;">
+        <div style="font-family: monospace; font-size: 12px; color: #000; width: 58mm;">
             <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
                 <b style="font-size: 14px;">MAINSTAY DRINK</b><br>
                 Tlp: 628977099557
@@ -1980,12 +1978,33 @@ window.prosesCetakStruk = () => {
         </div>
     `;
 
-    // 4. Masukkan ke wadah cetak
-    const printArea = document.getElementById('printable-receipt');
-    if (printArea) {
-        printArea.innerHTML = receiptHtml;
-    }
+    // 3. TEKNIK IFRAME: Buat jendela cetak rahasia yang tidak terlihat di layar
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
 
-    // 5. Panggil sistem pemilih printer HP
-    window.print();
+    // 4. Masukkan struk ke jendela rahasia dan PAKSA ukurannya jadi 58mm
+    iframe.contentDocument.write(`
+        <html>
+        <head>
+            <style>
+                @page { size: 58mm auto; margin: 0; }
+                body { margin: 0; padding: 2mm; background-color: white; }
+            </style>
+        </head>
+        <body>
+            ${receiptHtml}
+        </body>
+        </html>
+    `);
+    iframe.contentDocument.close();
+
+    // 5. Fokuskan dan cetak HANYA jendela rahasia tersebut
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+
+    // 6. Buang jendela rahasianya setelah menu print muncul (biar memori HP tidak penuh)
+    setTimeout(() => {
+        document.body.removeChild(iframe);
+    }, 1000);
 };
