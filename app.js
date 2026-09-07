@@ -1932,15 +1932,45 @@ Ditunggu kedatangannya kembali ya kak! ✨`;
 window.prosesCetakStruk = () => {
     if (!orderAktif) return;
 
-    // 1. Ambil desain kertas struk yang sudah berisi data pesanan
-    const isiStruk = document.getElementById('kertas-struk').innerHTML;
-    
-    // 2. Masukkan ke dalam wadah cetak khusus (menggunakan ID dari kode lama Mas Ihsan)
+    // 1. Desain Struk Khusus Thermal (Murni teks, anti error)
+    const receiptHtml = `
+        <div style="font-family: monospace; font-size: 12px; color: #000;">
+            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
+                <b style="font-size: 14px;">MAINSTAY DRINK</b><br>
+                Tlp: 628977099557
+            </div>
+            
+            <div style="margin-bottom: 5px;">
+                ID : ${orderAktif.orderId}<br>
+                Tgl: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}<br>
+                Plg: ${orderAktif.customerName || 'Umum'}
+            </div>
+            
+            <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px;">
+                ${orderAktif.items.map(i => `
+                    ${i.qty}x ${i.name}<br>
+                    &nbsp;&nbsp;${formatRupiah(i.price)} = ${formatRupiah(i.price * i.qty)}<br>
+                `).join('')}
+            </div>
+            
+            <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; font-weight: bold;">
+                TOTAL: ${formatRupiah(orderAktif.totalAmount)}<br>
+                BAYAR: ${orderAktif.paymentMethod}
+            </div>
+            
+            <div style="text-align: center; margin-top: 10px;">
+                Terima Kasih!<br>
+                IG: @mainstay.in
+            </div>
+        </div>
+    `;
+
+    // 2. Masukkan ke wadah cetak
     const printArea = document.getElementById('printable-receipt');
     if (printArea) {
-        printArea.innerHTML = isiStruk;
+        printArea.innerHTML = receiptHtml;
     }
 
-    // 3. Panggil sistem pemilih printer bawaan HP
+    // 3. Panggil sistem pemilih printer HP
     window.print();
 };
