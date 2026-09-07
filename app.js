@@ -2068,5 +2068,5 @@ window.kirimStrukWA = () => {
     const daftarMenuWA = orderAktif.items.map(i => `${i.qty}x ${i.name} - ${formatRupiah(i.price * i.qty)}`).join('\n');
     const pesan = `Halo kak! 👋\nTerima kasih sudah jajan di *Mainstay Drink*.\n\n*🧾 RINCIAN PESANAN*\nNo: ${orderAktif.orderId}\nWaktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}\n-----------------------------------\n${daftarMenuWA}\n-----------------------------------\n*TOTAL: ${formatRupiah(orderAktif.totalAmount)}*\nMetode Bayar: ${orderAktif.paymentMethod}\n\nDitunggu kedatangannya kembali ya kak! ✨`;
 
-    window.open(`https://wa.me/${noWA}?text=${encodeURIComponent(pesan)}`, '_blank');
+    window.location.href = `whatsapp://send?phone=${noWA}&text=${encodeURIComponent(pesan)}`;
 };
