@@ -1899,8 +1899,19 @@ window.bukaStruk = (orderKey) => {
 };
 
 window.tutupStruk = () => {
+    // 1. Perintah asli untuk menutup pop-up struk
     document.getElementById('modal-struk').classList.add('hidden');
-    orderAktif = null;
+    
+    // 2. PERINTAH BARU: Reset Laci WA Manual kembali ke semula
+    const wadahManual = document.getElementById('wadah-wa-manual');
+    if (wadahManual) {
+        wadahManual.classList.add('hidden'); // Menyembunyikan laci kembali
+    }
+    
+    const inputWA = document.getElementById('input-wa-manual');
+    if (inputWA) {
+        inputWA.value = ""; // Menghapus sisa angka yang sebelumnya diketik kasir
+    }
 };
 
 window.kirimStrukWA = () => {
