@@ -989,18 +989,70 @@ window.prosesLogin = async () => {
 };
 
 window.prosesLogout = (role) => {
-    if (confirm('Yakin ingin keluar dari sistem?')) {
-        // Hapus Sesi
-        localStorage.removeItem('mainstay_session_role');
-        localStorage.removeItem('mainstay_session_staff');
-        
-        if (role === 'kasir') {
-            activeStaff = null;
-        }
-        
-        window.switchRoleView('customer');
+    // Memanggil pop-up kustom yang elegan
+    window.tampilkanPopupLogout();
+};
+
+// ==========================================
+// MESIN POP-UP LOGOUT (DESAIN PREMIUM)
+// ==========================================
+window.tampilkanPopupLogout = () => {
+    const popupLama = document.getElementById('popup-logout-custom');
+    if (popupLama) popupLama.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'popup-logout-custom';
+    modal.className = 'fixed inset-0 z-[999999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-5 opacity-0 transition-opacity duration-300';
+
+    modal.innerHTML = `
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner border border-red-100">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </div>
+            
+            <h2 class="text-xl font-black text-slate-800 mb-1">Keluar Sistem?</h2>
+            <p class="text-xs text-slate-500 font-medium mb-6 px-2 leading-relaxed">
+                Sesi Anda akan diakhiri. Pastikan semua pekerjaan dan transaksi kasir sudah terselesaikan.
+            </p>
+
+            <div class="flex gap-3 w-full">
+                <button onclick="tutupPopupLogout()" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition active:scale-95 text-xs">
+                    Batal
+                </button>
+                <button onclick="eksekusiLogout()" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition shadow-md active:scale-95 text-xs flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-power-off"></i> Ya, Keluar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    
+    // Animasi masuk agar tidak kaku
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+    }, 10);
+};
+
+window.tutupPopupLogout = () => {
+    const modal = document.getElementById('popup-logout-custom');
+    if (modal) {
+        modal.classList.add('opacity-0');
+        modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => modal.remove(), 300); // Tunggu animasi menghilang
     }
 };
+
+window.eksekusiLogout = () => {
+    // Hapus sesi dengan aman sesuai dengan nama kunci asli di database Mas Ihsan
+    localStorage.removeItem('mainstay_session_role');
+    localStorage.removeItem('mainstay_session_staff');
+    
+    // Refresh otomatis ke halaman login
+    window.location.reload();
+};
+
 // ============================================================================
 // MAINSTAY DRINK POS - TAHAP 4: KASIR VIEW (ORDER MANAGEMENT & 3-TAB)
 // ============================================================================
