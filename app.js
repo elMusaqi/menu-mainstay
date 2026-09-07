@@ -1012,43 +1012,40 @@ window.renderKasirOrders = () => {
             let actionButtons = '';
             
             if (activeKasirTab === 'pending') {
-            // 1. Amankan data nomor HP (mencegah error/crash jika kosong)
-            const phoneRaw = order.customerPhone ? String(order.customerPhone) : '';
-            const adaNoHp = phoneRaw !== '' && phoneRaw !== '-' && phoneRaw !== 'undefined';
-            let linkWaPelanggan = '#';
+            const noHpRaw = order.customerPhone ? String(order.customerPhone).trim() : '';
+            const adaNoHp = noHpRaw !== '' && noHpRaw !== '-';
+            
+            let htmlTombolCekWa = '';
             
             if (adaNoHp) {
-                // Rapikan nomor jadi format 62...
-                let hp = phoneRaw.replace(/[^0-9]/g, '');
-                if (hp.startsWith('0')) hp = '62' + hp.substring(1);
-                const pesanSapaan = `Halo Kak ${order.customerName}, pesanan dengan kode *${key}* sudah masuk di kasir Mainstay Drink. Boleh konfirmasi atau kirimkan bukti pembayarannya ke sini ya Kak? Terima kasih! 🙏`;
-                linkWaPelanggan = `https://wa.me/${hp}?text=${encodeURIComponent(pesanSapaan)}`;
+                let hpAsli = noHpRaw.replace(/[^0-9]/g, '');
+                if (hpAsli.startsWith('0')) hpAsli = '62' + hpAsli.substring(1);
+                
+                const sapaan = "Halo Kak " + order.customerName + ", pesanan dengan kode *" + key + "* sudah masuk di kasir Mainstay Drink. Boleh konfirmasi atau kirimkan bukti pembayarannya ke sini ya Kak? Terima kasih!";
+                const linkTembusWa = "https://wa.me/" + hpAsli + "?text=" + encodeURIComponent(sapaan);
+                
+                htmlTombolCekWa = `
+                    <a href="${linkTembusWa}" target="_blank" class="w-full bg-blue-50 text-blue-600 border border-blue-200 p-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
+                    </a>`;
+            } else {
+                htmlTombolCekWa = `
+                    <button onclick="alert('Nomor WA Pelanggan tidak ada. Silakan cek manual di Inbox WhatsApp Resto (628977099557).')" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-[11px] font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-inbox text-sm"></i> Cek Manual di Inbox Resto
+                    </button>`;
             }
-
-            // 2. Amankan nama pelanggan dari tanda baca yang bikin web mati (seperti tanda petik tunggal)
-            const namaAman = order.customerName ? order.customerName.replace(/'/g, "\\'") : 'Pelanggan';
 
             actionButtons = `
                 <div class="flex flex-col gap-2 mt-3">
-                    <!-- TOMBOL BARU: CEK WA PELANGGAN -->
-                    ${adaNoHp 
-                        ? `<a href="${linkWaPelanggan}" target="_blank" class="w-full bg-blue-50 text-blue-600 border border-blue-200 p-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition flex items-center justify-center gap-2 shadow-sm">
-                            <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
-                           </a>`
-                        : `<button onclick="alert('Pelanggan atas nama ${namaAman} tidak mencantumkan nomor WA. Silakan cek manual di Inbox WhatsApp Resto.')" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-[11px] font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
-                            <i class="fa-solid fa-inbox text-sm"></i> Cek Manual di Inbox Resto
-                           </button>`
-                    }
-                    
-                    <!-- TOMBOL ASLI: TERIMA & BATAL -->
+                    ${htmlTombolCekWa}
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="updateOrderStatus('${key}', 'proses')" class="bg-amber-500 text-white p-2 rounded-xl text-xs font-bold hover:bg-amber-600 transition flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-fire-burner"></i> Terima & Masak</button>
                         <button onclick="batalOrder('${key}')" class="bg-slate-100 text-red-500 p-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-ban"></i> Batal</button>
                     </div>
                 </div>`;
-        }
-        // Tab 2 (Dapur): Ada 2 Tombol
-        actionButtons = `
+        } else if (activeKasirTab === 'proses') {
+            // Tab 2 (Dapur): Ada 2 Tombol
+            actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
                 <button onclick="bukaStruk('${key}')" class="bg-blue-500 text-white p-2 rounded text-xs font-bold flex justify-center items-center gap-1">
                     <i class="fa-solid fa-print"></i> Struk Kasir
