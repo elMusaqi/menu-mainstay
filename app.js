@@ -2068,11 +2068,6 @@ window.kirimStrukWA = () => {
     const daftarMenuWA = orderAktif.items.map(i => `${i.qty}x ${i.name} - ${formatRupiah(i.price * i.qty)}`).join('\n');
     const pesan = `Halo kak! 👋\nTerima kasih sudah jajan di *Mainstay Drink*.\n\n*🧾 RINCIAN PESANAN*\nNo: ${orderAktif.orderId}\nWaktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}\n-----------------------------------\n${daftarMenuWA}\n-----------------------------------\n*TOTAL: ${formatRupiah(orderAktif.totalAmount)}*\nMetode Bayar: ${orderAktif.paymentMethod}\n\nDitunggu kedatangannya kembali ya kak! ✨`;
 
-    // Trik Link Rahasia (Memaksa buka aplikasi WA langsung di Android Infinix)
-    const linkWA = document.createElement('a');
-    linkWA.href = `whatsapp://send?phone=${noWA}&text=${encodeURIComponent(pesan)}`;
-    
-    document.body.appendChild(linkWA);
-    linkWA.click();
-    document.body.removeChild(linkWA);
+    // Jalur VIP Android Intent (Khusus menembak langsung ke aplikasi WA)
+    window.location.href = `intent://send?phone=${noWA}&text=${encodeURIComponent(pesan)}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
 };
