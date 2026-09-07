@@ -1952,72 +1952,88 @@ Ditunggu kedatangannya kembali ya kak! ✨`;
 window.prosesCetakStruk = () => {
     if (!orderAktif) return;
 
-    // 1. Sistem memori penghitung cetak otomatis
-    orderAktif.printCount = (orderAktif.printCount || 0) + 1;
-    const tandaReprint = orderAktif.printCount > 1 ? `[Copy #${orderAktif.printCount}]` : ``;
+    const daftarMenuCetak = orderAktif.items.map(i => `
+        <tr>
+            <td style="padding-bottom: 3px;">${i.qty}x ${i.name}</td>
+            <td style="text-align: right; padding-bottom: 3px;">${formatRupiah(i.price * i.qty)}</td>
+        </tr>
+    `).join('');
 
-    // 2. Desain Struk Khusus Thermal
     const receiptHtml = `
-        <div style="font-family: monospace; font-size: 12px; color: #000; width: 58mm;">
-            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
-                <b style="font-size: 14px;">MAINSTAY DRINK</b><br>
-                Tlp: 628977099557
-            </div>
-            
-            <div style="margin-bottom: 5px;">
-                ID : ${orderAktif.orderId} <b>${tandaReprint}</b><br>
-                Tgl: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}<br>
-                Pelanggan: ${orderAktif.customerName || 'Umum'}
-            </div>
-            
-            <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px;">
-                ${orderAktif.items.map(i => `
-                    ${i.qty}x ${i.name}<br>
-                    &nbsp;&nbsp;${formatRupiah(i.price)} = ${formatRupiah(i.price * i.qty)}<br>
-                `).join('')}
-            </div>
-            
-            <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; font-weight: bold;">
-                TOTAL: ${formatRupiah(orderAktif.totalAmount)}<br>
-                BAYAR: ${orderAktif.paymentMethod}
-            </div>
-            
-            <div style="text-align: center; margin-top: 10px;">
-                Terima Kasih!<br>
-                IG: @mainstay.in
-            </div>
+    <html>
+    <head>
+        <style>
+            body { font-family: monospace; width: 58mm; margin: 0; padding: 0; color: #000; }
+            .center { text-align: center; }
+            .title { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+            .subtitle { font-size: 10px; margin-bottom: 8px; border-bottom: 1px dashed #000; padding-bottom: 4px; }
+            .content { font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 5px; }
+            .border-top { border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px; }
+            .bold { font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <!-- LOGO CETAK THERMAL -->
+        <div class="center" style="margin-bottom: 5px;">
+            <img src="logo-192.png" style="height: 35px; width: auto; filter: grayscale(100%);">
         </div>
+
+        <div class="center title">MAINSTAY DRINK</div>
+        <div class="center subtitle">Sistem Kasir Terpadu</div>
+        
+        <div class="content" style="margin-bottom: 5px;">
+            <div>No: ${orderAktif.orderId}</div>
+            <div>Tgl: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}</div>
+            <div>Pelanggan: ${orderAktif.customerName || "Umum"}</div>
+        </div>
+
+        <div style="border-bottom: 1px dashed #000; margin-bottom: 5px;"></div>
+        
+        <table>
+            ${daftarMenuCetak}
+        </table>
+        
+        <div class="border-top">
+            <table>
+                <tr>
+                    <td class="bold">TOTAL</td>
+                    <td class="bold" style="text-align: right;">${formatRupiah(orderAktif.totalAmount)}</td>
+                </tr>
+                <tr>
+                    <td style="font-size: 10px;">Metode Bayar</td>
+                    <td style="text-align: right; font-size: 10px;">${orderAktif.paymentMethod}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="center content" style="margin-top: 10px; font-size: 10px;">
+            <div>Terima kasih atas kunjungan Anda!</div>
+            <div style="margin-top: 2px;">-- LUNAS --</div>
+        </div>
+    </body>
+    </html>
     `;
 
-    // 3. TEKNIK IFRAME: Buat jendela cetak rahasia yang tidak terlihat di layar
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'absolute';
+    printFrame.style.width = '58mm';
+    printFrame.style.height = '0';
+    printFrame.style.border = 'none';
+    document.body.appendChild(printFrame);
 
-    // 4. Masukkan struk ke jendela rahasia dan PAKSA ukurannya jadi 58mm
-    iframe.contentDocument.write(`
-        <html>
-        <head>
-            <style>
-                @page { size: 58mm auto; margin: 0; }
-                body { margin: 0; padding: 2mm; background-color: white; }
-            </style>
-        </head>
-        <body>
-            ${receiptHtml}
-        </body>
-        </html>
-    `);
-    iframe.contentDocument.close();
+    const doc = printFrame.contentWindow.document;
+    doc.open();
+    doc.write(receiptHtml);
+    doc.close();
 
-    // 5. Fokuskan dan cetak HANYA jendela rahasia tersebut
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-
-    // 6. Buang jendela rahasianya setelah menu print muncul (biar memori HP tidak penuh)
-    setTimeout(() => {
-        document.body.removeChild(iframe);
-    }, 1000);
+    printFrame.onload = function() {
+        printFrame.contentWindow.focus();
+        printFrame.contentWindow.print();
+        setTimeout(() => {
+            document.body.removeChild(printFrame);
+        }, 1000);
+    };
 };
 
 // ==========================================
