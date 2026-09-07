@@ -1012,27 +1012,30 @@ window.renderKasirOrders = () => {
             let actionButtons = '';
             
             if (activeKasirTab === 'pending') {
-            // Cek ketersediaan nomor HP Pelanggan dari database
-            const adaNoHp = order.customerPhone && order.customerPhone !== '-' && order.customerPhone.trim() !== '';
+            // 1. Amankan data nomor HP (mencegah error/crash jika kosong)
+            const phoneRaw = order.customerPhone ? String(order.customerPhone) : '';
+            const adaNoHp = phoneRaw !== '' && phoneRaw !== '-' && phoneRaw !== 'undefined';
             let linkWaPelanggan = '#';
             
             if (adaNoHp) {
-                // Ubah format otomatis awalan 08 menjadi 628 agar link WA tidak error
-                let hp = order.customerPhone.replace(/[^0-9]/g, '');
+                // Rapikan nomor jadi format 62...
+                let hp = phoneRaw.replace(/[^0-9]/g, '');
                 if (hp.startsWith('0')) hp = '62' + hp.substring(1);
-                
                 const pesanSapaan = `Halo Kak ${order.customerName}, pesanan dengan kode *${key}* sudah masuk di kasir Mainstay Drink. Boleh konfirmasi atau kirimkan bukti pembayarannya ke sini ya Kak? Terima kasih! 🙏`;
                 linkWaPelanggan = `https://wa.me/${hp}?text=${encodeURIComponent(pesanSapaan)}`;
             }
 
+            // 2. Amankan nama pelanggan dari tanda baca yang bikin web mati (seperti tanda petik tunggal)
+            const namaAman = order.customerName ? order.customerName.replace(/'/g, "\\'") : 'Pelanggan';
+
             actionButtons = `
                 <div class="flex flex-col gap-2 mt-3">
-                    <!-- TOMBOL BARU: CEK BUKTI WA -->
+                    <!-- TOMBOL BARU: CEK WA PELANGGAN -->
                     ${adaNoHp 
                         ? `<a href="${linkWaPelanggan}" target="_blank" class="w-full bg-blue-50 text-blue-600 border border-blue-200 p-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition flex items-center justify-center gap-2 shadow-sm">
                             <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
                            </a>`
-                        : `<button onclick="alert('Pelanggan tidak mencantumkan nomor saat Checkout. Silakan buka aplikasi WhatsApp Resto (628977099557) untuk mengecek apakah pelanggan atas nama ${order.customerName} sudah mengirim bukti secara manual.')" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-[11px] font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
+                        : `<button onclick="alert('Pelanggan atas nama ${namaAman} tidak mencantumkan nomor WA. Silakan cek manual di Inbox WhatsApp Resto.')" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-[11px] font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
                             <i class="fa-solid fa-inbox text-sm"></i> Cek Manual di Inbox Resto
                            </button>`
                     }
