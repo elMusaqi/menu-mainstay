@@ -437,24 +437,28 @@ window.ubahStatusKedai = async (elemenSakelar) => {
 // ---------------------------------------------------------
 // 2A. FILTER KATEGORI & PENCARIAN MENU
 // ---------------------------------------------------------
-window.filterKategori = (kategori, btnEl) => {
-    activeCategoryFilter = kategori;
-    
-    // Reset desain semua tombol kategori ke mode tidak aktif
-    const allBtns = document.querySelectorAll('.cat-btn');
-    allBtns.forEach(btn => {
-        btn.classList.remove('active', 'bg-amber-500', 'text-white', 'shadow-md');
+window.filterKategori = (kategori, elemenTombol) => {
+    // 1. Ambil semua tombol kategori
+    const semuaTombol = document.querySelectorAll('.cat-btn');
+
+    // 2. Cabut warna amber (aktif) dari semua tombol, kembalikan ke putih (tidak aktif)
+    semuaTombol.forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-white', 'border-amber-500', 'shadow-md', 'active');
         btn.classList.add('bg-white', 'text-gray-600', 'border-gray-200');
     });
-    
-    // Aktifkan tombol yang diklik
-    if (btnEl) {
-        btnEl.classList.add('active', 'bg-amber-500', 'text-white', 'shadow-md');
-        btnEl.classList.remove('bg-white', 'text-gray-600', 'border-gray-200');
+
+    // 3. Suntikkan warna amber (aktif) HANYA ke tombol yang sedang diklik
+    if (elemenTombol) {
+        elemenTombol.classList.remove('bg-white', 'text-gray-600', 'border-gray-200');
+        elemenTombol.classList.add('bg-amber-500', 'text-white', 'border-amber-500', 'shadow-md', 'active');
     }
+
+    // 4. Simpan status kategori dan panggil ulang render katalog
+    window.kategoriAktif = kategori;
     
-    // Render ulang katalog berdasarkan filter baru
-    window.renderKatalog();
+    if (typeof window.renderKatalog === 'function') {
+        window.renderKatalog();
+    }
 };
 
 // ---------------------------------------------------------
