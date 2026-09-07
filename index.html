@@ -774,45 +774,47 @@
     <div id="modal-struk" class="hidden fixed inset-0 z-[100] bg-slate-900/80 flex items-center justify-center p-5 backdrop-blur-sm">
         <div class="flex flex-col items-center w-full max-w-sm">
             
-            <div id="kertas-struk" class="bg-white w-full shadow-2xl p-6 text-slate-800 font-mono text-sm relative">
-                <div class="text-center mb-5">
-                    <h2 class="font-black text-xl tracking-wider">MAINSTAY DRINK</h2>
-                    <p class="text-[10px] text-slate-500 mt-1">Sistem Kasir Terpadu</p>
-                </div>
-                
-                <div class="border-b-2 border-dashed border-slate-300 mb-3"></div>
-                
-                <div class="text-[11px] mb-3 flex justify-between font-semibold">
-                    <div class="flex flex-col gap-1">
-                        <p id="struk-no">No: -</p>
-                        <p id="struk-plg">Pelanggan: -</p>
-                    </div>
-                    <div class="text-right flex flex-col gap-1">
-                        <p id="struk-tgl">-</p>
-                    </div>
-                </div>
-                
-                <div class="border-b-2 border-dashed border-slate-300 mb-4"></div>
-                
-                <!-- Area ini akan diisi daftar menu otomatis -->
-                <div id="struk-items" class="text-[12px] mb-4 flex flex-col gap-2"></div>
-                
-                <div class="border-b-2 border-dashed border-slate-300 mb-3"></div>
-                
-                <div class="flex justify-between font-black text-[16px] mb-1">
-                    <span>TOTAL</span>
-                    <span id="struk-total">Rp 0</span>
-                </div>
-                <div class="flex justify-between text-[11px] text-slate-600 mb-5 font-bold">
-                    <span>Metode Bayar</span>
-                    <span id="struk-metode">-</span>
-                </div>
-                
-                <div class="text-center text-[10px] text-slate-500 font-bold">
-                    <p>Terima kasih atas kunjungan Anda!</p>
-                    <p class="mt-1">-- LUNAS --</p>
-                </div>
-            </div>
+            <div id="kertas-struk" class="bg-white w-full max-w-sm mx-auto shadow-2xl p-6 text-slate-800 font-mono text-sm relative">
+    
+    <!-- LOGO STRUK -->
+    <div class="flex justify-center mb-2">
+        <img src="logo-192.png" alt="Logo Mainstay" class="h-12 w-auto grayscale">
+    </div>
+    
+    <!-- Teks Judul Asli -->
+    <div class="text-center font-bold text-lg mb-1">MAINSTAY DRINK</div>
+    <div class="text-center text-[10px] text-slate-500 mb-3 border-b-2 border-dashed pb-2">Sistem Kasir Terpadu</div>
+    
+    <!-- Header Info -->
+    <div class="flex justify-between mb-1 text-[10px]">
+        <span id="struk-no">No: -</span>
+        <span id="struk-tgl">-</span>
+    </div>
+    <div class="text-[10px] mb-3">
+        <p id="struk-plg">Pelanggan: -</p>
+    </div>
+    
+    <!-- Daftar Pesanan -->
+    <div id="struk-items" class="border-b-2 border-dashed pb-2 mb-2 text-[11px]">
+        <!-- Item struk dinamis -->
+    </div>
+    
+    <!-- Total & Metode -->
+    <div class="flex justify-between font-bold text-sm mb-1">
+        <span>TOTAL</span>
+        <span id="struk-total">Rp 0</span>
+    </div>
+    <div class="flex justify-between text-[10px] mb-4">
+        <span>Metode Bayar</span>
+        <span id="struk-metode">-</span>
+    </div>
+    
+    <!-- Footer Kertas -->
+    <div class="text-center text-[10px] mt-4">
+        <p>Terima kasih atas kunjungan Anda!</p>
+        <p class="mt-1">-- LUNAS --</p>
+    </div>
+</div>
 
             <!-- TOMBOL KIRIM WA UTAMA (Ditambah mt-5 agar tidak mepet kertas struk) -->
 <button onclick="kirimStrukWA()" class="w-full mt-5 bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-sm mb-3">
@@ -853,6 +855,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=203"></script>
+    <script type="module" src="app.js?v=204"></script>
 </body>
 </html>
