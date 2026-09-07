@@ -1852,44 +1852,85 @@ window.switchTabKerja = (tabName) => {
     activeBtn.classList.add('text-blue-600', 'border-blue-600');
 };
 
-// Fungsi Buka Tutup Struk Digital
-window.bukaStruk = () => document.getElementById('modal-struk').classList.remove('hidden');
-window.tutupStruk = () => document.getElementById('modal-struk').classList.add('hidden');
+// ==========================================
+// MODUL STRUK DIGITAL & WA (DINAMIS)
+// ==========================================
+let orderAktif = null; // Menyimpan memori pesanan yang sedang diklik
 
-// Data sementara (Nanti akan otomatis terisi dari database)
-let nomorWAPelanggan = ""; 
+window.bukaStruk = (orderKey) => {
+    // 1. Tarik data asli dari memori pesanan
+    orderAktif = globalOrders[orderKey];
+    if (!orderAktif) return alert('Pesanan tidak ditemukan.');
+
+    // 2. Suntikkan data ke teks HTML Struk
+    document.getElementById('struk-no').innerText = "No: " + orderAktif.orderId;
+    document.getElementById('struk-plg').innerText = "Plg: " + (orderAktif.customerName || "Umum");
+    document.getElementById('struk-tgl').innerText = new Date(orderAktif.timestamp).toLocaleString('id-ID');
+    
+    // 3. Render daftar menu sesuai yang dibeli
+    const itemsContainer = document.getElementById('struk-items');
+    itemsContainer.innerHTML = '';
+    orderAktif.items.forEach(i => {
+        itemsContainer.innerHTML += `
+            <div>
+                <div class="flex justify-between font-bold">
+                    <span>${i.qty}x ${i.name}</span>
+                    <span>${formatRupiah(i.price * i.qty)}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    // 4. Suntikkan Total Harga dan Metode Bayar
+    document.getElementById('struk-total').innerText = formatRupiah(orderAktif.totalAmount);
+    document.getElementById('struk-metode').innerText = orderAktif.paymentMethod;
+
+    // 5. Munculkan layarnya
+    document.getElementById('modal-struk').classList.remove('hidden');
+};
+
+window.tutupStruk = () => {
+    document.getElementById('modal-struk').classList.add('hidden');
+    orderAktif = null;
+};
 
 window.kirimStrukWA = () => {
-    let noWA = nomorWAPelanggan;
+    if (!orderAktif) return;
 
-    // Jika nomor WA kosong, munculkan form pop-up ketik manual
+    // Cek apakah ada nomor WA di database, jika tidak ada, tanya manual
+    let noWA = orderAktif.customerPhone || orderAktif.wa || ""; 
     if (!noWA || noWA === "") {
-        noWA = prompt("Pelanggan tidak mencantumkan nomor WA.\n\nSilakan ketik nomor WA manual di bawah ini (contoh: 0812...):");
-        
-        // Batal jika kasir tidak mengisi apa-apa atau klik Cancel
-        if (!noWA || noWA.trim() === "") return; 
+        noWA = prompt("Nomor WA tidak ada di sistem.\nSilakan ketik manual (contoh: 0812...):");
+        if (!noWA || noWA.trim() === "") return;
     }
 
-    // Format nomor WA jadi +62
     noWA = noWA.trim();
     if (noWA.startsWith("0")) noWA = "62" + noWA.substring(1);
 
-    // Draft Pesan Teks (Format Struk Rapi)
+    // Susun daftar menu untuk teks WA
+    const daftarMenuWA = orderAktif.items.map(i => `${i.qty}x ${i.name} - ${formatRupiah(i.price * i.qty)}`).join('\n');
+
+    // Susun Draft Pesan WA
     const pesan = `Halo kak! 👋
 Terima kasih sudah jajan di *Mainstay Drink*.
 
 *🧾 RINCIAN PESANAN*
-No: CSH-0609013
-Waktu: 07 Sep 2026, 10:00 WIB
+No: ${orderAktif.orderId}
+Plg: ${orderAktif.customerName || "Umum"}
+Waktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}
 -----------------------------------
-1x Thai Tea (R) - Rp 7.000
-(Normal, Normal)
+${daftarMenuWA}
 -----------------------------------
-*TOTAL: Rp 7.000*
-Metode Bayar: CASH
+*TOTAL: ${formatRupiah(orderAktif.totalAmount)}*
+Metode Bayar: ${orderAktif.paymentMethod}
 
 Ditunggu kedatangannya kembali ya kak! ✨`;
     
-    // Buka aplikasi WA
     window.open(`https://wa.me/${noWA}?text=${encodeURIComponent(pesan)}`, '_blank');
+};
+
+window.prosesCetakStruk = () => {
+    if (!orderAktif) return;
+    alert("Sistem: Meneruskan perintah ke printer ESC/POS untuk pesanan " + orderAktif.orderId);
+    // Nanti logika print thermal Mas Ihsan ditaruh di sini
 };
