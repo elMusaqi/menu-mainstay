@@ -987,7 +987,7 @@ window.renderKasirOrders = () => {
                             <i class="fa-solid fa-ban"></i> Batal
                         </button>
                     </div>`;
-            } else if (activeKasirTab === 'proses') {
+            } else if (activeKasirTab === 'selesai') {
                 actionButtons = `
                     <div class="grid grid-cols-2 gap-2 mt-3">
                         <button onclick="bukaStruk('${key}')" class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-black py-2 rounded-lg hover:bg-blue-100 transition">
@@ -1932,7 +1932,13 @@ Ditunggu kedatangannya kembali ya kak! ✨`;
 window.prosesCetakStruk = () => {
     if (!orderAktif) return;
 
-    // 1. Desain Struk Khusus Thermal (Murni teks, anti error)
+    // 1. Sistem memori penghitung cetak otomatis
+    orderAktif.printCount = (orderAktif.printCount || 0) + 1;
+    
+    // 2. Penanda super simpel: "[Copy #2]" atau kosong jika cetakan pertama
+    const tandaReprint = orderAktif.printCount > 1 ? `[Copy #${orderAktif.printCount}]` : ``;
+
+    // 3. Desain Struk Khusus Thermal
     const receiptHtml = `
         <div style="font-family: monospace; font-size: 12px; color: #000;">
             <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
@@ -1941,7 +1947,7 @@ window.prosesCetakStruk = () => {
             </div>
             
             <div style="margin-bottom: 5px;">
-                ID : ${orderAktif.orderId}<br>
+                ID : ${orderAktif.orderId} <b>${tandaReprint}</b><br>
                 Tgl: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}<br>
                 Plg: ${orderAktif.customerName || 'Umum'}
             </div>
@@ -1965,12 +1971,12 @@ window.prosesCetakStruk = () => {
         </div>
     `;
 
-    // 2. Masukkan ke wadah cetak
+    // 4. Masukkan ke wadah cetak
     const printArea = document.getElementById('printable-receipt');
     if (printArea) {
         printArea.innerHTML = receiptHtml;
     }
 
-    // 3. Panggil sistem pemilih printer HP
+    // 5. Panggil sistem pemilih printer HP
     window.print();
 };
