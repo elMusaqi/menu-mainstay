@@ -2052,11 +2052,13 @@ window.kirimStrukWA = () => {
     if (!orderAktif) return;
 
     let noWA = orderAktif.customerPhone || orderAktif.wa || ""; 
+    let isManual = false; // Penanda apakah kasir mengetik manual
     
     // Cek apakah nomor kosong atau cuma tanda strip
     if (!noWA || noWA === "-" || noWA.trim() === "") {
         noWA = prompt("Nomor WA belum ada.\nSilakan ketik manual (contoh: 0812...):");
         if (!noWA) return; 
+        isManual = true; // Tandai bahwa ini diketik manual dari pop-up
     }
 
     // Bersihkan spasi/simbol dan ubah 0 di depan menjadi 62
@@ -2068,6 +2070,16 @@ window.kirimStrukWA = () => {
     const daftarMenuWA = orderAktif.items.map(i => `${i.qty}x ${i.name} - ${formatRupiah(i.price * i.qty)}`).join('\n');
     const pesan = `Halo kak! 👋\nTerima kasih sudah jajan di *Mainstay Drink*.\n\n*🧾 RINCIAN PESANAN*\nNo: ${orderAktif.orderId}\nWaktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}\n-----------------------------------\n${daftarMenuWA}\n-----------------------------------\n*TOTAL: ${formatRupiah(orderAktif.totalAmount)}*\nMetode Bayar: ${orderAktif.paymentMethod}\n\nDitunggu kedatangannya kembali ya kak! ✨`;
 
-    // Jalur VIP Android Intent (Khusus menembak langsung ke aplikasi WA)
-    window.location.href = `intent://send?phone=${noWA}&text=${encodeURIComponent(pesan)}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+    // Ini link andalan Mas Ihsan (Biar tetap bisa milih WA / WA Business)
+    const linkWhatsApp = `whatsapp://send?phone=${noWA}&text=${encodeURIComponent(pesan)}`;
+
+    if (isManual) {
+        // JIKA MANUAL: Kita pakai trik jeda 0.3 detik agar HP tidak mengiranya spam
+        setTimeout(() => {
+            window.location.href = linkWhatsApp;
+        }, 300);
+    } else {
+        // JIKA OTOMATIS: Langsung tembak tanpa basa-basi
+        window.location.href = linkWhatsApp;
+    }
 };
