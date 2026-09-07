@@ -1043,9 +1043,9 @@ window.renderKasirOrders = () => {
                         <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi WA Pelanggan
                     </a>`;
             } else {
-                // USULAN BARU: Langsung buka aplikasi WA ke nomor resto agar kasir bisa langsung cek Inbox
+                // REVISI: Menggunakan protokol whatsapp:// agar HP memunculkan opsi pilihan aplikasi WA
                 htmlTombolCekWa = `
-                    <a href="https://wa.me/628977099557" target="_blank" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
+                    <a href="whatsapp://send?phone=628977099557" class="w-full bg-slate-50 text-slate-500 border border-slate-200 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 transition flex items-center justify-center gap-2 shadow-sm">
                         <i class="fa-brands fa-whatsapp text-sm text-slate-400"></i> Buka Inbox WA Resto
                     </a>`;
             }
