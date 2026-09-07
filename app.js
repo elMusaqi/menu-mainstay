@@ -2048,20 +2048,46 @@ window.downloadStruk = async () => {
 // ==========================================
 // 2. FUNGSI KIRIM WA (AUTO FORMAT 62 & POP-UP)
 // ==========================================
+// 1. Fungsi saat tombol "Kirim WA" utama ditekan
 window.kirimStrukWA = () => {
     if (!orderAktif) return;
 
     let noWA = orderAktif.customerPhone || orderAktif.wa || ""; 
-    let isManual = false; // Penanda apakah kasir mengetik manual
     
-    // Cek apakah nomor kosong atau cuma tanda strip
+    // Jika nomor kosong, buka laci input di bawahnya
     if (!noWA || noWA === "-" || noWA.trim() === "") {
-        noWA = prompt("Nomor WA belum ada.\nSilakan ketik manual (contoh: 0812...):");
-        if (!noWA) return; 
-        isManual = true; // Tandai bahwa ini diketik manual dari pop-up
+        const wadahManual = document.getElementById('wadah-wa-manual');
+        if (wadahManual) {
+            wadahManual.classList.remove('hidden'); // Memunculkan laci
+            document.getElementById('input-wa-manual').focus(); // Otomatis kursor masuk ke kolom
+        }
+        return; 
     }
 
-    // Bersihkan spasi/simbol dan ubah 0 di depan menjadi 62
+    // Jika nomor sudah ada dari awal, langsung eksekusi tanpa buka laci
+    jalankanKirimWA(noWA);
+};
+
+// 2. Fungsi saat tombol "Kirim" di dalam laci ditekan
+window.prosesKirimWAManual = () => {
+    const inputWA = document.getElementById('input-wa-manual');
+    let noWA = inputWA ? inputWA.value : "";
+    
+    if (!noWA || noWA.trim() === "") {
+        alert("Nomor WA belum diisi!");
+        return;
+    }
+    
+    jalankanKirimWA(noWA);
+    
+    // Tutup dan bersihkan laci kembali setelah berhasil terkirim
+    document.getElementById('wadah-wa-manual').classList.add('hidden');
+    if (inputWA) inputWA.value = ""; 
+};
+
+// 3. Mesin Utama Pengirim WA (Bisa pilih aplikasi WA / WA Business)
+window.jalankanKirimWA = (noWA) => {
+    // Bersihkan spasi/simbol dan ubah 0 menjadi 62
     noWA = noWA.trim().replace(/[-+ ]/g, ""); 
     if (noWA.startsWith("0")) {
         noWA = "62" + noWA.substring(1);
@@ -2070,16 +2096,5 @@ window.kirimStrukWA = () => {
     const daftarMenuWA = orderAktif.items.map(i => `${i.qty}x ${i.name} - ${formatRupiah(i.price * i.qty)}`).join('\n');
     const pesan = `Halo kak! 👋\nTerima kasih sudah jajan di *Mainstay Drink*.\n\n*🧾 RINCIAN PESANAN*\nNo: ${orderAktif.orderId}\nWaktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}\n-----------------------------------\n${daftarMenuWA}\n-----------------------------------\n*TOTAL: ${formatRupiah(orderAktif.totalAmount)}*\nMetode Bayar: ${orderAktif.paymentMethod}\n\nDitunggu kedatangannya kembali ya kak! ✨`;
 
-    // Ini link andalan Mas Ihsan (Biar tetap bisa milih WA / WA Business)
-    const linkWhatsApp = `whatsapp://send?phone=${noWA}&text=${encodeURIComponent(pesan)}`;
-
-    if (isManual) {
-        // JIKA MANUAL: Kita pakai trik jeda 0.3 detik agar HP tidak mengiranya spam
-        setTimeout(() => {
-            window.location.href = linkWhatsApp;
-        }, 300);
-    } else {
-        // JIKA OTOMATIS: Langsung tembak tanpa basa-basi
-        window.location.href = linkWhatsApp;
-    }
+    window.location.href = `whatsapp://send?phone=${noWA}&text=${encodeURIComponent(pesan)}`;
 };
