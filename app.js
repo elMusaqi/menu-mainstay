@@ -2161,7 +2161,7 @@ window.jalankanKirimWA = (noWA) => {
 };
 
 // ==========================================
-// MESIN POP-UP BERHASIL (CASH & QRIS) - REVISI RAPI
+// MESIN POP-UP BERHASIL (CASH & QRIS) - FINAL REVISI
 // ==========================================
 window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
     const popupLama = document.getElementById('popup-sukses-order');
@@ -2204,8 +2204,8 @@ window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
         const pesanWa = `Halo Kasir, saya atas nama *${nama}* (Kode: ${orderId}) sudah melakukan pembayaran QRIS sebesar *${formatRupiah(total)}*. Berikut bukti pembayarannya.`;
         const linkWa = `https://wa.me/${nomorWaToko}?text=${encodeURIComponent(pesanWa)}`;
 
-        // PERBAIKAN: Menambahkan nama folder "assets/" agar gambar bisa dipanggil
-        const linkGambarQris = "assets/qris-mainstay.png"; 
+        // PERBAIKAN: Nama file disesuaikan persis dengan di Github (pakai strip)
+        const linkGambarQris = "qris-mainstay.png"; 
 
         htmlKonten = `
             <div class="bg-white w-full max-w-sm rounded-2xl p-5 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
@@ -2221,11 +2221,16 @@ window.tampilkanPopupBerhasil = (orderId, metode, total, nama) => {
                 </div>
 
                 <!-- Area Barcode QRIS -->
-                <div class="w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-2 mb-5 relative flex justify-center shadow-inner">
+                <div class="w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-2 mb-3 relative flex justify-center shadow-inner">
                     <img src="${linkGambarQris}" alt="QRIS Mainstay" class="w-full max-w-[170px] h-auto object-contain rounded-lg">
                 </div>
 
-                <!-- Tombol Aksi (Dibuat Menyamping & Lebih Ramping) -->
+                <!-- Teks Instruksi Baru Sesuai Permintaan -->
+                <p class="text-[10px] text-slate-600 font-medium mb-4 bg-blue-50 text-blue-700 p-2.5 rounded-lg border border-blue-100 leading-relaxed w-full">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Silakan tunjukkan bukti pembayaran langsung ke kasir atau kirim via WA lewat tombol di bawah.
+                </p>
+
+                <!-- Tombol Aksi Ramping -->
                 <div class="flex gap-2 w-full mb-2">
                     <a href="${linkGambarQris}" download="QRIS-Mainstay.png" class="flex-1 bg-white text-slate-700 font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs border-2 border-slate-200 transition active:scale-95 shadow-sm">
                         <i class="fa-solid fa-download"></i> Simpan
