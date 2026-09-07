@@ -814,8 +814,8 @@
                 </div>
             </div>
 
-            <!-- TOMBOL KIRIM WA UTAMA -->
-<button onclick="kirimStrukWA()" class="w-full bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-sm mb-3">
+            <!-- TOMBOL KIRIM WA UTAMA (Ditambah mt-5 agar tidak mepet kertas struk) -->
+<button onclick="kirimStrukWA()" class="w-full mt-5 bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-sm mb-3">
     <i class="fa-brands fa-whatsapp text-lg"></i> Kirim Struk ke WA
 </button>
 
@@ -830,19 +830,19 @@
     </div>
 </div>
 
-<!-- BARIS BAWAH: TUTUP, ICON DOWNLOAD, CETAK -->
-<div class="flex gap-2">
-    <!-- Tombol Tutup -->
+<!-- BARIS BAWAH: TUTUP, ICON DOWNLOAD, CETAK (Ditambah w-full agar melebar) -->
+<div class="flex w-full gap-2">
+    <!-- Tombol Tutup (Memanjang otomatis dengan flex-1) -->
     <button onclick="tutupStruk()" class="flex-1 bg-slate-600 text-white py-3.5 rounded-xl font-bold shadow-sm">
         Tutup
     </button>
     
-    <!-- Tombol Icon Download (Persegi di Tengah) -->
-    <button id="btn-download" onclick="downloadStruk()" class="bg-indigo-500 text-white w-14 rounded-xl flex justify-center items-center text-[22px] shadow-sm transition-colors active:bg-indigo-700" title="Download Gambar">
+    <!-- Tombol Icon Download (Ukurannya dikunci paten dengan flex-none dan w-14) -->
+    <button id="btn-download" onclick="downloadStruk()" class="flex-none bg-indigo-500 text-white w-14 py-3.5 rounded-xl flex justify-center items-center text-[20px] shadow-sm transition-colors active:bg-indigo-700" title="Download Gambar">
         <i class="fa-solid fa-download"></i>
     </button>
 
-    <!-- Tombol Cetak -->
+    <!-- Tombol Cetak (Memanjang otomatis dengan flex-1) -->
     <button onclick="prosesCetakStruk()" class="flex-1 bg-blue-500 text-white py-3.5 rounded-xl font-bold shadow-sm">
         <i class="fa-solid fa-print"></i> Cetak
     </button>
@@ -853,6 +853,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=201"></script>
+    <script type="module" src="app.js?v=202"></script>
 </body>
 </html>
