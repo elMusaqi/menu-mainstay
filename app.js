@@ -2008,3 +2008,64 @@ window.prosesCetakStruk = () => {
         document.body.removeChild(iframe);
     }, 1000);
 };
+
+// ==========================================
+// 1. FUNGSI DOWNLOAD GAMBAR STRUK
+// ==========================================
+window.downloadStruk = async () => {
+    if (!orderAktif) return;
+    
+    const btn = document.getElementById('btn-download');
+    const teksAsli = btn ? btn.innerHTML : 'Download Gambar';
+    
+    if (btn) {
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+        btn.disabled = true;
+    }
+
+    try {
+        const kertasStruk = document.getElementById('kertas-struk');
+        const canvas = await html2canvas(kertasStruk, { scale: 2, backgroundColor: "#ffffff" });
+        
+        const link = document.createElement('a');
+        link.download = `Struk_Mainstay_${orderAktif.orderId}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+    } catch (error) {
+        alert("Gagal menyimpan gambar. Pastikan memori HP tidak penuh.");
+    } finally {
+        if (btn) {
+            btn.innerHTML = teksAsli;
+            btn.disabled = false;
+        }
+    }
+};
+
+
+// ==========================================
+// 2. FUNGSI KIRIM WA (AUTO FORMAT 62 & POP-UP)
+// ==========================================
+window.kirimStrukWA = () => {
+    if (!orderAktif) return;
+
+    let noWA = orderAktif.customerPhone || orderAktif.wa || ""; 
+    
+    if (!noWA) {
+        noWA = prompt("Nomor WA pelanggan belum ada.\nSilakan ketik manual (contoh: 0812...):");
+        if (!noWA) return; 
+    }
+
+    // Bersihkan spasi/simbol dan ubah 0 di depan menjadi 62
+    noWA = noWA.trim().replace(/[-+ ]/g, ""); 
+    if (noWA.startsWith("0")) {
+        noWA = "62" + noWA.substring(1);
+    }
+
+    const daftarMenuWA = orderAktif.items.map(i => `${i.qty}x ${i.name} - ${formatRupiah(i.price * i.qty)}`).join('\n');
+    const pesan = `Halo kak! 👋\nTerima kasih sudah jajan di *Mainstay Drink*.\n\n*🧾 RINCIAN PESANAN*\nNo: ${orderAktif.orderId}\nWaktu: ${new Date(orderAktif.timestamp).toLocaleString('id-ID')}\n-----------------------------------\n${daftarMenuWA}\n-----------------------------------\n*TOTAL: ${formatRupiah(orderAktif.totalAmount)}*\nMetode Bayar: ${orderAktif.paymentMethod}\n\nDitunggu kedatangannya kembali ya kak! ✨`;
+
+    window.open(`https://wa.me/${noWA}?text=${encodeURIComponent(pesan)}`, '_blank');
+};
