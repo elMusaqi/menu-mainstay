@@ -494,23 +494,23 @@ window.renderKatalog = () => {
         // Gunakan placeholder jika url gambar kosong
         const imgUrl = menu.imageUrl || PLACEHOLDER_IMG;
 
-        // Rancang Card HTML Menu (Sudah Skala Miniatur 3 Kolom)
+        // Rancang Card HTML Menu (KEMBALI KE VERSI ASLI - BESAR & LEGA)
         const cardHtml = `
-            <div onclick="bukaModalDetail('${key}')" class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:scale-105 transition duration-200">
-                <div class="w-full h-24 bg-slate-100 rounded-xl overflow-hidden relative mb-1.5">
+            <div onclick="bukaModalDetail('${key}')" class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:-translate-y-1 hover:shadow-md transition duration-200">
+                <div class="w-full h-28 bg-slate-100 rounded-xl overflow-hidden relative mb-2">
                     <img src="${imgUrl}" alt="${menu.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                    ${menu.isBestSeller ? '<span class="absolute top-1.5 left-1.5 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm z-10">BEST</span>' : ''}
+                    ${menu.isBestSeller ? '<span class="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-2 py-1 rounded-md shadow-sm z-10">BEST</span>' : ''}
                 </div>
                 
                 <div class="px-1 flex-1 flex flex-col justify-between">
                     <div>
-                        <h3 class="text-[11px] font-black text-gray-900 leading-tight mb-0.5 line-clamp-2">${menu.name}</h3>
-                        <p class="text-[9px] text-gray-400 font-bold line-clamp-1 capitalize">${menu.category}</p>
+                        <h3 class="text-xs font-black text-gray-900 leading-tight mb-0.5">${menu.name}</h3>
+                        <p class="text-[9px] text-gray-400 font-bold capitalize">${menu.category}</p>
                     </div>
                     
-                    <div class="mt-2 flex justify-between items-center gap-1">
-                        <span class="text-xs font-black text-amber-500 truncate">${formatRupiah(menu.price)}</span>
-                        <button class="w-6 h-6 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
+                    <div class="mt-2 flex justify-between items-end">
+                        <span class="text-sm font-black text-amber-500">${formatRupiah(menu.price)}</span>
+                        <button class="w-6 h-6 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-[10px]">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
