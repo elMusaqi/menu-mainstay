@@ -818,9 +818,21 @@
                 <button id="btn-download" onclick="downloadStruk()" class="bg-indigo-500 text-white p-2 rounded text-sm font-bold w-full mb-2 flex justify-center items-center gap-2 shadow-md">
     <i class="fa-solid fa-download"></i> Download Gambar
                 </button>
-                <button onclick="kirimStrukWA()" class="w-full bg-emerald-500 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-emerald-600 transition shadow-lg flex items-center justify-center gap-2">
-                    <i class="fa-brands fa-whatsapp text-lg"></i> Kirim Struk ke WA
-                </button>
+                <!-- Tombol Kirim WA (Ini sudah ada di kode Mas Ihsan) -->
+<button onclick="kirimStrukWA()" class="w-full bg-emerald-500 text-white py-3.5 rounded-xl font-bold ...">
+    <i class="fa-brands fa-whatsapp text-lg"></i> Kirim Struk ke WA
+</button>
+
+<!-- LACI INPUT MANUAL WA (Muncul dinamis di bawah tombol) -->
+<div id="wadah-wa-manual" class="hidden w-full mt-2 bg-slate-100 p-3 rounded-xl border border-slate-200 transition-all">
+    <p class="text-[11px] text-slate-600 mb-2 font-bold text-center">Nomor WA tidak ditemukan. Ketik manual:</p>
+    <div class="flex gap-2">
+        <input type="number" id="input-wa-manual" placeholder="0812..." class="flex-1 bg-white border border-slate-300 p-2 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-emerald-500">
+        <button onclick="prosesKirimWAManual()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm">
+            Kirim <i class="fa-solid fa-paper-plane ml-1"></i>
+        </button>
+    </div>
+</div>
                 <div class="flex gap-3 w-full">
                     <button onclick="tutupStruk()" class="flex-1 bg-slate-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-slate-700 transition">
                         Tutup
@@ -836,6 +848,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=199"></script>
+    <script type="module" src="app.js?v=200"></script>
 </body>
 </html>
