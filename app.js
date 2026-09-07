@@ -2396,3 +2396,13 @@ window.tutupLaluRefresh = () => {
     window.location.reload();
 };
 // ==========================================
+
+// ==========================================
+// FITUR AUTO-JOIN GRUP WA MEMBER
+// ==========================================
+window.autoJoinGrup = (elemenCeklis) => {
+    if (elemenCeklis.checked) {
+        const linkGrupWa = "whatsapp://chat?code=DYUTVUGWfzcHoCWnKNFdSB"; 
+        window.location.href = linkGrupWa;
+    }
+};
