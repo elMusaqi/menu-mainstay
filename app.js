@@ -1931,6 +1931,16 @@ Ditunggu kedatangannya kembali ya kak! ✨`;
 
 window.prosesCetakStruk = () => {
     if (!orderAktif) return;
-    alert("Sistem: Meneruskan perintah ke printer ESC/POS untuk pesanan " + orderAktif.orderId);
-    // Nanti logika print thermal Mas Ihsan ditaruh di sini
+
+    // 1. Ambil desain kertas struk yang sudah berisi data pesanan
+    const isiStruk = document.getElementById('kertas-struk').innerHTML;
+    
+    // 2. Masukkan ke dalam wadah cetak khusus (menggunakan ID dari kode lama Mas Ihsan)
+    const printArea = document.getElementById('printable-receipt');
+    if (printArea) {
+        printArea.innerHTML = isiStruk;
+    }
+
+    // 3. Panggil sistem pemilih printer bawaan HP
+    window.print();
 };
