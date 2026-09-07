@@ -465,15 +465,15 @@ window.renderKatalog = () => {
     const grid = document.getElementById('menu-grid');
     const searchInput = document.getElementById('search-menu');
     const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
-    
+
     if (!grid) return;
-    
+
     grid.innerHTML = ''; // Kosongkan state loading
     const menuKeys = Object.keys(globalMenus);
-    
+
     if (menuKeys.length === 0) {
         grid.innerHTML = `
-            <div class="col-span-full text-center py-10 text-gray-400 font-bold text-xs">
+            <div class="col-span-full text-center py-10 text-gray-400 font-bold">
                 Belum ada menu di database.
             </div>`;
         return;
@@ -481,53 +481,46 @@ window.renderKatalog = () => {
 
     menuKeys.forEach(key => {
         const menu = globalMenus[key];
-        
+
         // Lewati (skip) jika tidak sesuai dengan filter kategori aktif
         if (activeCategoryFilter !== 'all' && menu.category !== activeCategoryFilter) return;
-        
+
         // Lewati jika tidak sesuai dengan kata kunci pencarian
         if (searchQuery && !menu.name.toLowerCase().includes(searchQuery)) return;
-        
-        // Lewati jika stok menu sedang ditandai habis (isAvailable = false)
-        if (!menu.isAvailable) return; 
+
+        // Lewati jika stok menu sedang ditandai habis
+        if (!menu.isAvailable) return;
 
         // Gunakan placeholder jika url gambar kosong
         const imgUrl = menu.imageUrl || PLACEHOLDER_IMG;
-        
-        // Rancang Card HTML Menu
+
+        // Rancang Card HTML Menu (Sudah Skala Miniatur 3 Kolom)
         const cardHtml = `
-        // Rancang Card HTML Menu (Skala Miniatur 3 Kolom)
-    const cardHtml = `
-        <div onclick="bukaModalDetail('${key}')" class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:scale-105 transition duration-200">
-            
-            <!-- 1. Gambar diturunkan tingginya menjadi h-24 -->
-            <div class="w-full h-24 bg-slate-100 rounded-xl overflow-hidden relative mb-1.5">
-                <img src="${imgUrl}" alt="${menu.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                ${menu.isBestSeller ? `<span class="absolute top-1.5 left-1.5 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm z-10">BEST</span>` : ''}
-            </div>
-            
-            <div class="px-1 flex-1 flex flex-col justify-between">
-                <div>
-                    <!-- 2. Font dikecilkan & dikunci maksimal 2 baris (line-clamp-2) -->
-                    <h3 class="text-[11px] font-black text-gray-900 leading-tight mb-0.5 line-clamp-2">${menu.name}</h3>
-                    <p class="text-[9px] text-gray-400 font-bold line-clamp-1 capitalize">${menu.category}</p>
+            <div onclick="bukaModalDetail('${key}')" class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:scale-105 transition duration-200">
+                <div class="w-full h-24 bg-slate-100 rounded-xl overflow-hidden relative mb-1.5">
+                    <img src="${imgUrl}" alt="${menu.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    ${menu.isBestSeller ? '<span class="absolute top-1.5 left-1.5 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm z-10">BEST</span>' : ''}
                 </div>
                 
-                <!-- 3. Harga dikecilkan & tombol dilarang gepeng (flex-shrink-0) -->
-                <div class="mt-2 flex justify-between items-center gap-1">
-                    <span class="text-xs font-black text-amber-500 truncate">${formatRupiah(menu.price)}</span>
-                    <button class="w-6 h-6 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                <div class="px-1 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-[11px] font-black text-gray-900 leading-tight mb-0.5 line-clamp-2">${menu.name}</h3>
+                        <p class="text-[9px] text-gray-400 font-bold line-clamp-1 capitalize">${menu.category}</p>
+                    </div>
+                    
+                    <div class="mt-2 flex justify-between items-center gap-1">
+                        <span class="text-xs font-black text-amber-500 truncate">${formatRupiah(menu.price)}</span>
+                        <button class="w-6 h-6 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-            
-        </div>
-    `;
+        `;
+        
         grid.insertAdjacentHTML('beforeend', cardHtml);
     });
 };
-
 // ---------------------------------------------------------
 // 2C. MODAL DETAIL & KUSTOMISASI MINUMAN
 // ---------------------------------------------------------
