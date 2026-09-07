@@ -29,22 +29,31 @@
         
         /* CSS Khusus Printer Thermal 58mm */
     @media print {
-        body * {
+        /* 1. KUNCI UTAMA: Paksa Android mengubah A4 menjadi mode kertas memanjang (Roll) */
+        @page {
+            size: 58mm auto;
+            margin: 0;
+        }
+
+        /* 2. Jadikan seluruh web transparan untuk menghapus layout asli */
+        body {
             visibility: hidden;
-        }
-        #printable-receipt, #printable-receipt * {
-            visibility: visible;
-        }
-        #printable-receipt {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 58mm; 
             margin: 0;
             padding: 0;
         }
-        @page {
-            margin: 0;
+
+        /* 3. Tampilkan wadah struk, posisikan persis di ujung kiri atas */
+        #printable-receipt {
+            visibility: visible;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 58mm;
+        }
+
+        /* 4. Pastikan teks di dalam struk tetap terlihat jelas */
+        #printable-receipt * {
+            visibility: visible;
         }
     }
     </style>
@@ -822,6 +831,6 @@
     </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=191"></script>
+    <script type="module" src="app.js?v=192"></script>
 </body>
 </html>
