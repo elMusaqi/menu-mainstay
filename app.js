@@ -1594,7 +1594,21 @@ window.renderPanelMenu = () => {
                             <option value="snack">Snack / Cemilan</option>
                         </select>
                     </div>
-                    
+                    <!-- Hubungkan Topping (Opsional) -->
+            <div class="mb-3">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-cookie-bite text-orange-500 mr-1"></i> Hubungkan Topping (Opsional)</label>
+                <div id="wadah-checkbox-topping" class="flex flex-col gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p class="text-[10px] text-slate-400 italic">Memuat topping...</p>
+                </div>
+            </div>
+
+            <!-- Hubungkan Varian -->
+            <div class="mb-3">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-layer-group text-purple-500 mr-1"></i> Hubungkan Varian (Opsional)</label>
+                <div id="wadah-checkbox-varian" class="flex flex-col gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p class="text-[10px] text-slate-400 italic">Memuat varian...</p>
+                </div>
+            </div>
                     <button onclick="window.simpanMenuBaru()" class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-amber-600 transition tracking-widest uppercase mt-2">
     <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan ke Database
 </button>
