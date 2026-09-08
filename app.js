@@ -1561,6 +1561,21 @@ window.renderPanelMenu = () => {
                 <div id="list-master-topping" class="flex flex-col gap-2"></div>
             </div>
         </div>
+        
+        <!-- MASTER VARIAN BEBAS -->
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-layer-group text-purple-500 mr-1"></i> 3. Master Varian Bebas</h3>
+            <p class="text-[10px] text-slate-500 mb-3 leading-relaxed">Buat varian pilihan untuk menu. (Misal: Level Es, Level Gula, atau Ukuran).</p>
+            <div class="flex flex-col gap-2 mb-3">
+                <input type="text" id="input-varian-nama" placeholder="Nama Varian (Cth: Level Es)" class="text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-400">
+                <input type="text" id="input-varian-opsi" placeholder="Pilihan (pisahkan dgn koma. Cth: Normal, Less, No)" class="text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-400">
+                <button onclick="window.tambahMasterVarian()" class="bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-600 shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> Tambah Varian
+                </button>
+            </div>
+            <!-- Tempat Munculnya Daftar Varian -->
+            <div id="list-master-varian" class="flex flex-col gap-2"></div>
+        </div>
         <!-- ========================================== -->
 
         <!-- Form Insert Database -->
@@ -1596,13 +1611,13 @@ window.renderPanelMenu = () => {
         </div>
     `; 
     
-    // --- PASTE DI SINI (SEBELUM KURUNG KURAWAL) ---
+    // Panggil perender Data Master agar datanya langsung muncul saat panel dibuka
     if(typeof window.renderMasterKategori === 'function') {
         window.renderMasterKategori();
         window.renderMasterTopping();
+        window.renderMasterVarian(); // <--- TAMBAHKAN BARIS INI
     }
-
-}; // <--- Ini baris 1582 aslinya
+}; // <- Ini adalah penutup asli fungsi window.renderPanelMenu
 
 // ---------------------------------------------------------
 // MODUL 2: HRD & STAFF (/staff)
@@ -2683,6 +2698,55 @@ window.renderMasterTopping = () => {
     `).join('');
 };
 // ==========================================
+
+// ==========================================
+// TAHAP 2: MESIN MASTER VARIAN BEBAS
+// ==========================================
+window.masterVarian = [];
+
+window.tambahMasterVarian = () => {
+    const namaEl = document.getElementById('input-varian-nama');
+    const opsiEl = document.getElementById('input-varian-opsi');
+    const nama = namaEl.value.trim();
+    const opsiRaw = opsiEl.value.trim();
+    
+    if (!nama || !opsiRaw) return alert("Nama Varian dan Pilihan Opsi wajib diisi!");
+    
+    // Pisahkan teks opsi berdasarkan tanda koma (,) dan buang spasi lebih
+    const opsiArray = opsiRaw.split(',').map(o => o.trim()).filter(o => o !== '');
+    if (opsiArray.length === 0) return alert("Format pilihan salah! Pisahkan dengan tanda koma.");
+
+    const id = 'var_' + Date.now();
+    window.masterVarian.push({ id, nama, opsi: opsiArray });
+    
+    namaEl.value = ''; opsiEl.value = ''; // Kosongkan input setelah sukses
+    window.renderMasterVarian();
+};
+
+window.hapusMasterVarian = (id) => {
+    window.masterVarian = window.masterVarian.filter(v => v.id !== id);
+    window.renderMasterVarian();
+};
+
+window.renderMasterVarian = () => {
+    const wadah = document.getElementById('list-master-varian');
+    if (!wadah) return;
+    if (window.masterVarian.length === 0) {
+        wadah.innerHTML = '<p class="text-[10px] text-slate-400 italic">Belum ada varian. Silakan tambah.</p>';
+        return;
+    }
+    wadah.innerHTML = window.masterVarian.map(v => `
+        <div class="bg-white border border-slate-200 p-2.5 rounded-xl flex justify-between items-center shadow-sm">
+            <div>
+                <p class="text-xs font-bold text-slate-800">${v.nama}</p>
+                <p class="text-[10px] font-medium text-purple-600 mt-1"><i class="fa-solid fa-list-check mr-1"></i> ${v.opsi.join(' • ')}</p>
+            </div>
+            <button onclick="window.hapusMasterVarian('${v.id}')" class="bg-red-50 text-red-500 shrink-0 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-100 transition active:scale-95 ml-2"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+        </div>
+    `).join('');
+};
+// ==========================================
+
 // ==========================================
 // FITUR BACKSOUND MUSIC (BGM) KHUSUS PELANGGAN
 // ==========================================
