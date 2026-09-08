@@ -1568,7 +1568,7 @@ window.renderPanelMenu = () => {
             <p class="text-[10px] text-slate-500 mb-3 leading-relaxed">Buat varian pilihan untuk menu. (Misal: Level Es, Level Gula, atau Ukuran).</p>
             <div class="flex flex-col gap-2 mb-3">
                 <input type="text" id="input-varian-nama" placeholder="Nama Varian (Cth: Level Es)" class="text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-400">
-                <input type="text" id="input-varian-opsi" placeholder="Pilihan (pisahkan dgn koma. Cth: Normal, Less, No)" class="text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-400">
+                <input type="text" id="input-varian-opsi" placeholder="Cth: Small=0, Medium=3000, Large=5000" class="text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-400">
                 <button onclick="window.tambahMasterVarian()" class="bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-600 shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-plus"></i> Tambah Varian
                 </button>
@@ -2700,7 +2700,7 @@ window.renderMasterTopping = () => {
 // ==========================================
 
 // ==========================================
-// TAHAP 2: MESIN MASTER VARIAN BEBAS
+// TAHAP 2 & 3: MESIN MASTER VARIAN (VERSI PRO DENGAN HARGA)
 // ==========================================
 window.masterVarian = [];
 
@@ -2712,20 +2712,29 @@ window.tambahMasterVarian = () => {
     
     if (!nama || !opsiRaw) return alert("Nama Varian dan Pilihan Opsi wajib diisi!");
     
-    // Pisahkan teks opsi berdasarkan tanda koma (,) dan buang spasi lebih
-    const opsiArray = opsiRaw.split(',').map(o => o.trim()).filter(o => o !== '');
-    if (opsiArray.length === 0) return alert("Format pilihan salah! Pisahkan dengan tanda koma.");
+    // LOGIKA PINTAR: Pecah koma, lalu deteksi tanda sama dengan (=) untuk harga
+    const opsiArray = opsiRaw.split(',').map(item => {
+        const parts = item.split('=');
+        const namaOpsi = parts[0].trim();
+        // Jika ada tanda '=', bersihkan teksnya dan ambil angka harganya saja. Jika tidak ada, default 0.
+        const hargaOpsi = parts.length > 1 ? Number(parts[1].replace(/[^0-9]/g, '')) : 0; 
+        return { namaOpsi: namaOpsi, harga: hargaOpsi };
+    }).filter(o => o.namaOpsi !== '');
+
+    if (opsiArray.length === 0) return alert("Format pilihan salah! Cek kembali ketikannya.");
 
     const id = 'var_' + Date.now();
     window.masterVarian.push({ id, nama, opsi: opsiArray });
     
-    namaEl.value = ''; opsiEl.value = ''; // Kosongkan input setelah sukses
+    namaEl.value = ''; opsiEl.value = ''; // Kosongkan input
     window.renderMasterVarian();
+    if(typeof window.renderCheckboxVarian === 'function') window.renderCheckboxVarian(); // Sinkronisasi otomatis ke form menu
 };
 
 window.hapusMasterVarian = (id) => {
     window.masterVarian = window.masterVarian.filter(v => v.id !== id);
     window.renderMasterVarian();
+    if(typeof window.renderCheckboxVarian === 'function') window.renderCheckboxVarian();
 };
 
 window.renderMasterVarian = () => {
@@ -2735,15 +2744,39 @@ window.renderMasterVarian = () => {
         wadah.innerHTML = '<p class="text-[10px] text-slate-400 italic">Belum ada varian. Silakan tambah.</p>';
         return;
     }
-    wadah.innerHTML = window.masterVarian.map(v => `
-        <div class="bg-white border border-slate-200 p-2.5 rounded-xl flex justify-between items-center shadow-sm">
+    wadah.innerHTML = window.masterVarian.map(v => {
+        // Cetak teks harga jika harganya lebih dari 0
+        const opsiTeks = v.opsi.map(o => o.harga > 0 ? `${o.namaOpsi} (+Rp${o.harga.toLocaleString('id-ID')})` : o.namaOpsi).join(' • ');
+
+        return `
+        <div class="bg-white border border-slate-200 p-2.5 rounded-xl flex justify-between items-center shadow-sm mb-2">
             <div>
                 <p class="text-xs font-bold text-slate-800">${v.nama}</p>
-                <p class="text-[10px] font-medium text-purple-600 mt-1"><i class="fa-solid fa-list-check mr-1"></i> ${v.opsi.join(' • ')}</p>
+                <p class="text-[10px] font-medium text-purple-600 mt-1 leading-relaxed"><i class="fa-solid fa-list-check mr-1"></i> ${opsiTeks}</p>
             </div>
             <button onclick="window.hapusMasterVarian('${v.id}')" class="bg-red-50 text-red-500 shrink-0 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-100 transition active:scale-95 ml-2"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
         </div>
-    `).join('');
+        `;
+    }).join('');
+};
+
+window.renderCheckboxVarian = () => {
+    const wadah = document.getElementById('wadah-checkbox-varian');
+    if (!wadah) return;
+    if (!window.masterVarian || window.masterVarian.length === 0) {
+        wadah.innerHTML = '<p class="text-[10px] text-slate-400 italic">Belum ada varian di Master Data.</p>';
+        return;
+    }
+    wadah.innerHTML = window.masterVarian.map(v => {
+        // Cetak tulisan ringkas untuk di form menu
+        const opsiTeks = v.opsi.map(o => o.harga > 0 ? `${o.namaOpsi} (+${o.harga/1000}k)` : o.namaOpsi).join(', ');
+        return `
+        <label class="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 transition shadow-sm">
+            <input type="checkbox" value="${v.id}" class="checkbox-varian-menu w-3.5 h-3.5 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+            <span class="text-[11px] font-bold text-slate-700">${v.nama} <span class="text-[9px] text-slate-400 font-normal">(${opsiTeks})</span></span>
+        </label>
+        `;
+    }).join('');
 };
 // ==========================================
 
