@@ -1453,19 +1453,73 @@ window.simpanNode = async (nodeString, payload) => {
 };
 
 window.hapusNode = async (nodeString, dataKey, callbackFunctionName) => {
-    if (confirm("PERINGATAN!\nYakin ingin menghapus data ini secara permanen dari Database?")) {
+    // 1. Bersihkan pop-up lama jika masih menempel
+    const modalLama = document.getElementById('popup-hapus-global');
+    if (modalLama) modalLama.remove();
+
+    // 2. Buat Kotak Pop-up Premium Baru
+    const modal = document.createElement('div');
+    modal.id = 'popup-hapus-global';
+    modal.className = "fixed inset-0 z-[999999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-5 opacity-0 transition-opacity duration-300";
+    
+    modal.innerHTML = `
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4 border-[4px] border-red-100">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 class="text-lg font-black text-slate-800 mb-2">Hapus Data Ini?</h2>
+            <p class="text-xs text-slate-500 font-medium mb-6 px-2 leading-relaxed">
+                Tindakan ini tidak dapat dibatalkan. Data akan dihapus secara permanen dari Database.
+            </p>
+            <div class="flex gap-3 w-full">
+                <button id="btn-batal-hapus" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition text-xs tracking-wider uppercase">
+                    Batal
+                </button>
+                <button id="btn-konfirm-hapus" class="flex-1 bg-red-500 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-red-600 transition text-xs tracking-wider uppercase flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trash-can"></i> Ya, Hapus
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // 3. Mainkan Animasi Muncul
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+    }, 10);
+
+    // 4. Aksi Jika Klik Batal
+    document.getElementById('btn-batal-hapus').onclick = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // 5. Aksi Jika Klik Konfirmasi "Ya, Hapus"
+    document.getElementById('btn-konfirm-hapus').onclick = async () => {
+        const btn = document.getElementById('btn-konfirm-hapus');
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menghapus...'; // Efek Loading
+        btn.disabled = true;
+
         try {
-            await remove(ref(db, `${nodeString}/${dataKey}`));
+            // Eksekusi hapus data ke Firebase
+            await remove(ref(db, `${nodeString}/${dataKey}`)); 
             
-            // Panggil kembali fungsi render UI untuk memuat ulang daftar
+            // Tutup Pop-up dengan animasi
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.remove(), 300);
+
+            // Muat ulang daftar tampilan secara otomatis
             if (typeof window[callbackFunctionName] === 'function') {
                 window[callbackFunctionName]();
             }
         } catch (error) {
             console.error("Firebase Delete Error:", error);
             alert("Terjadi kesalahan! Gagal menghapus data dari database.");
+            btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Ya, Hapus';
+            btn.disabled = false;
         }
-    }
+    };
 };
 
 
