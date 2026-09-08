@@ -861,10 +861,24 @@
 </div>
         </div>
     </div>
+    
+<!-- ========================================== -->
+    <!-- FITUR BACKSOUND MUSIC (BGM)                -->
+    <!-- ========================================== -->
+    <!-- File MP3 -->
+    <audio id="bgm-mainstay" loop>
+        <source src="mainstay-drink.mp3" type="audio/mpeg">
+    </audio>
 
+    <!-- Tombol Speaker Melayang di Kanan Bawah -->
+    <button id="btn-bgm" onclick="window.toggleBGM()" class="fixed bottom-24 right-4 z-[9999] w-10 h-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-full flex items-center justify-center shadow-lg transition active:scale-95">
+        <i id="icon-bgm" class="fa-solid fa-volume-xmark text-slate-400"></i>
+    </button>
+    <!-- ========================================== -->
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=241"></script>
+    <script type="module" src="app.js?v=243"></script>
 </body>
 </html>
