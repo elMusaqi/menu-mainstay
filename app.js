@@ -1546,8 +1546,13 @@ window.hapusNode = async (nodeString, dataKey, callbackFunctionName) => {
 // MODUL 1: KATALOG MENU (/menus)
 // ---------------------------------------------------------
 window.renderPanelMenu = () => {
+    // --- NYALAKAN 3 JEMBATAN KE FORM TAMBAH MENU ---
+    if(typeof window.renderSelectKategori === 'function') window.renderSelectKategori();
+    if(typeof window.renderCheckboxTopping === 'function') window.renderCheckboxTopping();
+    if(typeof window.renderCheckboxVarian === 'function') window.renderCheckboxVarian();
 
     let realDbMenus = {};
+    // ... (kode Mas Ihsan ke bawahnya tetap aman) ...
     Object.keys(globalMenus).forEach(key => {
         if (!key.startsWith('dummy_')) {
             realDbMenus[key] = globalMenus[key];
@@ -1654,7 +1659,7 @@ window.renderPanelMenu = () => {
             </h3>
                     
                     <input type="text" id="fm-name" placeholder="Nama Menu (Contoh: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
-                    
+                    <textarea id="fm-desc" placeholder="Deskripsi Menu (Contoh: Perpaduan kopi dan gula aren asli...)" rows="2" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-medium focus:outline-none focus:border-amber-500 transition"></textarea>
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <input type="number" id="fm-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition">
                         <select id="fm-cat" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition cursor-pointer">
@@ -2995,6 +3000,7 @@ document.addEventListener('visibilitychange', () => {
 window.simpanMenuBaru = async () => {
     const namaEl = document.getElementById('fm-name');
     const priceEl = document.getElementById('fm-price');
+    const descEl = document.getElementById('fm-desc'); // <--- Penarik Deskripsi Baru
     
     // Tarik elemen kategori
     const catEl = document.getElementById('fm-cat') || document.getElementById('select-kategori-menu');
@@ -3013,23 +3019,20 @@ window.simpanMenuBaru = async () => {
     document.querySelectorAll('.checkbox-varian-menu:checked').forEach(cb => varianTerpilih.push(cb.value));
 
     // ==========================================
-    // LOGIKA GAMBAR DUAL OPSI (URL vs FILE LOKAL)
+    // LOGIKA GAMBAR DUAL OPSI
     // ==========================================
     const imgUrlEl = document.getElementById('fm-image-url');
     const imgFileEl = document.getElementById('fm-image-file');
-    let finalImageUrl = 'https://via.placeholder.com/150?text=Menu+Baru'; // Gambar default jika kosong
+    let finalImageUrl = 'https://via.placeholder.com/150?text=Menu+Baru'; 
 
-    // Prioritas 1: Jika user meng-upload file dari memori HP/Laptop
     if (imgFileEl && imgFileEl.files.length > 0) {
         const file = imgFileEl.files[0];
-        // Ubah file gambar menjadi teks (Base64) agar bisa masuk ke database
         finalImageUrl = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result);
             reader.readAsDataURL(file);
         });
     } 
-    // Prioritas 2: Jika user menggunakan Link URL gambar
     else if (imgUrlEl && imgUrlEl.value.trim() !== '') {
         finalImageUrl = imgUrlEl.value.trim();
     }
@@ -3037,6 +3040,7 @@ window.simpanMenuBaru = async () => {
 
     const payload = {
         name: namaEl.value.trim(),
+        description: descEl ? descEl.value.trim() : '', // <--- Simpan Deskripsi ke Database
         price: Number(priceEl.value),
         category: kategoriValue,
         isAvailable: true,
@@ -3051,14 +3055,67 @@ window.simpanMenuBaru = async () => {
     // Bersihkan form setelah sukses
     namaEl.value = '';
     priceEl.value = '';
+    if (descEl) descEl.value = ''; // <--- Bersihkan form deskripsi
     if (imgUrlEl) imgUrlEl.value = '';
     if (imgFileEl) imgFileEl.value = '';
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
-    alert("Menu baru beserta gambarnya berhasil disimpan!");
+    alert("Menu baru berhasil disimpan!");
     if(typeof window.renderPanelMenu === 'function') window.renderPanelMenu();
 };
 // ==========================================
+
+// ==========================================
+// JEMBATAN 2: PENARIK TOPPING (BERSIH)
+// ==========================================
+window.renderCheckboxTopping = () => {
+    const wadah = document.getElementById('wadah-checkbox-topping');
+    if (!wadah) return;
+    
+    if (!window.masterTopping || window.masterTopping.length === 0) {
+        wadah.innerHTML = '<p class="text-[10px] text-slate-400 italic px-1">Belum ada topping di Data Master.</p>';
+        return;
+    }
+
+    wadah.innerHTML = window.masterTopping.map(top => `
+        <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-amber-50 transition">
+            <input type="checkbox" value="${top.id}" class="checkbox-topping-menu w-4 h-4 text-amber-500 rounded border-gray-300">
+            <span class="text-xs font-bold text-slate-700">${top.nama} <span class="text-[10px] text-emerald-500 ml-1 font-black">(+Rp ${top.harga.toLocaleString('id-ID')})</span></span>
+        </label>
+    `).join('');
+};
+
+// ==========================================
+// JEMBATAN 3: PENARIK VARIAN (AUTO-RESCUE 3 VARIAN ASLI)
+// ==========================================
+window.renderCheckboxVarian = () => {
+    // Tarik 3 Varian (Ukuran, Gula, Es) ke Data Master agar bisa diedit Owner!
+    if (window.masterVarian && window.masterVarian.length === 0) {
+        window.masterVarian = [
+            { id: 'var_ukuran', nama: 'PILIH UKURAN', opsi: [{ namaOpsi: 'Regular', harga: 0 }, { namaOpsi: 'Large', harga: 3000 }] },
+            { id: 'var_gula', nama: 'KADAR GULA', opsi: [{ namaOpsi: 'Normal (100%)', harga: 0 }, { namaOpsi: 'Less (50%)', harga: 0 }] },
+            { id: 'var_es', nama: 'KADAR ES', opsi: [{ namaOpsi: 'Normal Ice', harga: 0 }, { namaOpsi: 'Less Ice', harga: 0 }] }
+        ];
+        localStorage.setItem('master_varian', JSON.stringify(window.masterVarian));
+        if(typeof window.renderMasterVarian === 'function') window.renderMasterVarian();
+    }
+
+    const wadah = document.getElementById('wadah-checkbox-varian');
+    if (!wadah) return;
+
+    wadah.innerHTML = window.masterVarian.map(v => {
+        const opsiTeks = v.opsi.map(o => o.harga > 0 ? `${o.namaOpsi} (+${o.harga/1000}k)` : o.namaOpsi).join(', ');
+        return `
+        <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+            <input type="checkbox" value="${v.id}" class="checkbox-varian-menu w-4 h-4 text-purple-500 rounded border-gray-300">
+            <div class="flex flex-col">
+                <span class="text-xs font-bold text-slate-700">${v.nama}</span>
+                <span class="text-[9px] font-medium text-slate-400">${opsiTeks}</span>
+            </div>
+        </label>
+        `;
+    }).join('');
+};
 
 // ==========================================
 // PENDETEKSI SESI OTOMATIS (ANTI REFRESH ULTIMATE)
