@@ -2661,8 +2661,8 @@ window.tambahMasterKategori = () => {
     window.renderMasterKategori();
 };
 window.hapusMasterKategori = (nama) => {
-    window.masterKategori = window.masterKategori.filter(...); // (kode asli Mas Ihsan)
-    localStorage.setItem('master_kategori', JSON.stringify(window.masterKategori)); // <-- TARUH DI SINI
+    window.masterKategori = window.masterKategori.filter(item => item !== nama);
+    localStorage.setItem('master_kategori', JSON.stringify(window.masterKategori));
     window.renderMasterKategori();
 };
 
