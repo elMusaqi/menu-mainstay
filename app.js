@@ -2075,11 +2075,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 window.loginKeKasir = () => {
+window.matikanBGM()
     // Buka layar kasir
     document.getElementById('layar-kasir').classList.remove('hidden');
 };
 
 window.keluarDariKasir = () => {
+window.nyalakanBGM();
     // Tutup layar kasir dan kembali ke mode pelanggan
     document.getElementById('layar-kasir').classList.add('hidden');
     // Matikan kamera jika sebelumnya menyala
