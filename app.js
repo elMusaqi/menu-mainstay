@@ -2666,3 +2666,42 @@ window.renderMasterTopping = () => {
     `).join('');
 };
 // ==========================================
+// ==========================================
+// FITUR BACKSOUND MUSIC (BGM)
+// ==========================================
+window.bgm = document.getElementById('bgm-mainstay');
+window.bgmIcon = document.getElementById('icon-bgm');
+window.isBgmPlaying = false;
+
+// Setel volume menjadi 30% saja agar tidak mengagetkan
+if(window.bgm) {
+    window.bgm.volume = 0.3; 
+}
+
+// Fungsi untuk Nyala/Matikan Musik via Tombol
+window.toggleBGM = () => {
+    if (!window.bgm) return;
+    
+    if (window.isBgmPlaying) {
+        window.bgm.pause();
+        window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+        window.isBgmPlaying = false;
+    } else {
+        window.bgm.play().then(() => {
+            window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
+            window.isBgmPlaying = true;
+        }).catch(err => {
+            console.log("Tertunda menunggu interaksi user:", err);
+        });
+    }
+};
+
+// Trik Cerdas: Nyalakan musik otomatis saat pelanggan pertama kali sentuh layar
+document.body.addEventListener('click', function startBGM() {
+    if (!window.isBgmPlaying && window.bgm) {
+        window.toggleBGM();
+        // Hapus deteksi klik ini setelah musik menyala agar tidak dobel
+        document.body.removeEventListener('click', startBGM);
+    }
+}, { once: true });
+// ==========================================
