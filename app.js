@@ -1594,7 +1594,25 @@ window.renderPanelMenu = () => {
                             <option value="snack">Snack / Cemilan</option>
                         </select>
                     </div>
-
+<!-- Input Gambar (Dual Opsi) -->
+                    <div class="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-2"><i class="fa-solid fa-image text-blue-500 mr-1"></i> Gambar Menu (Pilih Salah Satu)</label>
+                        <div class="space-y-2">
+                            <!-- Opsi 1: Link URL -->
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-500">Opsi 1: Link Gambar (URL)</span>
+                                <input type="text" id="fm-image-url" placeholder="https://contoh.com/gambar.jpg" class="w-full bg-white border border-gray-200 p-2 rounded-lg text-xs focus:outline-none focus:border-amber-500 mt-1">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <hr class="flex-1 border-slate-200"><span class="text-[10px] text-slate-400 font-bold">ATAU</span><hr class="flex-1 border-slate-200">
+                            </div>
+                            <!-- Opsi 2: Upload File -->
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-500">Opsi 2: Upload File Lokal</span>
+                                <input type="file" id="fm-image-file" accept="image/*" class="w-full bg-white border border-gray-200 p-2 rounded-lg text-xs focus:outline-none focus:border-amber-500 mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200 cursor-pointer transition">
+                            </div>
+                        </div>
+                    </div>
                     <!-- Hubungkan Topping -->
                     <div class="mb-3">
                         <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-cookie-bite text-orange-500 mr-1"></i> Hubungkan Topping (Opsional)</label>
@@ -2906,46 +2924,69 @@ document.addEventListener('visibilitychange', () => {
 // TAHAP 3: FUNGSI SIMPAN MENU + VARIAN & TOPPING
 // ==========================================
 window.simpanMenuBaru = async () => {
-    const nameEl = document.getElementById('fm-name');
+    const namaEl = document.getElementById('fm-name');
     const priceEl = document.getElementById('fm-price');
     
-    // Mesin Pintar: Melacak elemen kategori baik itu fm-cat bawaan maupun versi baru
+    // Tarik elemen kategori
     const catEl = document.getElementById('fm-cat') || document.getElementById('select-kategori-menu');
 
-    // Validasi Cerdas 
-    if (!nameEl || !nameEl.value.trim()) return alert("Nama Menu wajib diisi!");
+    // Validasi form
+    if (!namaEl || !namaEl.value.trim()) return alert("Nama Menu wajib diisi!");
     if (!priceEl || !priceEl.value) return alert("Harga Menu wajib diisi!");
-    
-    // Tarik nilai kategori, jika gagal tertangkap paksa gunakan default
-    const kategoriValue = (catEl && catEl.value) ? catEl.value : 'coffee'; 
 
-    // Kumpulkan Centangan Topping
+    const kategoriValue = (catEl && catEl.value) ? catEl.value : 'coffee';
+
+    // Kumpulkan Centangan Topping & Varian
     const toppingTerpilih = [];
     document.querySelectorAll('.checkbox-topping-menu:checked').forEach(cb => toppingTerpilih.push(cb.value));
 
-    // Kumpulkan Centangan Varian
     const varianTerpilih = [];
     document.querySelectorAll('.checkbox-varian-menu:checked').forEach(cb => varianTerpilih.push(cb.value));
 
+    // ==========================================
+    // LOGIKA GAMBAR DUAL OPSI (URL vs FILE LOKAL)
+    // ==========================================
+    const imgUrlEl = document.getElementById('fm-image-url');
+    const imgFileEl = document.getElementById('fm-image-file');
+    let finalImageUrl = 'https://via.placeholder.com/150?text=Menu+Baru'; // Gambar default jika kosong
+
+    // Prioritas 1: Jika user meng-upload file dari memori HP/Laptop
+    if (imgFileEl && imgFileEl.files.length > 0) {
+        const file = imgFileEl.files[0];
+        // Ubah file gambar menjadi teks (Base64) agar bisa masuk ke database
+        finalImageUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+        });
+    } 
+    // Prioritas 2: Jika user menggunakan Link URL gambar
+    else if (imgUrlEl && imgUrlEl.value.trim() !== '') {
+        finalImageUrl = imgUrlEl.value.trim();
+    }
+    // ==========================================
+
     const payload = {
-        name: nameEl.value.trim(),
+        name: namaEl.value.trim(),
         price: Number(priceEl.value),
         category: kategoriValue,
         isAvailable: true,
-        imageUrl: '',
-        toppingIds: toppingTerpilih,   
-        varianIds: varianTerpilih      
+        imageUrl: finalImageUrl, 
+        toppingIds: toppingTerpilih,
+        varianIds: varianTerpilih
     };
 
-    // Kirim ke Database
+    // Kirim ke database
     await window.simpanNode('menus', payload);
-    
-    // Bersihkan Form setelah sukses
-    nameEl.value = '';
+
+    // Bersihkan form setelah sukses
+    namaEl.value = '';
     priceEl.value = '';
+    if (imgUrlEl) imgUrlEl.value = '';
+    if (imgFileEl) imgFileEl.value = '';
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    
-    alert("Menu baru berhasil disimpan!");
-    if (typeof window.renderPanelMenu === 'function') window.renderPanelMenu();
+
+    alert("Menu baru beserta gambarnya berhasil disimpan!");
+    if(typeof window.renderPanelMenu === 'function') window.renderPanelMenu();
 };
 // ==========================================
