@@ -2667,40 +2667,50 @@ window.renderMasterTopping = () => {
 };
 // ==========================================
 // ==========================================
-// FITUR BACKSOUND MUSIC (BGM)
+// FITUR BACKSOUND MUSIC (BGM) - FORCED AUTOPLAY
 // ==========================================
 window.bgm = document.getElementById('bgm-mainstay');
 window.bgmIcon = document.getElementById('icon-bgm');
 window.isBgmPlaying = false;
 
-// Setel volume menjadi 30% saja agar tidak mengagetkan
 if(window.bgm) {
-    window.bgm.volume = 0.3; 
+    window.bgm.volume = 0.3; // Volume 30%
 }
 
-// Fungsi untuk Nyala/Matikan Musik via Tombol
+// Fungsi mencoba paksa nyala
+window.cobaPlayBGM = () => {
+    if(!window.bgm) return;
+    window.bgm.play().then(() => {
+        // Jika browser mengizinkan, ikon langsung berubah biru & musik nyala
+        window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
+        window.isBgmPlaying = true;
+    }).catch(err => {
+        // Jika diblokir browser, diam-diam tunggu layar disentuh
+        console.log("Autoplay ditahan browser sampai pelanggan menyentuh layar.");
+    });
+};
+
+// Fungsi untuk tombol klik manual
 window.toggleBGM = () => {
     if (!window.bgm) return;
-    
     if (window.isBgmPlaying) {
         window.bgm.pause();
         window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
         window.isBgmPlaying = false;
     } else {
-        window.bgm.play().then(() => {
-            window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
-            window.isBgmPlaying = true;
-        }).catch(err => {
-            console.log("Tertunda menunggu interaksi user:", err);
-        });
+        window.cobaPlayBGM();
     }
 };
 
-// Trik Cerdas: Nyalakan musik otomatis saat pelanggan pertama kali sentuh layar
+// 1. Coba paksa nyala seketika saat web loading
+setTimeout(() => {
+    window.cobaPlayBGM();
+}, 500);
+
+// 2. Trik Cadangan: Jika gagal nyala di awal, otomatis nyalakan saat pelanggan pertama kali sentuh layar (scroll/klik)
 document.body.addEventListener('click', function startBGM() {
     if (!window.isBgmPlaying && window.bgm) {
-        window.toggleBGM();
-        // Hapus deteksi klik ini setelah musik menyala agar tidak dobel
+        window.cobaPlayBGM();
         document.body.removeEventListener('click', startBGM);
     }
 }, { once: true });
