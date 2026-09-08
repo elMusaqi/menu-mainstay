@@ -2667,30 +2667,32 @@ window.renderMasterTopping = () => {
 };
 // ==========================================
 // ==========================================
-// FITUR BACKSOUND MUSIC (BGM) - FORCED AUTOPLAY
+// FITUR BACKSOUND MUSIC (BGM) KHUSUS PELANGGAN
 // ==========================================
 window.bgm = document.getElementById('bgm-mainstay');
 window.bgmIcon = document.getElementById('icon-bgm');
+window.btnBgm = document.getElementById('btn-bgm');
 window.isBgmPlaying = false;
 
+// Setel volume pelan (30%)
 if(window.bgm) {
-    window.bgm.volume = 0.3; // Volume 30%
+    window.bgm.volume = 0.3; 
 }
 
-// Fungsi mencoba paksa nyala
 window.cobaPlayBGM = () => {
+    // CEGAH NYALA: Jika Owner Panel sedang terbuka, jangan putar musiknya
+    const panelWadah = document.getElementById('panels-container');
+    if (panelWadah && panelWadah.innerHTML.trim() !== '') return;
+
     if(!window.bgm) return;
     window.bgm.play().then(() => {
-        // Jika browser mengizinkan, ikon langsung berubah biru & musik nyala
         window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
         window.isBgmPlaying = true;
     }).catch(err => {
-        // Jika diblokir browser, diam-diam tunggu layar disentuh
-        console.log("Autoplay ditahan browser sampai pelanggan menyentuh layar.");
+        console.log("Menunggu sentuhan pelanggan untuk memulai musik.");
     });
 };
 
-// Fungsi untuk tombol klik manual
 window.toggleBGM = () => {
     if (!window.bgm) return;
     if (window.isBgmPlaying) {
@@ -2702,16 +2704,35 @@ window.toggleBGM = () => {
     }
 };
 
-// 1. Coba paksa nyala seketika saat web loading
-setTimeout(() => {
-    window.cobaPlayBGM();
-}, 500);
+// 1. Coba paksa nyala di detik pertama web dibuka
+setTimeout(() => { window.cobaPlayBGM(); }, 500);
 
-// 2. Trik Cadangan: Jika gagal nyala di awal, otomatis nyalakan saat pelanggan pertama kali sentuh layar (scroll/klik)
+// 2. Jika browser memblokir, tunggu pelanggan sentuh layar pertama kali
 document.body.addEventListener('click', function startBGM() {
     if (!window.isBgmPlaying && window.bgm) {
         window.cobaPlayBGM();
         document.body.removeEventListener('click', startBGM);
     }
 }, { once: true });
+
+
+// --- CCTV PEMANTAU OWNER PANEL ---
+// Otomatis mematikan musik & tombol saat Mas Ihsan masuk ke Panel Admin
+const cctvPanel = document.getElementById('panels-container');
+if (cctvPanel) {
+    const pantau = new MutationObserver(() => {
+        if (cctvPanel.innerHTML.trim() !== '') {
+            // Panel Owner TERBUKA -> Matikan musik & sembunyikan tombol
+            if (window.bgm) window.bgm.pause();
+            if (window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+            window.isBgmPlaying = false;
+            if (window.btnBgm) window.btnBgm.style.display = 'none';
+        } else {
+            // Panel Owner DITUTUP -> Munculkan tombol lagi untuk pelanggan
+            if (window.btnBgm) window.btnBgm.style.display = 'flex';
+        }
+    });
+    // Mulai memantau perubahan pada panel
+    pantau.observe(cctvPanel, { childList: true });
+}
 // ==========================================
