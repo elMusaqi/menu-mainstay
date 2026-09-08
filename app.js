@@ -1353,6 +1353,7 @@ window.updateLiveCashDrawer = () => {
 // ============================================================================
 
 window.updateOwnerDashboard = () => {
+window.matikanBGM();
     let todayOmzet = 0;
     
     Object.values(globalOrders).forEach(order => { 
@@ -1369,6 +1370,7 @@ window.updateOwnerDashboard = () => {
 };
 
 window.closePanel = () => {
+window.nyalakanBGM();
     const container = document.getElementById('owner-inner-panels-container');
     if (container) {
         container.innerHTML = '';
@@ -2674,65 +2676,43 @@ window.bgmIcon = document.getElementById('icon-bgm');
 window.btnBgm = document.getElementById('btn-bgm');
 window.isBgmPlaying = false;
 
-// Setel volume pelan (30%)
-if(window.bgm) {
-    window.bgm.volume = 0.3; 
-}
+if(window.bgm) window.bgm.volume = 0.3; 
 
 window.cobaPlayBGM = () => {
-    // CEGAH NYALA: Jika Owner Panel sedang terbuka, jangan putar musiknya
-    const panelWadah = document.getElementById('panels-container');
-    if (panelWadah && panelWadah.innerHTML.trim() !== '') return;
-
     if(!window.bgm) return;
     window.bgm.play().then(() => {
-        window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
+        if(window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
         window.isBgmPlaying = true;
-    }).catch(err => {
-        console.log("Menunggu sentuhan pelanggan untuk memulai musik.");
-    });
+    }).catch(err => console.log("Menunggu klik user..."));
 };
 
 window.toggleBGM = () => {
     if (!window.bgm) return;
     if (window.isBgmPlaying) {
         window.bgm.pause();
-        window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+        if(window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
         window.isBgmPlaying = false;
     } else {
         window.cobaPlayBGM();
     }
 };
 
-// 1. Coba paksa nyala di detik pertama web dibuka
-setTimeout(() => { window.cobaPlayBGM(); }, 500);
+// --- FITUR REM TANGAN (MANUAL) ---
+window.matikanBGM = () => {
+    if (window.bgm) window.bgm.pause(); // Hentikan lagu
+    if (window.btnBgm) window.btnBgm.style.display = 'none'; // Sembunyikan tombol
+};
 
-// 2. Jika browser memblokir, tunggu pelanggan sentuh layar pertama kali
+window.nyalakanBGM = () => {
+    if (window.btnBgm) window.btnBgm.style.display = 'flex'; // Munculkan tombol
+    if (window.isBgmPlaying && window.bgm) window.bgm.play(); // Lanjut putar lagu
+};
+
+setTimeout(() => { window.cobaPlayBGM(); }, 500);
 document.body.addEventListener('click', function startBGM() {
     if (!window.isBgmPlaying && window.bgm) {
         window.cobaPlayBGM();
         document.body.removeEventListener('click', startBGM);
     }
 }, { once: true });
-
-
-// --- CCTV PEMANTAU OWNER PANEL ---
-// Otomatis mematikan musik & tombol saat Mas Ihsan masuk ke Panel Admin
-const cctvPanel = document.getElementById('panels-container');
-if (cctvPanel) {
-    const pantau = new MutationObserver(() => {
-        if (cctvPanel.innerHTML.trim() !== '') {
-            // Panel Owner TERBUKA -> Matikan musik & sembunyikan tombol
-            if (window.bgm) window.bgm.pause();
-            if (window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
-            window.isBgmPlaying = false;
-            if (window.btnBgm) window.btnBgm.style.display = 'none';
-        } else {
-            // Panel Owner DITUTUP -> Munculkan tombol lagi untuk pelanggan
-            if (window.btnBgm) window.btnBgm.style.display = 'flex';
-        }
-    });
-    // Mulai memantau perubahan pada panel
-    pantau.observe(cctvPanel, { childList: true });
-}
 // ==========================================
