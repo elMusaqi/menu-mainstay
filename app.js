@@ -1506,8 +1506,49 @@ window.renderPanelMenu = () => {
             </div>
             
             <div class="flex-1 overflow-y-auto p-5 hide-scrollbar">
-                <!-- Form Insert Database -->
-                <div class="bg-white p-5 rounded-2xl border border-gray-100 mb-6 shadow-sm">
+    
+    <!-- ========================================== -->
+    <!-- TAHAP 1: UI MASTER KATEGORI & TOPPING      -->
+    <!-- ========================================== -->
+    <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-6">
+        <h2 class="text-lg font-black text-slate-800 mb-4">
+            <i class="fa-solid fa-database text-blue-500 mr-2"></i>Data Master
+        </h2>
+        
+        <!-- MASTER KATEGORI -->
+        <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            <h3 class="text-sm font-bold text-slate-700 mb-3">1. Master Kategori Produk</h3>
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="input-kategori-baru" placeholder="Cth: Kopi, Snack..." class="flex-1 text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
+                <button onclick="window.tambahMasterKategori()" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm active:scale-95 transition">
+                    <i class="fa-solid fa-plus"></i> Tambah
+                </button>
+            </div>
+            <!-- Tempat Munculnya Daftar Kategori -->
+            <div id="list-master-kategori" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- MASTER TOPPING -->
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            <h3 class="text-sm font-bold text-slate-700 mb-3">2. Master Topping / Add-on</h3>
+            <div class="flex flex-col gap-2 mb-3">
+                <input type="text" id="input-topping-nama" placeholder="Nama Topping (Cth: Boba, Extra Keju)" class="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
+                <div class="flex gap-2">
+                    <input type="number" id="input-topping-harga" placeholder="Harga (+Rp)" class="flex-1 text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
+                    <button onclick="window.tambahMasterTopping()" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm active:scale-95 transition">
+                        <i class="fa-solid fa-plus"></i> Tambah
+                    </button>
+                </div>
+            </div>
+            <!-- Tempat Munculnya Daftar Topping -->
+            <div id="list-master-topping" class="flex flex-col gap-2"></div>
+        </div>
+    </div>
+    <!-- ========================================== -->
+
+    <!-- Form Insert Database -->
+    <div class="bg-white p-5 rounded-2xl border border-gray-100 mb-6 shadow-sm">
+        <!-- (Kode asli Mas Ihsan lanjut ke bawah...) -->
                     <h3 class="text-xs font-black mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
                         <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Tambah Menu Baru
                     </h3>
