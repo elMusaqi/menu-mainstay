@@ -836,15 +836,21 @@ window.prosesCheckout = async () => {
 
 window.switchRoleView = (role) => {
     
-    // --- REM TANGAN BGM OTOMATIS ---
-    if (role === 'kasir' || role === 'owner') {
+    // --- PUSAT KENDALI: BGM & ALWAYS ON DISPLAY ---
+    if (role === 'kasir') {
         window.matikanBGM();
+        window.requestWakeLock(); // Layar nyala terus saat jaga kasir!
+    } else if (role === 'owner') {
+        window.matikanBGM();
+        window.releaseWakeLock(); // Lepas kunci layar agar HP bisa istirahat
     } else {
         window.nyalakanBGM();
+        window.releaseWakeLock(); // Lepas kunci layar saat mode pelanggan
     }
-    // -------------------------------
+    // ----------------------------------------------
 
     // Sembunyikan semua section layar terlebih dahulu
+    // ... (kode Mas Ihsan lanjut ke bawah seperti aslinya)
     document.getElementById('view-customer').classList.add('hidden');
     document.getElementById('view-kasir').classList.add('hidden');
     document.getElementById('view-owner').classList.add('hidden');
@@ -2741,6 +2747,39 @@ document.body.addEventListener('click', () => {
     const viewCust = document.getElementById('view-customer');
     if (viewCust && !viewCust.classList.contains('hidden')) {
         window.cobaPlayBGM();
+    }
+});
+// ==========================================
+
+// ==========================================
+// FITUR ALWAYS ON DISPLAY (WAKE LOCK) KASIR
+// ==========================================
+window.wakeLock = null;
+
+window.requestWakeLock = async () => {
+    try {
+        if ('wakeLock' in navigator) {
+            window.wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Layar Kasir Aktif Terus');
+        }
+    } catch (err) {
+        console.log('Gagal mengunci layar:', err.message);
+    }
+};
+
+window.releaseWakeLock = () => {
+    if (window.wakeLock !== null) {
+        window.wakeLock.release().then(() => {
+            window.wakeLock = null;
+        });
+    }
+};
+
+// Pancingan Pintar: Jika Mas Ihsan sempat minimize Chrome/PWA untuk buka WA,
+// lalu kembali ke aplikasi Kasir, layar akan otomatis dikunci "Always On" lagi.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && typeof currentRole !== 'undefined' && currentRole === 'kasir') {
+        window.requestWakeLock();
     }
 });
 // ==========================================
