@@ -1302,20 +1302,24 @@ window.updateOrderStatus = async (orderKey, newStatus) => {
     }
 };
 
-window.batalOrder = async (orderKey) => {
-    // Pop-up konfirmasi biasa tanpa PIN
-    const yakin = confirm("Apakah Anda yakin ingin membatalkan pesanan ini?");
+// 1. Pemicu munculnya pop-up elegan
+window.batalOrder = (orderKey) => {
+    window.tampilkanPopupBatal(orderKey);
+};
 
-    if (yakin) {
-        try {
-            // Pastikan tulisan di dalam ref() sama dengan kode asli Anda yang terpotong di gambar
-            const orderRef = ref(db, `orders/${orderKey}`); 
-            await remove(orderRef);
-            alert("Berhasil! Pesanan dibatalkan.");
-        } catch(error) {
-            console.error("Void Order Error:", error);
-            alert("Gagal menghapus pesanan.");
-        }
+// 2. Mesin eksekutor (Dijalankan saat tombol "Ya, Batalkan" diklik)
+window.eksekusiBatalOrder = async (orderKey) => {
+    window.tutupPopupBatal(); // Hilangkan pop-up dari layar
+    
+    try {
+        const orderRef = ref(db, 'orders/' + orderKey);
+        await remove(orderRef);
+        
+        // Buat alert kustom sementara untuk sukses (Bisa diganti dengan Toast nanti)
+        alert("Berhasil! Pesanan dibatalkan.");
+    } catch (error) {
+        console.error("Void Order Error:", error);
+        alert("Gagal menghapus pesanan.");
     }
 };
 
@@ -2491,5 +2495,56 @@ window.autoJoinGrup = (elemenCeklis) => {
     if (elemenCeklis.checked) {
         const linkGrupWa = "whatsapp://chat?code=DYUTVUGWfzcHoCWnKNFdSB"; 
         window.location.href = linkGrupWa;
+    }
+};
+
+// ==========================================
+// MESIN POP-UP BATAL PESANAN (DESAIN PREMIUM)
+// ==========================================
+window.tampilkanPopupBatal = (key) => {
+    const popupLama = document.getElementById('popup-batal-custom');
+    if (popupLama) popupLama.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'popup-batal-custom';
+    modal.className = 'fixed inset-0 z-[999999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-5 opacity-0 transition-opacity duration-300';
+
+    modal.innerHTML = `
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner border border-red-100">
+                <i class="fa-solid fa-ban"></i>
+            </div>
+            
+            <h2 class="text-xl font-black text-slate-800 mb-1">Batalkan Pesanan?</h2>
+            <p class="text-xs text-slate-500 font-medium mb-6 px-2 leading-relaxed">
+                Tindakan ini tidak dapat diurungkan. Pesanan pelanggan ini akan dihapus dari sistem.
+            </p>
+
+            <div class="flex gap-3 w-full">
+                <button onclick="window.tutupPopupBatal()" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition active:scale-95 text-xs">
+                    Kembali
+                </button>
+                <button onclick="window.eksekusiBatalOrder('${key}')" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition shadow-md active:scale-95 text-xs flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-trash-can"></i> Ya, Batalkan
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    
+    // Animasi masuk agar munculnya mulus
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+    }, 10);
+};
+
+window.tutupPopupBatal = () => {
+    const modal = document.getElementById('popup-batal-custom');
+    if (modal) {
+        modal.classList.add('opacity-0');
+        modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => modal.remove(), 300);
     }
 };
