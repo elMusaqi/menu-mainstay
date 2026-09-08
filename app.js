@@ -2688,11 +2688,20 @@ window.isBgmPlaying = false;
 if(window.bgm) window.bgm.volume = 0.3; 
 
 window.cobaPlayBGM = () => {
+    // --- GEMBOK ANTI-BOCOR REFRESH ---
+    // Cek posisi layar: Jika yang terbuka adalah layar kasir/owner, BATALKAN PUTAR MUSIK!
+    if (typeof currentRole !== 'undefined' && (currentRole === 'kasir' || currentRole === 'owner')) return;
+    const viewKasir = document.getElementById('view-kasir');
+    const viewOwner = document.getElementById('view-owner');
+    if (viewKasir && !viewKasir.classList.contains('hidden')) return;
+    if (viewOwner && !viewOwner.classList.contains('hidden')) return;
+    // ---------------------------------
+
     if(!window.bgm) return;
     window.bgm.play().then(() => {
         if(window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
         window.isBgmPlaying = true;
-    }).catch(err => console.log("Menunggu klik user..."));
+    }).catch(err => console.log("Menunggu klik..."));
 };
 
 window.toggleBGM = () => {
@@ -2706,22 +2715,27 @@ window.toggleBGM = () => {
     }
 };
 
-// --- FITUR REM TANGAN (MANUAL) ---
 window.matikanBGM = () => {
-    if (window.bgm) window.bgm.pause(); // Hentikan lagu
-    if (window.btnBgm) window.btnBgm.style.display = 'none'; // Sembunyikan tombol
+    if (window.bgm) window.bgm.pause(); 
+    if (window.btnBgm) window.btnBgm.style.display = 'none'; 
+    if (window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+    window.isBgmPlaying = false; 
 };
 
 window.nyalakanBGM = () => {
-    if (window.btnBgm) window.btnBgm.style.display = 'flex'; // Munculkan tombol
-    if (window.isBgmPlaying && window.bgm) window.bgm.play(); // Lanjut putar lagu
+    if (window.btnBgm) window.btnBgm.style.display = 'flex'; 
+    window.cobaPlayBGM(); 
 };
 
+// Coba putar di awal loading (akan digagalkan oleh gembok jika sedang di kasir)
 setTimeout(() => { window.cobaPlayBGM(); }, 500);
-document.body.addEventListener('click', function startBGM() {
-    if (!window.isBgmPlaying && window.bgm) {
+
+// Pancingan pintar: Hanya mau kepancing nyala kalau diklik pas di layar pelanggan
+document.body.addEventListener('click', () => {
+    if (window.isBgmPlaying) return;
+    const viewCust = document.getElementById('view-customer');
+    if (viewCust && !viewCust.classList.contains('hidden')) {
         window.cobaPlayBGM();
-        document.body.removeEventListener('click', startBGM);
     }
-}, { once: true });
+});
 // ==========================================
