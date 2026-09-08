@@ -3086,6 +3086,38 @@ window.renderCheckboxTopping = () => {
 };
 
 // ==========================================
+// JEMBATAN 1: PENARIK KATEGORI (ANTI-NYANGKUT)
+// ==========================================
+window.renderSelectKategori = () => {
+    const catSelect = document.getElementById('fm-cat');
+    if (!catSelect) return;
+
+    // Tarik data dari database
+    let dataMentah = window.globalKategori || window.masterKategori || window.kategori || window.globalMasterKategori;
+    let daftarKategori = [];
+
+    if (dataMentah) {
+        if (Array.isArray(dataMentah)) {
+            daftarKategori = dataMentah.map(k => typeof k === 'object' ? (k.nama || k.name || k.id) : k);
+        } else if (typeof dataMentah === 'object') {
+            daftarKategori = Object.keys(dataMentah);
+            if (daftarKategori.length > 0 && typeof dataMentah[daftarKategori[0]] === 'object') {
+                daftarKategori = Object.values(dataMentah).map(val => val.nama || val.name || val.id || val.kategori);
+            }
+        }
+    }
+
+    // Masukkan data asli ke dalam dropdown (Hapus bawaan lama)
+    if (daftarKategori.length > 0) {
+        catSelect.innerHTML = daftarKategori.map(kat => 
+            `<option value="${kat}">${kat}</option>`
+        ).join('');
+    } else {
+        catSelect.innerHTML = '<option value="" disabled selected>-- Belum ada Kategori --</option>';
+    }
+};
+
+// ==========================================
 // JEMBATAN 3: PENARIK VARIAN (AUTO-RESCUE 3 VARIAN ASLI)
 // ==========================================
 window.renderCheckboxVarian = () => {
