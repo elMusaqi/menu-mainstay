@@ -1506,52 +1506,52 @@ window.renderPanelMenu = () => {
             </div>
             
             <div class="flex-1 overflow-y-auto p-5 hide-scrollbar">
-    
-    <!-- ========================================== -->
-    <!-- TAHAP 1: UI MASTER KATEGORI & TOPPING      -->
-    <!-- ========================================== -->
-    <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-6">
-        <h2 class="text-lg font-black text-slate-800 mb-4">
-            <i class="fa-solid fa-database text-blue-500 mr-2"></i>Data Master
-        </h2>
         
-        <!-- MASTER KATEGORI -->
-        <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-            <h3 class="text-sm font-bold text-slate-700 mb-3">1. Master Kategori Produk</h3>
-            <div class="flex gap-2 mb-3">
-                <input type="text" id="input-kategori-baru" placeholder="Cth: Kopi, Snack..." class="flex-1 text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
-                <button onclick="window.tambahMasterKategori()" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm active:scale-95 transition">
-                    <i class="fa-solid fa-plus"></i> Tambah
-                </button>
-            </div>
-            <!-- Tempat Munculnya Daftar Kategori -->
-            <div id="list-master-kategori" class="flex flex-wrap gap-2"></div>
-        </div>
-
-        <!-- MASTER TOPPING -->
-        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-            <h3 class="text-sm font-bold text-slate-700 mb-3">2. Master Topping / Add-on</h3>
-            <div class="flex flex-col gap-2 mb-3">
-                <input type="text" id="input-topping-nama" placeholder="Nama Topping (Cth: Boba, Extra Keju)" class="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
-                <div class="flex gap-2">
-                    <input type="number" id="input-topping-harga" placeholder="Harga (+Rp)" class="flex-1 text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
-                    <button onclick="window.tambahMasterTopping()" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm active:scale-95 transition">
+        <!-- ========================================== -->
+        <!-- TAHAP 1: UI MASTER KATEGORI & TOPPING      -->
+        <!-- ========================================== -->
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-6">
+            <h2 class="text-lg font-black text-slate-800 mb-4">
+                <i class="fa-solid fa-database text-blue-500 mr-2"></i>Data Master
+            </h2>
+            
+            <!-- MASTER KATEGORI -->
+            <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <h3 class="text-sm font-bold text-slate-700 mb-3">1. Master Kategori Produk</h3>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="input-kategori-baru" placeholder="Cth: Kopi, Snack..." class="flex-1 text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
+                    <button onclick="window.tambahMasterKategori()" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm active:scale-95 transition">
                         <i class="fa-solid fa-plus"></i> Tambah
                     </button>
                 </div>
+                <!-- Tempat Munculnya Daftar Kategori -->
+                <div id="list-master-kategori" class="flex flex-wrap gap-2"></div>
             </div>
-            <!-- Tempat Munculnya Daftar Topping -->
-            <div id="list-master-topping" class="flex flex-col gap-2"></div>
-        </div>
-    </div>
-    <!-- ========================================== -->
 
-    <!-- Form Insert Database -->
-    <div class="bg-white p-5 rounded-2xl border border-gray-100 mb-6 shadow-sm">
-        <!-- (Kode asli Mas Ihsan lanjut ke bawah...) -->
-                    <h3 class="text-xs font-black mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
-                        <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Tambah Menu Baru
-                    </h3>
+            <!-- MASTER TOPPING -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <h3 class="text-sm font-bold text-slate-700 mb-3">2. Master Topping / Add-on</h3>
+                <div class="flex flex-col gap-2 mb-3">
+                    <input type="text" id="input-topping-nama" placeholder="Nama Topping (Cth: Boba, Extra Keju)" class="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
+                    <div class="flex gap-2">
+                        <input type="number" id="input-topping-harga" placeholder="Harga (+Rp)" class="flex-1 text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
+                        <button onclick="window.tambahMasterTopping()" class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm active:scale-95 transition">
+                            <i class="fa-solid fa-plus"></i> Tambah
+                        </button>
+                    </div>
+                </div>
+                <!-- Tempat Munculnya Daftar Topping -->
+                <div id="list-master-topping" class="flex flex-col gap-2"></div>
+            </div>
+        </div>
+        <!-- ========================================== -->
+
+        <!-- Form Insert Database -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-100 mb-6 shadow-sm">
+            <h3 class="text-xs font-black mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
+                <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Tambah Menu Baru
+            </h3>
+// ... (dan kodenya lanjut ke bawah seperti aslinya)
                     
                     <input type="text" id="fm-name" placeholder="Nama Menu (Contoh: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
                     
@@ -1578,9 +1578,15 @@ window.renderPanelMenu = () => {
                 </div>
             </div>
         </div>
-    `;
-};
+    `; 
+    
+    // --- PASTE DI SINI (SEBELUM KURUNG KURAWAL) ---
+    if(typeof window.renderMasterKategori === 'function') {
+        window.renderMasterKategori();
+        window.renderMasterTopping();
+    }
 
+}; // <--- Ini baris 1582 aslinya
 
 // ---------------------------------------------------------
 // MODUL 2: HRD & STAFF (/staff)
@@ -2589,3 +2595,75 @@ window.tutupPopupBatal = () => {
         setTimeout(() => modal.remove(), 300);
     }
 };
+
+// ==========================================
+// TAHAP 1: MESIN DATA MASTER (KATEGORI & TOPPING)
+// ==========================================
+window.masterKategori = [];
+window.masterTopping = [];
+
+window.tambahMasterKategori = () => {
+    const inputEl = document.getElementById('input-kategori-baru');
+    const nama = inputEl.value.trim();
+    if (!nama) return alert("Ketik nama kategori dulu ya!");
+    if (window.masterKategori.includes(nama)) return alert("Kategori ini sudah ada di daftar!");
+    window.masterKategori.push(nama);
+    inputEl.value = ''; 
+    window.renderMasterKategori();
+};
+
+window.hapusMasterKategori = (nama) => {
+    window.masterKategori = window.masterKategori.filter(k => k !== nama);
+    window.renderMasterKategori();
+};
+
+window.renderMasterKategori = () => {
+    const wadah = document.getElementById('list-master-kategori');
+    if (!wadah) return;
+    if (window.masterKategori.length === 0) {
+        wadah.innerHTML = '<p class="text-[10px] text-slate-400 italic">Belum ada kategori. Silakan tambah.</p>';
+        return;
+    }
+    wadah.innerHTML = window.masterKategori.map(nama => `
+        <div class="bg-white border border-slate-200 text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+            ${nama}
+            <button onclick="window.hapusMasterKategori('${nama}')" class="text-slate-300 hover:text-red-500 transition"><i class="fa-solid fa-circle-xmark"></i></button>
+        </div>
+    `).join('');
+};
+
+window.tambahMasterTopping = () => {
+    const namaEl = document.getElementById('input-topping-nama');
+    const hargaEl = document.getElementById('input-topping-harga');
+    const nama = namaEl.value.trim();
+    const harga = parseInt(hargaEl.value) || 0; 
+    if (!nama) return alert("Nama topping harus diisi!");
+    const id = 'top_' + Date.now();
+    window.masterTopping.push({ id, nama, harga });
+    namaEl.value = ''; hargaEl.value = '';
+    window.renderMasterTopping();
+};
+
+window.hapusMasterTopping = (id) => {
+    window.masterTopping = window.masterTopping.filter(t => t.id !== id);
+    window.renderMasterTopping();
+};
+
+window.renderMasterTopping = () => {
+    const wadah = document.getElementById('list-master-topping');
+    if (!wadah) return;
+    if (window.masterTopping.length === 0) {
+        wadah.innerHTML = '<p class="text-[10px] text-slate-400 italic">Belum ada topping. Silakan tambah.</p>';
+        return;
+    }
+    wadah.innerHTML = window.masterTopping.map(top => `
+        <div class="bg-white border border-slate-200 p-2.5 rounded-xl flex justify-between items-center shadow-sm">
+            <div>
+                <p class="text-xs font-bold text-slate-800">${top.nama}</p>
+                <p class="text-[10px] font-black text-emerald-500">+ Rp ${top.harga.toLocaleString('id-ID')}</p>
+            </div>
+            <button onclick="window.hapusMasterTopping('${top.id}')" class="bg-red-50 text-red-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-100 transition active:scale-95"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+        </div>
+    `).join('');
+};
+// ==========================================
