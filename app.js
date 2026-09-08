@@ -1392,16 +1392,24 @@ window.matikanBGM();
 };
 
 window.closePanel = () => {
-window.nyalakanBGM();
+    // --- HAPUS INGATAN LACI SAAT KELUAR ---
+    localStorage.removeItem('mainstay_active_panel');
+
+    window.nyalakanBGM();
+    // ... (biarkan sisa kode bawaan Mas Ihsan) ...
     const container = document.getElementById('owner-inner-panels-container');
     if (container) {
         container.innerHTML = '';
     }
 };
 
-// Router Utama untuk membuka 8 Modul Panel Owner
+// Router Utama untuk membuka 8 Modul
 window.openPanel = (panelId) => {
+    // --- SIMPAN INGATAN LACI (Berlaku untuk SEMUA laci) ---
+    localStorage.setItem('mainstay_active_panel', panelId);
+
     const functionMap = {
+        // ... (biarkan fungsi bawaan Mas Ihsan di bawahnya) ...
         'panel-menu': window.renderPanelMenu,
         'panel-hrd': window.renderPanelHRD,
         'panel-inventory': window.renderPanelInventory,
@@ -1538,7 +1546,7 @@ window.hapusNode = async (nodeString, dataKey, callbackFunctionName) => {
 // MODUL 1: KATALOG MENU (/menus)
 // ---------------------------------------------------------
 window.renderPanelMenu = () => {
-    // Filter out dummy data: Jangan tampilkan dummy 'd1', 'd2', dst di panel owner
+
     let realDbMenus = {};
     Object.keys(globalMenus).forEach(key => {
         if (!key.startsWith('dummy_')) {
@@ -3053,14 +3061,21 @@ window.simpanMenuBaru = async () => {
 // ==========================================
 
 // ==========================================
-// PENDETEKSI SESI OTOMATIS (ANTI REFRESH)
+// PENDETEKSI SESI OTOMATIS (ANTI REFRESH ULTIMATE)
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
+        // 1. Cek Pintu Utama (Owner / Kasir)
         const sesiAktif = localStorage.getItem('mainstay_session_role');
         if (sesiAktif === 'owner' || sesiAktif === 'kasir') {
             if (typeof window.switchRoleView === 'function') {
                 window.switchRoleView(sesiAktif); 
+            }
+            
+            // 2. Cek Laci spesifik yang sedang terbuka
+            const panelAktif = localStorage.getItem('mainstay_active_panel');
+            if (panelAktif && typeof window.openPanel === 'function') {
+                window.openPanel(panelAktif); // Buka panel apapun yang terakhir dilihat!
             }
         }
     }, 500); 
