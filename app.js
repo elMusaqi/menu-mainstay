@@ -1585,34 +1585,36 @@ window.renderPanelMenu = () => {
             </h3>
                     
                     <input type="text" id="fm-name" placeholder="Nama Menu (Contoh: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
-                    
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <input type="number" id="fm-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition">
-                        <select id="fm-cat" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition cursor-pointer">
-                            <option value="coffee">Coffee</option>
-                            <option value="non-coffee">Non-Coffee</option>
-                            <option value="snack">Snack / Cemilan</option>
-                        </select>
-                    </div>
-                    <!-- Hubungkan Topping (Opsional) -->
-            <div class="mb-3">
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-cookie-bite text-orange-500 mr-1"></i> Hubungkan Topping (Opsional)</label>
-                <div id="wadah-checkbox-topping" class="flex flex-col gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                    <p class="text-[10px] text-slate-400 italic">Memuat topping...</p>
-                </div>
-            </div>
 
-            <!-- Hubungkan Varian -->
-            <div class="mb-3">
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-layer-group text-purple-500 mr-1"></i> Hubungkan Varian (Opsional)</label>
-                <div id="wadah-checkbox-varian" class="flex flex-col gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                    <p class="text-[10px] text-slate-400 italic">Memuat varian...</p>
-                </div>
-            </div>
-                    <button onclick="window.simpanMenuBaru()" class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-amber-600 transition tracking-widest uppercase mt-2">
+<div class="grid grid-cols-2 gap-3 mb-3">
+    <input type="number" id="fm-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition">
+    <select id="fm-cat" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition cursor-pointer">
+        <option value="coffee">Coffee</option>
+        <option value="non-coffee">Non-Coffee</option>
+        <option value="snack">Snack / Cemilan</option>
+    </select>
+</div>
+
+<!-- Hubungkan Topping -->
+<div class="mb-3">
+    <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-cookie-bite text-orange-500 mr-1"></i> Hubungkan Topping (Opsional)</label>
+    <div id="wadah-checkbox-topping" class="flex flex-col gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <p class="text-[10px] text-slate-400 italic">Memuat topping...</p>
+    </div>
+</div>
+
+<!-- Hubungkan Varian -->
+<div class="mb-3">
+    <label class="block text-[11px] font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-layer-group text-purple-500 mr-1"></i> Hubungkan Varian (Opsional)</label>
+    <div id="wadah-checkbox-varian" class="flex flex-col gap-1.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <p class="text-[10px] text-slate-400 italic">Memuat varian...</p>
+    </div>
+</div>
+
+<button onclick="window.simpanMenuBaru()" class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-amber-600 transition tracking-widest uppercase mt-2">
     <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan ke Database
 </button>
-                </div>
+</div>
                 
                 <!-- Database List Render -->
                 <h3 class="text-xs font-black mb-3 uppercase tracking-wider flex items-center gap-2">
