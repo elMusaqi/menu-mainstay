@@ -1518,9 +1518,9 @@ window.renderPanelMenu = () => {
             <!-- MASTER KATEGORI -->
             <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
                 <h3 class="text-sm font-bold text-slate-700 mb-3">1. Master Kategori Produk</h3>
-                <div class="flex items-stretch gap-2 mb-3 h-[42px]">
-            <input type="text" id="input-kategori-baru" placeholder="Cth: Kopi, Snack..." class="flex-1 text-xs px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 h-full">
-            <button onclick="window.tambahMasterKategori()" class="bg-blue-500 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm whitespace-nowrap active:scale-95 transition flex items-center justify-center gap-1.5 h-full">
+                <div class="flex w-full items-stretch gap-2 mb-3 h-[42px]">
+            <input type="text" id="input-kategori-baru" placeholder="Cth: Kopi, Snack..." class="flex-1 min-w-0 text-xs px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 h-full">
+            <button onclick="window.tambahMasterKategori()" class="bg-blue-500 shrink-0 text-white px-3 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm whitespace-nowrap active:scale-95 transition flex items-center justify-center gap-1.5 h-full">
                 <i class="fa-solid fa-plus"></i> Tambah
             </button>
         </div>
@@ -1533,9 +1533,9 @@ window.renderPanelMenu = () => {
                 <h3 class="text-sm font-bold text-slate-700 mb-3">2. Master Topping / Add-on</h3>
                 <div class="flex flex-col gap-2 mb-3">
                     <input type="text" id="input-topping-nama" placeholder="Nama Topping (Cth: Boba, Extra Keju)" class="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400">
-                    <div class="flex items-stretch gap-2 h-[42px]">
-            <input type="number" id="input-topping-harga" placeholder="Harga (+Rp)" class="flex-1 text-xs px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 h-full">
-            <button onclick="window.tambahMasterTopping()" class="bg-blue-500 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm whitespace-nowrap active:scale-95 transition flex items-center justify-center gap-1.5 h-full">
+                    <div class="flex w-full items-stretch gap-2 h-[42px]">
+            <input type="number" id="input-topping-harga" placeholder="Harga (+Rp)" class="flex-1 min-w-0 text-xs px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 h-full">
+            <button onclick="window.tambahMasterTopping()" class="bg-blue-500 shrink-0 text-white px-3 rounded-xl text-xs font-bold hover:bg-blue-600 shadow-sm whitespace-nowrap active:scale-95 transition flex items-center justify-center gap-1.5 h-full">
                 <i class="fa-solid fa-plus"></i> Tambah
             </button>
         </div>
@@ -1551,7 +1551,6 @@ window.renderPanelMenu = () => {
             <h3 class="text-xs font-black mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
                 <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Tambah Menu Baru
             </h3>
-// ... (dan kodenya lanjut ke bawah seperti aslinya)
                     
                     <input type="text" id="fm-name" placeholder="Nama Menu (Contoh: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
                     
