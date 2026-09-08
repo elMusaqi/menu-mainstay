@@ -2630,8 +2630,8 @@ window.tutupPopupBatal = () => {
 // ==========================================
 // TAHAP 1: MESIN DATA MASTER (KATEGORI & TOPPING)
 // ==========================================
-window.masterKategori = [];
-window.masterTopping = [];
+window.masterKategori = JSON.parse(localStorage.getItem('master_kategori')) || [];
+window.masterTopping = JSON.parse(localStorage.getItem('master_topping')) || [];
 
 window.tambahMasterKategori = () => {
     const inputEl = document.getElementById('input-kategori-baru');
@@ -2639,12 +2639,13 @@ window.tambahMasterKategori = () => {
     if (!nama) return alert("Ketik nama kategori dulu ya!");
     if (window.masterKategori.includes(nama)) return alert("Kategori ini sudah ada di daftar!");
     window.masterKategori.push(nama);
-    inputEl.value = ''; 
+    inputEl.value = '';
+    localStorage.setItem('master_kategori', JSON.stringify(window.masterKategori)); // <-- TARUH DI SINI
     window.renderMasterKategori();
 };
-
 window.hapusMasterKategori = (nama) => {
-    window.masterKategori = window.masterKategori.filter(k => k !== nama);
+    window.masterKategori = window.masterKategori.filter(...); // (kode asli Mas Ihsan)
+    localStorage.setItem('master_kategori', JSON.stringify(window.masterKategori)); // <-- TARUH DI SINI
     window.renderMasterKategori();
 };
 
@@ -2671,12 +2672,14 @@ window.tambahMasterTopping = () => {
     if (!nama) return alert("Nama topping harus diisi!");
     const id = 'top_' + Date.now();
     window.masterTopping.push({ id, nama, harga });
-    namaEl.value = ''; hargaEl.value = '';
+    namaEl.value = ''; hargaEl.value = ''; 
+    localStorage.setItem('master_topping', JSON.stringify(window.masterTopping)); // <-- TARUH DI SINI
     window.renderMasterTopping();
 };
 
 window.hapusMasterTopping = (id) => {
-    window.masterTopping = window.masterTopping.filter(t => t.id !== id);
+    window.masterTopping = window.masterTopping.filter(v => v.id !== id);
+    localStorage.setItem('master_topping', JSON.stringify(window.masterTopping)); // <-- TARUH DI SINI
     window.renderMasterTopping();
 };
 
@@ -2702,8 +2705,7 @@ window.renderMasterTopping = () => {
 // ==========================================
 // TAHAP 2 & 3: MESIN MASTER VARIAN (VERSI PRO DENGAN HARGA)
 // ==========================================
-window.masterVarian = [];
-
+window.masterVarian = JSON.parse(localStorage.getItem('master_varian')) || [];
 window.tambahMasterVarian = () => {
     const namaEl = document.getElementById('input-varian-nama');
     const opsiEl = document.getElementById('input-varian-opsi');
@@ -2726,13 +2728,15 @@ window.tambahMasterVarian = () => {
     const id = 'var_' + Date.now();
     window.masterVarian.push({ id, nama, opsi: opsiArray });
     
-    namaEl.value = ''; opsiEl.value = ''; // Kosongkan input
+    namaEl.value = ''; opsiEl.value = '';
+    localStorage.setItem('master_varian', JSON.stringify(window.masterVarian)); // <--- TARUH DI SINI
     window.renderMasterVarian();
-    if(typeof window.renderCheckboxVarian === 'function') window.renderCheckboxVarian(); // Sinkronisasi otomatis ke form menu
+    if(typeof window.renderCheckboxVarian === 'function') window.renderCheckboxVarian();
 };
 
 window.hapusMasterVarian = (id) => {
     window.masterVarian = window.masterVarian.filter(v => v.id !== id);
+    localStorage.setItem('master_varian', JSON.stringify(window.masterVarian)); // <--- TARUH DI SINI
     window.renderMasterVarian();
     if(typeof window.renderCheckboxVarian === 'function') window.renderCheckboxVarian();
 };
