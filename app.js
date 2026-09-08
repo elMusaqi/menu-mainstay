@@ -1595,9 +1595,9 @@ window.renderPanelMenu = () => {
                         </select>
                     </div>
                     
-                    <button onclick="simpanNode('menus', { name: document.getElementById('fm-name').value, price: Number(document.getElementById('fm-price').value), category: document.getElementById('fm-cat').value, isAvailable: true, imageUrl: '' })" class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-amber-600 transition tracking-widest uppercase mt-2">
-                        <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan ke Database
-                    </button>
+                    <button onclick="window.simpanMenuBaru()" class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-amber-600 transition tracking-widest uppercase mt-2">
+    <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan ke Database
+</button>
                 </div>
                 
                 <!-- Database List Render -->
@@ -2879,4 +2879,60 @@ document.addEventListener('visibilitychange', () => {
         window.requestWakeLock();
     }
 });
+// ==========================================
+
+// ==========================================
+// TAHAP 3: FUNGSI SIMPAN MENU + VARIAN & TOPPING
+// ==========================================
+window.simpanMenuBaru = async () => {
+    // 1. Ambil Data Dasar Menu
+    const nameEl = document.getElementById('fm-name');
+    const priceEl = document.getElementById('fm-price');
+    const catEl = document.getElementById('select-kategori-menu');
+    
+    // (Opsional) Ambil deskripsi/gambar jika Mas Ihsan pakai ID ini di form-nya
+    const descEl = document.getElementById('fm-desc'); 
+    const imgEl = document.getElementById('fm-img'); 
+
+    if (!nameEl || !nameEl.value || !priceEl || !priceEl.value) return alert("Nama dan Harga Menu wajib diisi!");
+    if (!catEl || !catEl.value) return alert("Kategori Menu wajib dipilih!");
+
+    // 2. Kumpulkan Topping yang Dicentang
+    const toppingTerpilih = [];
+    document.querySelectorAll('.checkbox-topping-menu:checked').forEach(cb => {
+        toppingTerpilih.push(cb.value);
+    });
+
+    // 3. Kumpulkan Varian yang Dicentang
+    const varianTerpilih = [];
+    document.querySelectorAll('.checkbox-varian-menu:checked').forEach(cb => {
+        varianTerpilih.push(cb.value);
+    });
+
+    // 4. Susun Paket Data (Payload)
+    const payload = {
+        name: nameEl.value,
+        price: Number(priceEl.value),
+        desc: descEl ? descEl.value : '',
+        img: imgEl ? imgEl.value : '',
+        kategoriId: catEl.value,       // <-- Ini data Kategorinya
+        toppingIds: toppingTerpilih,   // <-- Ini data Topping-nya
+        varianIds: varianTerpilih,     // <-- Ini data Varian-nya
+        status: 'tersedia' 
+    };
+
+    // 5. Kirim ke Database Firebase Mas Ihsan
+    await window.simpanNode('menus', payload);
+    
+    // 6. Bersihkan Form & Refresh Layar
+    nameEl.value = '';
+    priceEl.value = '';
+    if(descEl) descEl.value = '';
+    if(imgEl) imgEl.value = '';
+    catEl.value = '';
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    
+    alert("Menu baru beserta varian berhasil disimpan!");
+    if (typeof window.renderPanelMenu === 'function') window.renderPanelMenu();
+};
 // ==========================================
