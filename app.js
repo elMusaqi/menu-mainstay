@@ -835,7 +835,14 @@ window.prosesCheckout = async () => {
 // ============================================================================
 
 window.switchRoleView = (role) => {
-    
+
+    // --- SISTEM ANTI REFRESH (SESSION MEMORY) ---
+    if (role === 'customer') {
+        localStorage.removeItem('mainstay_session_role');
+    } else {
+        localStorage.setItem('mainstay_session_role', role);
+    }
+    // --------------------------------------------
     // --- PUSAT KENDALI: BGM & ALWAYS ON DISPLAY ---
     if (role === 'kasir') {
         window.matikanBGM();
@@ -3044,3 +3051,17 @@ window.simpanMenuBaru = async () => {
     if(typeof window.renderPanelMenu === 'function') window.renderPanelMenu();
 };
 // ==========================================
+
+// ==========================================
+// PENDETEKSI SESI OTOMATIS (ANTI REFRESH)
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const sesiAktif = localStorage.getItem('mainstay_session_role');
+        if (sesiAktif === 'owner' || sesiAktif === 'kasir') {
+            if (typeof window.switchRoleView === 'function') {
+                window.switchRoleView(sesiAktif); 
+            }
+        }
+    }, 500); 
+});
