@@ -2889,54 +2889,46 @@ document.addEventListener('visibilitychange', () => {
 // TAHAP 3: FUNGSI SIMPAN MENU + VARIAN & TOPPING
 // ==========================================
 window.simpanMenuBaru = async () => {
-    // 1. Ambil Data Dasar Menu
     const nameEl = document.getElementById('fm-name');
     const priceEl = document.getElementById('fm-price');
-    const catEl = document.getElementById('select-kategori-menu');
     
-    // (Opsional) Ambil deskripsi/gambar jika Mas Ihsan pakai ID ini di form-nya
-    const descEl = document.getElementById('fm-desc'); 
-    const imgEl = document.getElementById('fm-img'); 
+    // Mesin Pintar: Melacak elemen kategori baik itu fm-cat bawaan maupun versi baru
+    const catEl = document.getElementById('fm-cat') || document.getElementById('select-kategori-menu');
 
-    if (!nameEl || !nameEl.value || !priceEl || !priceEl.value) return alert("Nama dan Harga Menu wajib diisi!");
-    if (!catEl || !catEl.value) return alert("Kategori Menu wajib dipilih!");
+    // Validasi Cerdas 
+    if (!nameEl || !nameEl.value.trim()) return alert("Nama Menu wajib diisi!");
+    if (!priceEl || !priceEl.value) return alert("Harga Menu wajib diisi!");
+    
+    // Tarik nilai kategori, jika gagal tertangkap paksa gunakan default
+    const kategoriValue = (catEl && catEl.value) ? catEl.value : 'coffee'; 
 
-    // 2. Kumpulkan Topping yang Dicentang
+    // Kumpulkan Centangan Topping
     const toppingTerpilih = [];
-    document.querySelectorAll('.checkbox-topping-menu:checked').forEach(cb => {
-        toppingTerpilih.push(cb.value);
-    });
+    document.querySelectorAll('.checkbox-topping-menu:checked').forEach(cb => toppingTerpilih.push(cb.value));
 
-    // 3. Kumpulkan Varian yang Dicentang
+    // Kumpulkan Centangan Varian
     const varianTerpilih = [];
-    document.querySelectorAll('.checkbox-varian-menu:checked').forEach(cb => {
-        varianTerpilih.push(cb.value);
-    });
+    document.querySelectorAll('.checkbox-varian-menu:checked').forEach(cb => varianTerpilih.push(cb.value));
 
-    // 4. Susun Paket Data (Payload)
     const payload = {
-        name: nameEl.value,
+        name: nameEl.value.trim(),
         price: Number(priceEl.value),
-        desc: descEl ? descEl.value : '',
-        img: imgEl ? imgEl.value : '',
-        kategoriId: catEl.value,       // <-- Ini data Kategorinya
-        toppingIds: toppingTerpilih,   // <-- Ini data Topping-nya
-        varianIds: varianTerpilih,     // <-- Ini data Varian-nya
-        status: 'tersedia' 
+        category: kategoriValue,
+        isAvailable: true,
+        imageUrl: '',
+        toppingIds: toppingTerpilih,   
+        varianIds: varianTerpilih      
     };
 
-    // 5. Kirim ke Database Firebase Mas Ihsan
+    // Kirim ke Database
     await window.simpanNode('menus', payload);
     
-    // 6. Bersihkan Form & Refresh Layar
+    // Bersihkan Form setelah sukses
     nameEl.value = '';
     priceEl.value = '';
-    if(descEl) descEl.value = '';
-    if(imgEl) imgEl.value = '';
-    catEl.value = '';
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
     
-    alert("Menu baru beserta varian berhasil disimpan!");
+    alert("Menu baru berhasil disimpan!");
     if (typeof window.renderPanelMenu === 'function') window.renderPanelMenu();
 };
 // ==========================================
