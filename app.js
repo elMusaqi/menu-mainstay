@@ -2684,23 +2684,23 @@ window.bgm = document.getElementById('bgm-mainstay');
 window.bgmIcon = document.getElementById('icon-bgm');
 window.btnBgm = document.getElementById('btn-bgm');
 window.isBgmPlaying = false;
+window.bgmUserPaused = false; // <-- MEMORI: Mengingat apakah user sengaja mute
 
 if(window.bgm) window.bgm.volume = 0.3; 
 
 window.cobaPlayBGM = () => {
-    // --- GEMBOK ANTI-BOCOR REFRESH ---
-    // Cek posisi layar: Jika yang terbuka adalah layar kasir/owner, BATALKAN PUTAR MUSIK!
+    // Gembok Anti-Bocor Kasir/Owner
     if (typeof currentRole !== 'undefined' && (currentRole === 'kasir' || currentRole === 'owner')) return;
     const viewKasir = document.getElementById('view-kasir');
     const viewOwner = document.getElementById('view-owner');
     if (viewKasir && !viewKasir.classList.contains('hidden')) return;
     if (viewOwner && !viewOwner.classList.contains('hidden')) return;
-    // ---------------------------------
 
     if(!window.bgm) return;
     window.bgm.play().then(() => {
         if(window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-high text-blue-500";
         window.isBgmPlaying = true;
+        window.bgmUserPaused = false; 
     }).catch(err => console.log("Menunggu klik..."));
 };
 
@@ -2710,7 +2710,9 @@ window.toggleBGM = () => {
         window.bgm.pause();
         if(window.bgmIcon) window.bgmIcon.className = "fa-solid fa-volume-xmark text-slate-400";
         window.isBgmPlaying = false;
+        window.bgmUserPaused = true; // <-- INGAT: Pelanggan sengaja mematikan lagu
     } else {
+        window.bgmUserPaused = false; 
         window.cobaPlayBGM();
     }
 };
@@ -2724,15 +2726,18 @@ window.matikanBGM = () => {
 
 window.nyalakanBGM = () => {
     if (window.btnBgm) window.btnBgm.style.display = 'flex'; 
-    window.cobaPlayBGM(); 
+    // Nyalakan lagu HANYA JIKA pelanggan sebelumnya tidak memute manual
+    if (!window.bgmUserPaused) {
+        window.cobaPlayBGM(); 
+    }
 };
 
-// Coba putar di awal loading (akan digagalkan oleh gembok jika sedang di kasir)
+// Coba putar otomatis di awal
 setTimeout(() => { window.cobaPlayBGM(); }, 500);
 
-// Pancingan pintar: Hanya mau kepancing nyala kalau diklik pas di layar pelanggan
+// Pancingan layar: JANGAN paksa nyala kalau pelanggan sengaja nge-mute
 document.body.addEventListener('click', () => {
-    if (window.isBgmPlaying) return;
+    if (window.isBgmPlaying || window.bgmUserPaused) return; 
     const viewCust = document.getElementById('view-customer');
     if (viewCust && !viewCust.classList.contains('hidden')) {
         window.cobaPlayBGM();
