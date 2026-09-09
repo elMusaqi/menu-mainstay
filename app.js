@@ -515,64 +515,39 @@ window.bukaModalDetail = (key) => {
 
     window.selectedMenuForCart = { id: key, ...menu };
 
-    // Sinkronkan Nama Menu
-    document.querySelectorAll('#modal-title, #modal-menu-name, h3.font-black, .modal-title').forEach(el => {
-        if (el) el.innerText = menu.name;
-    });
+    // Cari elemen pembungkus modal
+    const modal = document.getElementById('modal-detail') || document.querySelector('.modal');
+    if (!modal) return;
 
-    // Sinkronkan Gambar Menu
-    document.querySelectorAll('#modal-img, #modal-menu-img, img.modal-img').forEach(el => {
-        if (el) el.src = menu.imageUrl || 'https://via.placeholder.com/150';
-    });
-
-    // Sinkronkan Deskripsi Asli dari Owner
-    document.querySelectorAll('#modal-desc, #modal-menu-desc, .modal-desc').forEach(el => {
-        if (el) el.innerText = menu.description ? menu.description : 'Tidak ada deskripsi untuk menu ini.';
-    });
-
-    // Sinkronkan Pilihan Varian & Add-on
-    const wadahVarian = document.getElementById('modal-varian-container') || document.getElementById('wadah-modal-varian');
-    if (wadahVarian) {
-        let vHtml = '';
-        const linkedVarianIds = menu.varianIds || [];
-        let masterVar = window.masterVarian || [];
-        if (masterVar.length === 0) {
-            const savedVar = localStorage.getItem('master_varian');
-            if (savedVar) masterVar = JSON.parse(savedVar);
-        }
-
-        const filteredVar = masterVar.filter(v => linkedVarianIds.includes(v.id));
-        
-        if (filteredVar.length > 0) {
-            filteredVar.forEach(v => {
-                vHtml += `
-                    <div class="mb-3">
-                        <label class="text-xs font-black text-slate-700 uppercase block mb-1">${v.nama}</label>
-                        <div class="grid grid-cols-2 gap-2">
-                `;
-                v.opsi.forEach((o, idx) => {
-                    const hargaOpsi = o.harga > 0 ? ` (+Rp ${o.harga.toLocaleString('id-ID')})` : '';
-                    vHtml += `
-                        <label class="flex items-center gap-2 p-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 transition">
-                            <input type="radio" name="modal_var_${v.id}" value="${o.namaOpsi}" ${idx === 0 ? 'checked' : ''} class="text-amber-500 focus:ring-amber-400">
-                            <span class="text-xs font-bold text-slate-700">${o.namaOpsi}<span class="text-[10px] text-slate-400 block">${hargaOpsi}</span></span>
-                        </label>
-                    `;
-                });
-                vHtml += `</div></div>`;
-            });
-        } else {
-            vHtml = '<p class="text-xs text-slate-400 italic">Tidak ada varian khusus untuk menu ini.</p>';
-        }
-        wadahVarian.innerHTML = vHtml;
+    // 1. Sinkronkan Gambar (Dengan sistem pengaman jika link rusak)
+    const img = modal.querySelector('img');
+    if (img) {
+        img.src = (menu && menu.imageUrl) ? menu.imageUrl : 'https://via.placeholder.com/150';
+        img.onerror = () => { img.src = 'https://via.placeholder.com/150'; }; 
     }
 
-    // Munculkan Modal Preview
-    const modal = document.getElementById('modal-detail') || document.getElementById('modalMenu');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
+    // 2. Sinkronkan Judul & Deskripsi (Pencari Teks Pintar)
+    // Mesin ini mencari teks bawaan template dan menguncinya, sehingga tidak menabrak varian
+    const allTags = modal.querySelectorAll('*');
+    allTags.forEach(el => {
+        // Hanya targetkan elemen teks ujung
+        if (el.children.length === 0) { 
+            // Ganti Judul
+            if (el.dataset.target === 'title' || el.innerText.trim() === 'Nama Menu') {
+                el.innerText = menu.name;
+                el.dataset.target = 'title'; // Kunci sebagai target judul
+            }
+            // Ganti Deskripsi
+            if (el.dataset.target === 'desc' || el.innerText.trim() === 'Deskripsi menu akan muncul di sini.') {
+                el.innerText = menu.description ? menu.description : 'Tidak ada deskripsi.';
+                el.dataset.target = 'desc'; // Kunci sebagai target deskripsi
+            }
+        }
+    });
+
+    // 3. Tampilkan Pop-up
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 };
 window.closeModalDetail = () => {
     const modal = document.getElementById('modal-detail');
