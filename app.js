@@ -477,7 +477,7 @@ window.renderKatalog = () => {
         if (!menu.isAvailable) return;
 
         // Gunakan placeholder jika url gambar kosong
-        const imgUrl = menu.imageUrl || PLACEHOLDER_IMG;
+        const imgUrl = menu.imageUrl || 'https://via.placeholder.com/150';
 
         // Rancang Card HTML Menu (KEMBALI KE VERSI ASLI - BESAR & LEGA)
         const cardHtml = `
