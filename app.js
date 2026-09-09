@@ -52,7 +52,6 @@ const MASTER_PIN = "888888";
 const PLACEHOLDER_IMG = "logo-192.png";
 
 // --- JURUS SULAP: GANTI SEMUA ALERT BAWAAN JADI NOTIFIKASI MELAYANG ---
-// --- JURUS SULAP: GANTI SEMUA ALERT BAWAAN JADI NOTIFIKASI MELAYANG ---
 window.alert = (pesan) => {
     // Hapus notif lama kalau masih ada yang nyangkut
     const notifLama = document.getElementById('notif-global');
@@ -199,42 +198,8 @@ window.tutupMenuAbsen = () => {
 // ============================================================================
 // 3. DUMMY DATA FALLBACK (Ditampilkan HANYA jika database kosong)
 // ============================================================================
-const dummyCatalog = {
-    "dummy_1": { 
-        name: "Kopi Susu Aren", 
-        category: "coffee", 
-        price: 18000, 
-        imageUrl: "logo-192.png", 
-        isAvailable: true, 
-        isBestSeller: true 
-    },
-    "dummy_2": { 
-        name: "Americano Cold", 
-        category: "coffee", 
-        price: 15000, 
-        imageUrl: "logo-192.png", 
-        isAvailable: true, 
-        isBestSeller: false 
-    },
-    "dummy_3": { 
-        name: "Matcha Latte", 
-        category: "non-coffee", 
-        price: 20000, 
-        imageUrl: "logo-192.png", 
-        isAvailable: true, 
-        isBestSeller: true 
-    },
-    "dummy_4": { 
-        name: "Kentang Goreng", 
-        category: "snack", 
-        price: 15000, 
-        imageUrl: "logo-192.png", 
-        isAvailable: true, 
-        isBestSeller: false 
-    }
-};
+const dummyCatalog = {}; // Hantu sudah dibasmi, sekarang murni dari Database!// ============================================================================
 
-// ============================================================================
 // 4. UTILITY FUNCTIONS (Format Uang & Waktu)
 // ============================================================================
 const formatRupiah = (number) => {
@@ -483,6 +448,9 @@ window.filterKategori = (kategori, btnEl) => {
 // 2B. RENDER GRID KATALOG MENU
 // ---------------------------------------------------------
 window.renderKatalog = () => {
+    // --- NYALAKAN TOMBOL KATEGORI DINAMIS OTOMATIS ---
+    if(typeof window.renderClientKategoriButtons === 'function') window.renderClientKategoriButtons();
+
     const grid = document.getElementById('menu-grid');
     const searchInput = document.getElementById('search-menu');
     const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
@@ -3144,6 +3112,42 @@ window.renderCheckboxVarian = () => {
         </label>
         `;
     }).join('');
+};
+
+// ==========================================
+// MESIN PEMBUAT TOMBOL KATEGORI PELANGGAN
+// ==========================================
+window.renderClientKategoriButtons = () => {
+    const container = document.getElementById('container-filter-kategori');
+    if (!container) return;
+
+    // Selalu pertahankan tombol "Semua Menu" di depan
+    let html = `
+        <button onclick="filterKategori('all', this)" class="cat-btn active bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition">
+            Semua Menu
+        </button>
+    `;
+
+    // Ambil data kategori dari Database Master
+    let listKat = window.masterKategori || [];
+    if (listKat.length === 0) {
+        const saved = localStorage.getItem('master_kategori');
+        if (saved) listKat = JSON.parse(saved);
+    }
+
+    // Buat tombol secara otomatis untuk setiap kategori yang ada
+    listKat.forEach(kat => {
+        const katName = typeof kat === 'object' ? (kat.nama || kat.name || kat.id) : kat;
+        if (!katName) return;
+
+        html += `
+            <button onclick="filterKategori('${katName}', this)" class="cat-btn bg-white text-gray-600 border border-gray-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm hover:bg-slate-50 transition">
+                ${katName}
+            </button>
+        `;
+    });
+
+    container.innerHTML = html;
 };
 
 // ==========================================
