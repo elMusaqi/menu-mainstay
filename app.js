@@ -670,11 +670,13 @@ window.hitungTotalHargaDetail = () => {
 
     const totalEl = document.getElementById('detail-total-price') || document.querySelector('#modal-detail button.bg-amber-500');
     if (totalEl) {
-        if(totalEl.tagName === 'BUTTON' || totalEl.innerText.includes('Tambah')) {
+        // Deteksi tombol dengan mengecek tag atau isinya
+        if(totalEl.tagName === 'BUTTON' || totalEl.innerText.includes('Tambah') || totalEl.innerHTML.includes('fa-cart')) {
+             // Mengganti teks "Tambah" dengan Ikon Keranjang (+) agar muat banyak angka
              totalEl.innerHTML = `
                 <div class="flex items-center justify-center gap-2 w-full whitespace-nowrap">
-                    <span class="font-bold text-[14px]">Tambah</span>
-                    <span class="bg-white/20 border border-white/20 px-2.5 py-0.5 rounded-lg font-black text-[14px] tracking-wide">
+                    <i class="fa-solid fa-cart-plus text-lg"></i>
+                    <span class="bg-white/20 border border-white/20 px-2 py-0.5 rounded-lg font-black text-[14px] tracking-wide">
                         Rp ${total.toLocaleString('id-ID')}
                     </span>
                 </div>
@@ -1637,24 +1639,34 @@ window.renderPanelMenu = () => {
     
     // Rancang HTML List dari Database
     let htmlList = Object.keys(realDbMenus).map(key => `
-        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-3 fade-in group">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded bg-slate-100 border border-gray-200 overflow-hidden shrink-0">
-                    <img src="${realDbMenus[key].imageUrl || PLACEHOLDER_IMG}" class="w-full h-full object-cover">
+    let htmlList = Object.keys(realDbMenus).map(key => `
+        <div class="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl mb-3 shadow-sm">
+            
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                    <img src="${realDbMenus[key].imageUrl || 'logo-192.png'}" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
                 </div>
-                <div>
-                    <h4 class="text-xs font-black text-gray-900">${realDbMenus[key].name}</h4>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        <span class="text-amber-500">${formatRupiah(realDbMenus[key].price)}</span> • ${realDbMenus[key].category}
-                    </p>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-black text-slate-800 truncate">${realDbMenus[key].name}</h4>
+                    <p class="text-[10px] font-bold text-amber-500 uppercase truncate">Rp ${Number(realDbMenus[key].price).toLocaleString('id-ID')} &bull; <span class="text-slate-400">${realDbMenus[key].category}</span></p>
                 </div>
-            <div class="flex items-center gap-2">
-            <button onclick="window.siapkanEditMenu('${key}')" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1.5 rounded transition">
-                <i class="fa-solid fa-pen text-[10px]"></i>
-            </button>
-            <button onclick="hapusNode('menus', '${key}', 'renderPanelMenu')" class="text-red-500 hover:text-red-700 bg-red-50 px-2 py-1.5 rounded transition">
-                <i class="fa-solid fa-trash text-[10px]"></i>
-            </button>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                <!-- TOMBOL PREVIEW (MATA) -->
+                <button onclick="window.bukaModalDetail('${key}')" class="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-500 hover:bg-emerald-100 rounded-lg transition shadow-sm" title="Preview Menu">
+                    <i class="fa-solid fa-eye text-xs"></i>
+                </button>
+                <!-- TOMBOL EDIT (PENA) -->
+                <button onclick="window.siapkanEditMenu('${key}')" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-lg transition shadow-sm" title="Edit Menu">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                <!-- TOMBOL HAPUS (TONG SAMPAH) -->
+                <button onclick="window.hapusNode('menus', '${key}', 'renderPanelMenu')" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition shadow-sm" title="Hapus Menu">
+                    <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+            </div>
+
         </div>
     `).join('');
 
