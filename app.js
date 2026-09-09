@@ -509,124 +509,169 @@ window.renderKatalog = () => {
 // ---------------------------------------------------------
 // 2C. MODAL DETAIL & KUSTOMISASI MINUMAN
 // ---------------------------------------------------------
+// ==========================================
+// PAKET MESIN POP-UP, QTY, HARGA & KERANJANG
+// ==========================================
+
 window.bukaModalDetail = (key) => {
     const menu = globalMenus[key];
     if (!menu) return;
 
-    // 1. KUNCI HARGA: Tanpa kata "window." agar langsung menyuntik ke variabel asli di baris 39!
     currentDetailMenu = { key: key, ...menu };
-    detailQty = 1; 
+    detailQty = 1;
 
-    // Cari elemen pembungkus modal
     const modal = document.getElementById('modal-detail') || document.querySelector('.modal');
     if (!modal) return;
 
-    // 2. Sinkronkan Gambar
-    const img = modal.querySelector('img');
-    if (img) {
-        img.src = (menu && menu.imageUrl) ? menu.imageUrl : 'https://via.placeholder.com/150';
-        img.onerror = () => { img.src = 'https://via.placeholder.com/150'; }; 
+    // A. SUNTIK CSS UNTUK MENGHILANGKAN VARIAN HTML BAWAAN
+    if (!document.getElementById('css-penghancur-varian')) {
+        const style = document.createElement('style');
+        style.id = 'css-penghancur-varian';
+        style.innerHTML = `
+            #modal-detail label:not(#wadah-modal-varian label),
+            #modal-detail .uppercase:not(#wadah-modal-varian .uppercase) { display: none !important; }
+            #wadah-modal-varian label { display: flex !important; }
+            #wadah-modal-varian .uppercase { display: block !important; }
+        `;
+        document.head.appendChild(style);
     }
 
-    // 3. Sinkronkan Judul & Deskripsi
+    // B. SINKRONISASI GAMBAR
+    const img = modal.querySelector('img');
+    if (img) {
+        img.src = (menu.imageUrl && menu.imageUrl.trim() !== '') ? menu.imageUrl : 'logo-192.png';
+        img.onerror = () => { img.src = 'logo-192.png'; };
+    }
+
+    // C. SINKRONISASI JUDUL & DESKRIPSI
     const allTags = modal.querySelectorAll('*');
     allTags.forEach(el => {
-        if (el.children.length === 0) { 
-            if (el.dataset.target === 'title' || el.innerText.trim() === 'Nama Menu') {
+        if (el.children.length === 0) {
+            if (el.dataset.target === 'title' || el.innerText.trim() === 'Nama Menu' || el.innerText.trim() === 'Thai Tea Original') {
                 el.innerText = menu.name;
                 el.dataset.target = 'title';
             }
-            if (el.dataset.target === 'desc' || el.innerText.trim() === 'Deskripsi menu akan muncul di sini.') {
-                el.innerText = menu.description ? menu.description : 'Tidak ada deskripsi.';
+            if (el.dataset.target === 'desc' || el.innerText.includes('Deskripsi menu') || el.innerText.includes('Teh Thailand asli')) {
+                el.innerText = menu.description ? menu.description : 'Tidak ada deskripsi untuk menu ini.';
                 el.dataset.target = 'desc';
             }
         }
     });
 
-    // 4. Reset Angka Qty di Layar
+    // D. BANGUN WADAH VARIAN DINAMIS
+    let wadahVarian = document.getElementById('wadah-modal-varian');
+    if (!wadahVarian) {
+        wadahVarian = document.createElement('div');
+        wadahVarian.id = 'wadah-modal-varian';
+        wadahVarian.className = 'w-full mb-4 max-h-60 overflow-y-auto px-1';
+
+        const qtyBlock = document.getElementById('detail-qty');
+        if (qtyBlock) {
+            const footer = qtyBlock.closest('.flex.items-center.justify-between') || qtyBlock.parentElement.parentElement;
+            if (footer && footer.parentElement) footer.parentElement.insertBefore(wadahVarian, footer);
+        }
+    }
+
+    // E. TARIK DATA VARIAN DARI DATABASE
+    let vHtml = '';
+    const linkedVarianIds = menu.varianIds || [];
+    let masterVar = window.masterVarian || JSON.parse(localStorage.getItem('master_varian')) || [];
+    const filteredVar = masterVar.filter(v => linkedVarianIds.includes(v.id));
+
+    if (filteredVar.length > 0) {
+        filteredVar.forEach(v => {
+            vHtml += `
+                <div class="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <label class="text-xs font-black text-slate-700 uppercase block mb-2">${v.nama}</label>
+                    <div class="grid grid-cols-2 gap-2">
+            `;
+            v.opsi.forEach((o, idx) => {
+                const extraPrice = Number(o.harga) || 0;
+                const hargaOpsi = extraPrice > 0 ? ` (+Rp ${extraPrice.toLocaleString('id-ID')})` : '';
+                vHtml += `
+                    <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 transition shadow-sm">
+                        <input type="radio" name="modal_var_${v.id}" value="${o.namaOpsi}" data-harga="${extraPrice}" ${idx === 0 ? 'checked' : ''} class="text-amber-500 focus:ring-amber-400" onchange="window.hitungTotalHargaDetail()">
+                        <span class="text-xs font-bold text-slate-700">${o.namaOpsi}<span class="text-[10px] text-slate-400 block">${hargaOpsi}</span></span>
+                    </label>
+                `;
+            });
+            vHtml += `</div></div>`;
+        });
+    } else {
+        vHtml = '<p class="text-xs text-slate-400 italic text-center py-2">Tidak ada varian/topping.</p>';
+    }
+    wadahVarian.innerHTML = vHtml;
+
     const qtyEl = document.getElementById('detail-qty');
     if (qtyEl) qtyEl.innerText = detailQty;
 
-    // 5. Panggil Mesin Penghitung Harga agar Rp 0 langsung diganti harga menu
-    if (typeof window.hitungTotalHargaDetail === 'function') {
-        window.hitungTotalHargaDetail();
-    }
-
-    // 6. Pasang "Sensor Klik" di opsi Regular/Large agar harga merespon
-    const variantInputs = modal.querySelectorAll('input[type="radio"], input[type="checkbox"]');
-    variantInputs.forEach(input => {
-        input.onchange = () => {
-            if (typeof window.hitungTotalHargaDetail === 'function') {
-                window.hitungTotalHargaDetail();
-            }
-        };
-    });
-
-    // 7. Tampilkan Pop-up
+    window.hitungTotalHargaDetail();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 };
 
 window.closeModalDetail = () => {
-    const modal = document.getElementById('modal-detail');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    const modal = document.getElementById('modal-detail') || document.querySelector('.modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 };
 
 window.ubahQtyDetail = (amount) => {
-    // Pastikan quantity tidak kurang dari 1
     if (detailQty + amount >= 1) {
         detailQty += amount;
-        document.getElementById('detail-qty').innerText = detailQty;
+        const qtyEl = document.getElementById('detail-qty');
+        if (qtyEl) qtyEl.innerText = detailQty;
         window.hitungTotalHargaDetail();
     }
 };
 
 window.hitungTotalHargaDetail = () => {
     if (!currentDetailMenu) return;
-    
-    let basePrice = Number(currentDetailMenu.price);
-    
-    // Cek jika ukuran Large dipilih (Markup +Rp3000)
-    const sizeInput = document.querySelector('input[name="detail_size"]:checked');
-    if (sizeInput && sizeInput.value.includes('Large')) {
-        basePrice += 3000; 
-    }
-    
-    const totalPrice = basePrice * detailQty;
-    document.getElementById('detail-total-price').innerText = formatRupiah(totalPrice);
-};
+    let base = Number(currentDetailMenu.price) || 0;
 
-// ---------------------------------------------------------
-// 2D. SISTEM KERANJANG (CART)
-// ---------------------------------------------------------
-window.tambahKeKeranjang = () => {
-    // Ambil nilai kustomisasi dari radio buttons
-    const sizeInput = document.querySelector('input[name="detail_size"]:checked');
-    const sugarInput = document.querySelector('input[name="detail_sugar"]:checked');
-    const iceInput = document.querySelector('input[name="detail_ice"]:checked');
-    
-    const size = sizeInput ? sizeInput.value : 'Regular';
-    const sugar = sugarInput ? sugarInput.value : 'Normal';
-    const ice = iceInput ? iceInput.value : 'Normal';
-    
-    let itemPrice = Number(currentDetailMenu.price);
-    if (size.includes('Large')) {
-        itemPrice += 3000;
-    }
-
-    // Masukkan ke array keranjang lokal
-    cart.push({
-        id: currentDetailMenu.key, 
-        name: currentDetailMenu.name, 
-        qty: detailQty,
-        price: itemPrice, 
-        total: itemPrice * detailQty, 
-        notes: `${size}, ${sugar}, ${ice}`
+    const inputs = document.querySelectorAll('#wadah-modal-varian input:checked');
+    inputs.forEach(input => {
+        base += Number(input.dataset.harga) || 0;
     });
 
-    window.updateCartBadge();
-    window.closeModalDetail();
+    let total = base * (detailQty || 1);
+
+    const totalEl = document.getElementById('detail-total-price') || document.querySelector('#modal-detail button.bg-amber-500');
+    if (totalEl) {
+        if(totalEl.tagName === 'BUTTON' || totalEl.innerText.includes('Tambah')) {
+             totalEl.innerText = 'Tambah Rp ' + total.toLocaleString('id-ID');
+        } else {
+             totalEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
+        }
+    }
+};
+
+window.tambahKeKeranjang = () => {
+    if (!currentDetailMenu) return;
+
+    let itemPrice = Number(currentDetailMenu.price) || 0;
+    let notesArr = [];
+
+    const inputs = document.querySelectorAll('#wadah-modal-varian input:checked');
+    inputs.forEach(input => {
+        itemPrice += Number(input.dataset.harga) || 0;
+        notesArr.push(input.value);
+    });
+
+    cart.push({
+        id: currentDetailMenu.key,
+        name: currentDetailMenu.name,
+        qty: detailQty,
+        price: itemPrice,
+        total: itemPrice * (detailQty || 1),
+        notes: notesArr.join(', '),
+        imageUrl: (currentDetailMenu.imageUrl && currentDetailMenu.imageUrl.trim() !== '') ? currentDetailMenu.imageUrl : 'logo-192.png'
+    });
+
+    if (typeof window.updateCartBadge === 'function') window.updateCartBadge();
+    if (typeof window.closeModalDetail === 'function') window.closeModalDetail();
 };
 
 window.updateCartBadge = () => {
