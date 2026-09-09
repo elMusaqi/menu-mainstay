@@ -3224,15 +3224,15 @@ window.renderSelectKategori = () => {
 };
 
 // ==========================================
-// JEMBATAN 3: PENARIK VARIAN (AUTO-RESCUE 3 VARIAN ASLI)
+// JEMBATAN 5: PEWARIS VARIAN (AUTO-RENDER 3 VARIAN ASLI) + TOPPING
 // ==========================================
 window.renderCheckboxVarian = () => {
-    // Tarik 3 Varian (Ukuran, Gula, Es) ke Data Master agar bisa diedit Owner!
-    if (window.masterVarian && window.masterVarian.length === 0) {
+    // Tarik 3 Varian (Ukuran, Gula, Es) ke Data Master agar bisa diedit Owner
+    if (!window.masterVarian || window.masterVarian.length === 0) {
         window.masterVarian = [
-            { id: 'var_ukuran', nama: 'PILIH UKURAN', opsi: [{ namaOpsi: 'Regular', harga: 0 }, { namaOpsi: 'Large', harga: 3000 }] },
-            { id: 'var_gula', nama: 'KADAR GULA', opsi: [{ namaOpsi: 'Normal (100%)', harga: 0 }, { namaOpsi: 'Less (50%)', harga: 0 }] },
-            { id: 'var_es', nama: 'KADAR ES', opsi: [{ namaOpsi: 'Normal Ice', harga: 0 }, { namaOpsi: 'Less Ice', harga: 0 }] }
+            { id: 'var_ukuran', nama: 'PILIH UKURAN', opsi: [{namaOpsi: 'Regular', harga: 0}, {namaOpsi: 'Large', harga: 3000}] },
+            { id: 'var_gula', nama: 'KADAR GULA', opsi: [{namaOpsi: 'Normal (100%)', harga: 0}, {namaOpsi: 'Less (50%)', harga: 0}] },
+            { id: 'var_es', nama: 'KADAR ES', opsi: [{namaOpsi: 'Normal Ice', harga: 0}, {namaOpsi: 'Less Ice', harga: 0}] }
         ];
         localStorage.setItem('master_varian', JSON.stringify(window.masterVarian));
         if(typeof window.renderMasterVarian === 'function') window.renderMasterVarian();
@@ -3242,44 +3242,49 @@ window.renderCheckboxVarian = () => {
     if (!wadah) return;
 
     // 1. CETAK KOTAK VARIAN
-        let htmlFinal = window.masterVarian.map(v => {
-            const opsiTeks = v.opsi ? v.opsi.map(o => o.namaOpsi).join(', ') : '';
+    let htmlFinal = window.masterVarian.map(v => {
+        const opsiTeks = v.opsi ? v.opsi.map(o => o.namaOpsi).join(', ') : '';
+        return `
+        <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition mb-2 shadow-sm">
+            <!-- PENTING: Class dikembalikan ke 'checkbox-varian-menu' agar bisa di-save -->
+            <input type="checkbox" value="${v.id}" class="checkbox-varian-menu w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+            <div class="flex flex-col">
+                <span class="text-xs font-black text-slate-700 uppercase">${v.nama}</span>
+                <span class="text-[10px] text-slate-400">${opsiTeks}</span>
+            </div>
+        </label>
+        `;
+    }).join('');
+
+    // 2. CETAK KOTAK TOPPING (Anti-Crash/Layar Putih)
+    let masterTop = [];
+    try {
+        // Coba tarik data, kalau error tidak akan bikin web mati
+        masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
+    } catch (error) {
+        masterTop = []; 
+    }
+    
+    // Pastikan masterTop adalah Array sebelum di-loop
+    if (Array.isArray(masterTop) && masterTop.length > 0) {
+        htmlFinal += `<div class="w-full mt-5 mb-2 border-t border-slate-200 pt-3"><span class="text-[11px] font-black text-amber-600 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> HUBUNGKAN TOPPING</span></div>`;
+        
+        htmlFinal += masterTop.map(t => {
+            // PENTING: Class diubah ke 'checkbox-topping-menu' agar dikenali sistem simpan
             return `
-            <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition mb-2 shadow-sm">
-                <!-- Class 'checkbox-varian' dijaga agar sistem simpan tidak error -->
-                <input type="checkbox" value="${v.id}" class="checkbox-varian w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+            <label class="flex items-center gap-3 p-3 bg-amber-50/40 border border-amber-200 rounded-xl cursor-pointer hover:border-amber-400 transition mb-2 shadow-sm">
+                <input type="checkbox" value="${t.nama}" class="checkbox-topping-menu w-4 h-4 text-amber-500 rounded border-amber-300 focus:ring-amber-500">
                 <div class="flex flex-col">
-                    <span class="text-xs font-black text-slate-700 uppercase">${v.nama}</span>
-                    <span class="text-[10px] text-slate-400">${opsiTeks}</span>
+                    <span class="text-xs font-black text-slate-800">${t.nama}</span>
+                    <span class="text-[10px] font-bold text-amber-600">+Rp ${Number(t.harga || 0).toLocaleString('id-ID')}</span>
                 </div>
             </label>
             `;
         }).join('');
+    }
 
-        // 2. CETAK KOTAK TOPPING (Otomatis Diselipkan di Bawah Varian)
-        let masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
-        if (masterTop.length > 0) {
-            // Judul Pemisah Topping
-            htmlFinal += `<div class="w-full mt-5 mb-2 border-t border-slate-200 pt-3"><span class="text-[11px] font-black text-amber-600 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> HUBUNGKAN TOPPING</span></div>`;
-            
-            // Loop data topping
-            htmlFinal += masterTop.map(t => {
-                return `
-                <label class="flex items-center gap-3 p-3 bg-amber-50/40 border border-amber-200 rounded-xl cursor-pointer hover:border-amber-400 transition mb-2 shadow-sm">
-                    <!-- Class 'checkbox-topping' dijaga agar sistem baca data Boba/Keju -->
-                    <input type="checkbox" value="${t.nama}" class="checkbox-topping w-4 h-4 text-amber-500 rounded border-amber-300 focus:ring-amber-500">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-black text-slate-800">${t.nama}</span>
-                        <span class="text-[10px] font-bold text-amber-600">+Rp ${Number(t.harga).toLocaleString('id-ID')}</span>
-                    </div>
-                </label>
-                `;
-            }).join('');
-        }
-
-        // Tembakkan semua desain ke layar
-        wadah.innerHTML = htmlFinal;
-    };
+    wadah.innerHTML = htmlFinal;
+};
 
 // ==========================================
 // MESIN PEMBUAT TOMBOL KATEGORI PELANGGAN
