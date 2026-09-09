@@ -513,9 +513,9 @@ window.bukaModalDetail = (key) => {
     const menu = globalMenus[key];
     if (!menu) return;
 
-    // 1. KUNCI HARGA: Gunakan variabel yang dikenali oleh mesin keranjang Mas Ihsan
-    window.currentDetailMenu = { key: key, ...menu };
-    window.detailQty = 1; // Reset jumlah pesanan ke 1 setiap klik menu baru
+    // 1. KUNCI HARGA: Tanpa kata "window." agar langsung menyuntik ke variabel asli di baris 39!
+    currentDetailMenu = { key: key, ...menu };
+    detailQty = 1; 
 
     // Cari elemen pembungkus modal
     const modal = document.getElementById('modal-detail') || document.querySelector('.modal');
@@ -543,16 +543,16 @@ window.bukaModalDetail = (key) => {
         }
     });
 
-    // 4. Reset Angka Qty di Layar menjadi 1
+    // 4. Reset Angka Qty di Layar
     const qtyEl = document.getElementById('detail-qty');
-    if (qtyEl) qtyEl.innerText = window.detailQty;
+    if (qtyEl) qtyEl.innerText = detailQty;
 
-    // 5. Panggil Mesin Penghitung Harga agar "Rp 0" langsung berubah jadi harga asli
+    // 5. Panggil Mesin Penghitung Harga agar Rp 0 langsung diganti harga menu
     if (typeof window.hitungTotalHargaDetail === 'function') {
         window.hitungTotalHargaDetail();
     }
 
-    // 6. Pasang "Sensor" di setiap tombol varian agar harga otomatis merespon saat diklik (+Rp 3000)
+    // 6. Pasang "Sensor Klik" di opsi Regular/Large agar harga merespon
     const variantInputs = modal.querySelectorAll('input[type="radio"], input[type="checkbox"]');
     variantInputs.forEach(input => {
         input.onchange = () => {
@@ -566,6 +566,7 @@ window.bukaModalDetail = (key) => {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 };
+
 window.closeModalDetail = () => {
     const modal = document.getElementById('modal-detail');
     modal.classList.add('hidden');
