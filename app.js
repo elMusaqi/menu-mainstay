@@ -513,29 +513,28 @@ window.bukaModalDetail = (key) => {
     const menu = globalMenus[key];
     if (!menu) return;
 
-    // Simpan menu yang sedang dipilih
     window.selectedMenuForCart = { id: key, ...menu };
 
-    // 1. Munculkan Nama & Gambar
-    const titleEl = document.getElementById('modal-title') || document.getElementById('modal-menu-name');
-    if (titleEl) titleEl.innerText = menu.name;
+    // Sinkronkan Nama Menu
+    document.querySelectorAll('#modal-title, #modal-menu-name, h3.font-black, .modal-title').forEach(el => {
+        if (el) el.innerText = menu.name;
+    });
 
-    const imgEl = document.getElementById('modal-img') || document.getElementById('modal-menu-img');
-    if (imgEl) imgEl.src = menu.imageUrl || 'https://via.placeholder.com/150';
+    // Sinkronkan Gambar Menu
+    document.querySelectorAll('#modal-img, #modal-menu-img, img.modal-img').forEach(el => {
+        if (el) el.src = menu.imageUrl || 'https://via.placeholder.com/150';
+    });
 
-    // 2. Munculkan Deskripsi Asli dari Owner
-    const descEl = document.getElementById('modal-desc') || document.getElementById('modal-menu-desc');
-    if (descEl) {
-        descEl.innerText = menu.description ? menu.description : 'Tidak ada deskripsi untuk menu ini.';
-    }
+    // Sinkronkan Deskripsi Asli dari Owner
+    document.querySelectorAll('#modal-desc, #modal-menu-desc, .modal-desc').forEach(el => {
+        if (el) el.innerText = menu.description ? menu.description : 'Tidak ada deskripsi untuk menu ini.';
+    });
 
-    // 3. Render Varian yang terhubung ke menu ini
+    // Sinkronkan Pilihan Varian & Add-on
     const wadahVarian = document.getElementById('modal-varian-container') || document.getElementById('wadah-modal-varian');
     if (wadahVarian) {
         let vHtml = '';
         const linkedVarianIds = menu.varianIds || [];
-        
-        // Ambil data master varian
         let masterVar = window.masterVarian || [];
         if (masterVar.length === 0) {
             const savedVar = localStorage.getItem('master_varian');
@@ -568,7 +567,7 @@ window.bukaModalDetail = (key) => {
         wadahVarian.innerHTML = vHtml;
     }
 
-    // 4. Buka Modal Preview di Layar Pelanggan
+    // Munculkan Modal Preview
     const modal = document.getElementById('modal-detail') || document.getElementById('modalMenu');
     if (modal) {
         modal.classList.remove('hidden');
@@ -3150,30 +3149,31 @@ window.renderCheckboxVarian = () => {
 // MESIN PEMBUAT TOMBOL KATEGORI PELANGGAN
 // ==========================================
 window.renderClientKategoriButtons = () => {
+window.renderClientKategoriButtons = () => {
     const container = document.getElementById('container-filter-kategori');
     if (!container) return;
 
-    // Selalu pertahankan tombol "Semua Menu" di depan
+    let activeKat = typeof activeCategoryFilter !== 'undefined' ? activeCategoryFilter : 'all';
+
     let html = `
-        <button onclick="filterKategori('all', this)" class="cat-btn active bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition">
+        <button onclick="filterKategori('all', this)" class="cat-btn ${activeKat === 'all' ? 'active bg-amber-500 text-white' : 'bg-white text-gray-600 border border-gray-200'} px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition">
             Semua Menu
         </button>
     `;
 
-    // Ambil data kategori dari Database Master
     let listKat = window.masterKategori || [];
     if (listKat.length === 0) {
         const saved = localStorage.getItem('master_kategori');
         if (saved) listKat = JSON.parse(saved);
     }
 
-    // Buat tombol secara otomatis untuk setiap kategori yang ada
     listKat.forEach(kat => {
         const katName = typeof kat === 'object' ? (kat.nama || kat.name || kat.id) : kat;
         if (!katName) return;
 
+        const isActive = activeKat === katName;
         html += `
-            <button onclick="filterKategori('${katName}', this)" class="cat-btn bg-white text-gray-600 border border-gray-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm hover:bg-slate-50 transition">
+            <button onclick="filterKategori('${katName}', this)" class="cat-btn ${isActive ? 'active bg-amber-500 text-white' : 'bg-white text-gray-600 border border-gray-200'} px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm hover:bg-slate-50 transition">
                 ${katName}
             </button>
         `;
