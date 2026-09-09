@@ -235,21 +235,13 @@
                     <input type="text" id="search-menu" onkeyup="renderKatalog()" placeholder="Cari minuman, cemilan..." class="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold focus:outline-none focus:border-amber-500 shadow-sm transition">
                 </div>
                 
-                <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-1" id="category-container">
-    <!-- Tombol Semua Menu (Default Aktif: Amber) -->
-    <button onclick="filterKategori('all', this)" class="cat-btn active bg-amber-500 text-white border border-amber-500 shadow-md px-5 py-2.5 rounded-xl text-[10px] font-black whitespace-nowrap uppercase tracking-wide transition">
+                <!-- Wadah Tombol Kategori Dinamis -->
+<div id="container-filter-kategori" class="flex overflow-x-auto gap-2 pb-2 scrollbar-none">
+    <!-- Tombol Semua Menu (Default Aktif) -->
+    <button onclick="filterKategori('all', this)" class="cat-btn active bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition">
         Semua Menu
     </button>
-    
-    <!-- Tombol Coffee (Default Tidak Aktif: Putih) -->
-    <button onclick="filterKategori('coffee', this)" class="cat-btn bg-white text-gray-600 border border-gray-200 px-5 py-2.5 rounded-xl text-[10px] font-black whitespace-nowrap uppercase tracking-wide transition">
-        <i class="fa-solid fa-mug-hot mr-1"></i> Coffee
-    </button>
-    
-    <!-- Tombol Non-Coffee (Default Tidak Aktif: Putih) -->
-    <button onclick="filterKategori('non-coffee', this)" class="cat-btn bg-white text-gray-600 border border-gray-200 px-5 py-2.5 rounded-xl text-[10px] font-black whitespace-nowrap uppercase tracking-wide transition">
-        <i class="fa-solid fa-martini-glass-empty mr-1"></i> Non-Coffee
-    </button>
+    <!-- Tombol kategori lain akan muncul otomatis di sini dari Data Master -->
 </div>
             </div>
 
@@ -879,6 +871,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=271"></script>
+    <script type="module" src="app.js?v=273"></script>
 </body>
 </html>
