@@ -1660,6 +1660,10 @@ window.renderPanelMenu = () => {
                     
                     <input type="text" id="fm-name" placeholder="Nama Menu (Contoh: Aren Latte)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-amber-500 transition">
                     <textarea id="fm-desc" placeholder="Deskripsi Menu (Contoh: Perpaduan kopi dan gula aren asli...)" rows="2" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-medium focus:outline-none focus:border-amber-500 transition"></textarea>
+                    <label class="flex items-center gap-2 mb-3 p-3 bg-red-50 border border-red-100 rounded-xl cursor-pointer">
+    <input type="checkbox" id="fm-bestseller" class="w-4 h-4 text-red-500 rounded border-red-200">
+    <span class="text-xs font-bold text-red-700">Jadikan "BEST SELLER" (Muncul Label Merah)</span>
+</label>
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <input type="number" id="fm-price" placeholder="Harga (Cth: 15000)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition">
                         <select id="fm-cat" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500 transition cursor-pointer">
@@ -3000,27 +3004,22 @@ document.addEventListener('visibilitychange', () => {
 window.simpanMenuBaru = async () => {
     const namaEl = document.getElementById('fm-name');
     const priceEl = document.getElementById('fm-price');
-    const descEl = document.getElementById('fm-desc'); // <--- Penarik Deskripsi Baru
+    const descEl = document.getElementById('fm-desc');
+    const bestSellerEl = document.getElementById('fm-bestseller'); // <--- Sensor Best Seller
     
-    // Tarik elemen kategori
     const catEl = document.getElementById('fm-cat') || document.getElementById('select-kategori-menu');
 
-    // Validasi form
     if (!namaEl || !namaEl.value.trim()) return alert("Nama Menu wajib diisi!");
     if (!priceEl || !priceEl.value) return alert("Harga Menu wajib diisi!");
 
     const kategoriValue = (catEl && catEl.value) ? catEl.value : 'coffee';
 
-    // Kumpulkan Centangan Topping & Varian
     const toppingTerpilih = [];
     document.querySelectorAll('.checkbox-topping-menu:checked').forEach(cb => toppingTerpilih.push(cb.value));
 
     const varianTerpilih = [];
     document.querySelectorAll('.checkbox-varian-menu:checked').forEach(cb => varianTerpilih.push(cb.value));
 
-    // ==========================================
-    // LOGIKA GAMBAR DUAL OPSI
-    // ==========================================
     const imgUrlEl = document.getElementById('fm-image-url');
     const imgFileEl = document.getElementById('fm-image-file');
     let finalImageUrl = 'https://via.placeholder.com/150?text=Menu+Baru'; 
@@ -3032,30 +3031,28 @@ window.simpanMenuBaru = async () => {
             reader.onloadend = () => resolve(reader.result);
             reader.readAsDataURL(file);
         });
-    } 
-    else if (imgUrlEl && imgUrlEl.value.trim() !== '') {
+    } else if (imgUrlEl && imgUrlEl.value.trim() !== '') {
         finalImageUrl = imgUrlEl.value.trim();
     }
-    // ==========================================
 
     const payload = {
         name: namaEl.value.trim(),
-        description: descEl ? descEl.value.trim() : '', // <--- Simpan Deskripsi ke Database
+        description: descEl ? descEl.value.trim() : '',
         price: Number(priceEl.value),
         category: kategoriValue,
         isAvailable: true,
         imageUrl: finalImageUrl, 
         toppingIds: toppingTerpilih,
-        varianIds: varianTerpilih
+        varianIds: varianTerpilih,
+        isBestSeller: bestSellerEl ? bestSellerEl.checked : false // <--- Simpan status ke Database
     };
 
-    // Kirim ke database
     await window.simpanNode('menus', payload);
 
-    // Bersihkan form setelah sukses
     namaEl.value = '';
     priceEl.value = '';
-    if (descEl) descEl.value = ''; // <--- Bersihkan form deskripsi
+    if (descEl) descEl.value = '';
+    if (bestSellerEl) bestSellerEl.checked = false; // <--- Bersihkan saklar
     if (imgUrlEl) imgUrlEl.value = '';
     if (imgFileEl) imgFileEl.value = '';
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
