@@ -53,21 +53,21 @@ const PLACEHOLDER_IMG = "logo-192.png";
 
 // --- JURUS SULAP: GANTI SEMUA ALERT BAWAAN JADI NOTIFIKASI MELAYANG ---
 window.alert = (pesan) => {
-    // Hapus notif lama kalau masih ada yang nyangkut
     const notifLama = document.getElementById('notif-global');
     if (notifLama) notifLama.remove();
-    
-    // Buat kapsul notifikasi baru (Posisi diubah ke left-0 right-0 mx-auto)
+
+    // Mesin pendeteksi warna otomatis
+    const isSuccess = pesan.toLowerCase().includes('berhasil') || pesan.toLowerCase().includes('sukses');
+    const bgColor = isSuccess ? 'bg-green-500' : 'bg-red-600';
+    const icon = isSuccess ? 'fa-check-circle' : 'fa-triangle-exclamation';
+
     const notif = document.createElement('div');
     notif.id = 'notif-global';
-    notif.className = 'fixed top-10 left-0 right-0 mx-auto w-[90%] max-w-sm bg-red-600 text-white px-4 py-3 rounded-full shadow-2xl z-[99999] font-bold text-xs flex items-center justify-center gap-2 animate-bounce text-center';
-    notif.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-sm"></i> <span>${pesan}</span>`;
+    notif.className = `fixed top-10 left-0 right-0 mx-auto w-[90%] max-w-sm ${bgColor} text-white px-4 py-3 rounded-xl shadow-lg z-[9999] flex items-center gap-3 font-sans`;
+    notif.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span class="font-bold text-sm">${pesan}</span>`;
     
-    // Tampilkan ke layar
     document.body.appendChild(notif);
-    
-    // Hilangkan otomatis dalam 3 detik
-    setTimeout(() => { if (notif) notif.remove(); }, 5000);
+    setTimeout(() => { if (notif) notif.remove(); }, 3000);
 };
 // ----------------------------------------------------------------------
 
@@ -573,13 +573,22 @@ window.bukaModalDetail = (key) => {
         }
     }
 
-    // E. TARIK DATA VARIAN DARI DATABASE
+    // E. TARIK DATA VARIAN & TOPPING DARI DATABASE
     let vHtml = '';
+    
+    // 1. Tarik Data Varian
     const linkedVarianIds = menu.varianIds || [];
     let masterVar = window.masterVarian || JSON.parse(localStorage.getItem('master_varian')) || [];
     const filteredVar = masterVar.filter(v => linkedVarianIds.includes(v.id));
 
-    if (filteredVar.length > 0) {
+    // 2. Tarik Data Topping
+    const linkedToppingIds = menu.toppingIds || menu.toppings || []; 
+    let masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
+    const filteredTop = masterTop.filter(t => linkedToppingIds.includes(t.id || t.nama));
+
+    if (filteredVar.length > 0 || filteredTop.length > 0) {
+        
+        // Render Tampilan Varian (Ukuran, Gula, Es)
         filteredVar.forEach(v => {
             vHtml += `
                 <div class="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -598,11 +607,31 @@ window.bukaModalDetail = (key) => {
             });
             vHtml += `</div></div>`;
         });
+
+        // Render Tampilan Extra Topping (Boba, Keju)
+        if (filteredTop.length > 0) {
+            vHtml += `
+                <div class="mb-4 bg-amber-50/50 p-3 rounded-xl border border-amber-100">
+                    <label class="text-xs font-black text-amber-700 uppercase block mb-2">EXTRA TOPPING</label>
+                    <div class="grid grid-cols-2 gap-2">
+            `;
+            filteredTop.forEach(t => {
+                const extraPrice = Number(t.harga) || 0;
+                vHtml += `
+                    <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 transition shadow-sm">
+                        <input type="checkbox" name="modal_top_${t.id || t.nama}" value="${t.nama}" data-harga="${extraPrice}" class="text-amber-500 focus:ring-amber-400 rounded-sm" onchange="window.hitungTotalHargaDetail()">
+                        <span class="text-xs font-bold text-slate-700">${t.nama}<span class="text-[10px] text-amber-500 block">+Rp ${extraPrice.toLocaleString('id-ID')}</span></span>
+                    </label>
+                `;
+            });
+            vHtml += `</div></div>`;
+        }
+
     } else {
         vHtml = '<p class="text-xs text-slate-400 italic text-center py-2">Tidak ada varian/topping.</p>';
     }
     wadahVarian.innerHTML = vHtml;
-
+    
     const qtyEl = document.getElementById('detail-qty');
     if (qtyEl) qtyEl.innerText = detailQty;
 
@@ -642,11 +671,12 @@ window.hitungTotalHargaDetail = () => {
     const totalEl = document.getElementById('detail-total-price') || document.querySelector('#modal-detail button.bg-amber-500');
     if (totalEl) {
         if(totalEl.tagName === 'BUTTON' || totalEl.innerText.includes('Tambah')) {
-             // Menggunakan flex dan whitespace-nowrap agar ikon dan teks "Tambah Rp..." tidak pernah berantakan
              totalEl.innerHTML = `
-                <div class="flex items-center justify-center gap-2 whitespace-nowrap w-full">
-                    <span class="font-black">Tambah Rp ${total.toLocaleString('id-ID')}</span> 
-                    <i class="fa-solid fa-volume-high text-amber-500 bg-white p-1.5 rounded-full text-[10px]"></i>
+                <div class="flex items-center justify-center gap-2 w-full whitespace-nowrap">
+                    <span class="font-bold text-[14px]">Tambah</span>
+                    <span class="bg-white/20 border border-white/20 px-2.5 py-0.5 rounded-lg font-black text-[14px] tracking-wide">
+                        Rp ${total.toLocaleString('id-ID')}
+                    </span>
                 </div>
              `;
         } else {
@@ -654,7 +684,6 @@ window.hitungTotalHargaDetail = () => {
         }
     }
 };
-
 window.tambahKeKeranjang = () => {
     if (!currentDetailMenu) return;
 
@@ -3097,7 +3126,28 @@ window.simpanMenuBaru = async () => {
         isBestSeller: bestSellerEl ? bestSellerEl.checked : false // <--- Simpan status ke Database
     };
 
-    await window.simpanNode('menus', payload);
+    if (window.editMenuKeyTarget) {
+        // 1. JIKA MODE EDIT: Update dan timpa data lama
+        const menuRef = ref(db, 'menus/' + window.editMenuKeyTarget);
+        await update(menuRef, payload);
+        alert('Menu berhasil diupdate!');
+        
+        // Matikan mode edit & kembalikan tombol jadi warna kuning
+        window.editMenuKeyTarget = null;
+        const btns = document.querySelectorAll('#owner-inner-panels-container button');
+        btns.forEach(btn => {
+            if (btn.innerText.toUpperCase().includes('UPDATE')) {
+                btn.innerHTML = '<i class="fa-solid fa-save mr-2"></i> SIMPAN KE DATABASE';
+                btn.classList.add('bg-amber-500', 'hover:bg-amber-600');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            }
+        });
+    } else {
+        // 2. JIKA MODE TAMBAH BARU: Buat data baru (Create)
+        const menuRef = ref(db, 'menus');
+        await push(menuRef, payload);
+        alert('Menu baru berhasil disimpan!');
+    }
 
     namaEl.value = '';
     priceEl.value = '';
