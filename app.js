@@ -662,35 +662,37 @@ window.hapusItemKeranjang = (index) => {
 // ==========================================
 window.bukaModalCheckout = () => {
     const listEl = document.getElementById('checkout-list');
-    if (listEl) listEl.innerHTML = '';
+    if (!listEl) return;
     
+    listEl.innerHTML = '';
     let grandTotal = 0;
-    
+
     cart.forEach((item, index) => {
-        // Mencegah error jika total harganya belum terbaca
+        // Cegah error jika total harganya belum terbaca
         const hargaTotal = Number(item.total) || 0;
         grandTotal += hargaTotal;
-        
-        const imgUrl = (typeof globalMenus !== 'undefined' && globalMenus[item.id] && globalMenus[item.id].image) ? globalMenus[item.id].image : 'logo-192.png';
 
-        listEl.insertAdjacentHTML('beforeend', `
+        // KUNCI PERBAIKAN GAMBAR: Tarik gambar langsung dari Data Master Firebase
+        const menuAsli = globalMenus[item.id];
+        const imgUrl = (menuAsli && menuAsli.imageUrl) ? menuAsli.imageUrl : 'https://via.placeholder.com/150';
+
+        const html = `
             <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-0 relative">
-                
-                <div class="w-14 h-14 bg-slate-50 rounded-xl overflow-hidden shrink-0 shadow-sm border border-slate-200/60 p-0.5">
-                    <img src="${imgUrl}" alt="${item.name}" class="w-full h-full object-cover rounded-lg" onerror="this.src='logo-192.png'">
+                <div class="w-14 h-14 bg-slate-50 rounded-xl overflow-hidden shrink-0 shadow-sm border border-slate-200/50 flex items-center justify-center">
+                    <img src="${imgUrl}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150'">
                 </div>
                 
                 <div class="flex-1 pr-8">
                     <h4 class="text-xs font-black text-slate-800 leading-tight mb-0.5">${item.name}</h4>
-                    ${item.notes && item.notes !== '-' ? `<p class="text-[9px] text-slate-500 font-medium leading-snug mb-1 line-clamp-2">${item.notes}</p>` : ''}
+                    <p class="text-[9px] text-slate-500 font-medium leading-snug mb-1">${item.notes || ''}</p>
                     
                     <div class="flex items-center gap-3 mt-1.5">
-                        <div class="flex items-center bg-slate-100 rounded-lg border border-slate-200 shadow-sm">
-                            <button onclick="window.ubahQtyKeranjang(${index}, -1)" class="w-7 h-6 flex justify-center items-center text-slate-600 hover:text-amber-500 hover:bg-slate-200 rounded-l-lg transition">
+                        <div class="flex items-center gap-2 bg-slate-50 rounded-lg border border-slate-200 shadow-sm px-1.5 py-0.5">
+                            <button onclick="window.ubahQtyKeranjang(${index}, -1)" class="w-5 h-5 flex justify-center items-center text-slate-400 hover:text-amber-500 transition">
                                 <i class="fa-solid fa-minus text-[9px]"></i>
                             </button>
-                            <span class="text-[10px] font-black text-slate-800 w-5 text-center">${item.qty}</span>
-                            <button onclick="window.ubahQtyKeranjang(${index}, 1)" class="w-7 h-6 flex justify-center items-center text-slate-600 hover:text-amber-500 hover:bg-slate-200 rounded-r-lg transition">
+                            <span class="text-[10px] font-black text-slate-800 w-3 text-center">${item.qty}</span>
+                            <button onclick="window.ubahQtyKeranjang(${index}, 1)" class="w-5 h-5 flex justify-center items-center text-slate-400 hover:text-amber-500 transition">
                                 <i class="fa-solid fa-plus text-[9px]"></i>
                             </button>
                         </div>
@@ -698,16 +700,17 @@ window.bukaModalCheckout = () => {
                     </div>
                 </div>
 
-                <button onclick="window.hapusItemKeranjang(${index})" class="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full flex justify-center items-center transition">
+                <button onclick="window.hapusItemKeranjang(${index})" class="absolute right-0 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition shadow-sm">
                     <i class="fa-solid fa-trash-can text-sm"></i>
                 </button>
             </div>
-        `);
+        `;
+        listEl.insertAdjacentHTML('beforeend', html);
     });
-    
+
     const totalEl = document.getElementById('checkout-total');
-    if (totalEl) totalEl.innerText = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
-    
+    if (totalEl) totalEl.innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+
     const modal = document.getElementById('checkout-modal');
     if (modal) {
         modal.classList.remove('hidden');
