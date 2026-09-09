@@ -424,7 +424,6 @@ window.ubahStatusKedai = async (elemenSakelar) => {
 // 2A. FILTER KATEGORI & PENCARIAN MENU
 // ---------------------------------------------------------
 window.filterKategori = (kategori, btnEl) => {
-window.filterKategori = (kategori, btnEl) => {
     activeCategoryFilter = kategori;
     
     // Reset semua tombol kategori ke mode putih
