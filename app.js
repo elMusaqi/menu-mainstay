@@ -3149,7 +3149,6 @@ window.renderCheckboxVarian = () => {
 // MESIN PEMBUAT TOMBOL KATEGORI PELANGGAN
 // ==========================================
 window.renderClientKategoriButtons = () => {
-window.renderClientKategoriButtons = () => {
     const container = document.getElementById('container-filter-kategori');
     if (!container) return;
 
