@@ -1639,7 +1639,6 @@ window.renderPanelMenu = () => {
     
     // Rancang HTML List dari Database
     let htmlList = Object.keys(realDbMenus).map(key => `
-    let htmlList = Object.keys(realDbMenus).map(key => `
         <div class="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl mb-3 shadow-sm">
             
             <div class="flex items-center gap-3 overflow-hidden">
