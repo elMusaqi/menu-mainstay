@@ -563,7 +563,8 @@ window.bukaModalDetail = (key) => {
     if (!wadahVarian) {
         wadahVarian = document.createElement('div');
         wadahVarian.id = 'wadah-modal-varian';
-        wadahVarian.className = 'w-full mb-4 max-h-60 overflow-y-auto px-1';
+        // Beri margin bawah (mb-28) dan padding bawah (pb-8) agar ruang scroll ekstra luas dan tidak menabrak footer
+        wadahVarian.className = 'w-full mb-28 pb-8 max-h-[60vh] overflow-y-auto px-1';
 
         const qtyBlock = document.getElementById('detail-qty');
         if (qtyBlock) {
@@ -641,7 +642,13 @@ window.hitungTotalHargaDetail = () => {
     const totalEl = document.getElementById('detail-total-price') || document.querySelector('#modal-detail button.bg-amber-500');
     if (totalEl) {
         if(totalEl.tagName === 'BUTTON' || totalEl.innerText.includes('Tambah')) {
-             totalEl.innerText = 'Tambah Rp ' + total.toLocaleString('id-ID');
+             // Menggunakan flex dan whitespace-nowrap agar ikon dan teks "Tambah Rp..." tidak pernah berantakan
+             totalEl.innerHTML = `
+                <div class="flex items-center justify-center gap-2 whitespace-nowrap w-full">
+                    <span class="font-black">Tambah Rp ${total.toLocaleString('id-ID')}</span> 
+                    <i class="fa-solid fa-volume-high text-amber-500 bg-white p-1.5 rounded-full text-[10px]"></i>
+                </div>
+             `;
         } else {
              totalEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
         }
@@ -1612,8 +1619,11 @@ window.renderPanelMenu = () => {
                         <span class="text-amber-500">${formatRupiah(realDbMenus[key].price)}</span> • ${realDbMenus[key].category}
                     </p>
                 </div>
-            </div>
-            <button onclick="hapusNode('menus', '${key}', 'renderPanelMenu')" class="text-red-400 bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition shrink-0 border border-red-100">
+            <div class="flex items-center gap-2">
+            <button onclick="window.siapkanEditMenu('${key}')" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1.5 rounded transition">
+                <i class="fa-solid fa-pen text-[10px]"></i>
+            </button>
+            <button onclick="hapusNode('menus', '${key}', 'renderPanelMenu')" class="text-red-500 hover:text-red-700 bg-red-50 px-2 py-1.5 rounded transition">
                 <i class="fa-solid fa-trash text-[10px]"></i>
             </button>
         </div>
@@ -3242,3 +3252,53 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, 500); 
 });
+
+// ==========================================
+// FUNGSI PERSIAPAN MODE EDIT (FULL CRUD)
+// ==========================================
+window.siapkanEditMenu = (key) => {
+    const menu = globalMenus[key];
+    if(!menu) return;
+
+    // Kunci ID menu agar nanti disave sebagai "Update", bukan "Menu Baru"
+    window.editMenuKeyTarget = key; 
+
+    // Cari area form owner
+    const panel = document.getElementById('owner-inner-panels-container');
+    if(!panel) return;
+
+    // Otomatis isi data ke kolom input
+    const inputs = panel.querySelectorAll('input, textarea, select');
+    inputs.forEach(el => {
+        const hint = (el.placeholder || el.id || el.name || '').toLowerCase();
+        if (hint.includes('nama') || hint.includes('name')) el.value = menu.name || '';
+        else if (hint.includes('harga') || hint.includes('price')) el.value = menu.price || '';
+        else if (hint.includes('kategori') || hint.includes('cat')) el.value = menu.category || '';
+        else if (hint.includes('gambar') || hint.includes('url')) el.value = menu.imageUrl || '';
+        else if (hint.includes('deskripsi') || hint.includes('desc')) el.value = menu.description || '';
+    });
+
+    // Otomatis centang varian yang sesuai
+    const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (cb.value && menu.varianIds) {
+            cb.checked = menu.varianIds.includes(cb.value);
+        } else {
+            cb.checked = false;
+        }
+    });
+
+    // Ubah tombol "SIMPAN" jadi "UPDATE" (Warna Biru)
+    const btns = panel.querySelectorAll('button');
+    btns.forEach(btn => {
+        if (btn.innerText.toUpperCase().includes('SIMPAN')) {
+            btn.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i> UPDATE DATA MENU';
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+        }
+    });
+    
+    // Gulir layar ke atas menuju form
+    const formArea = panel.querySelector('h2');
+    if(formArea) formArea.scrollIntoView({ behavior: 'smooth' });
+};
