@@ -668,22 +668,23 @@ window.hitungTotalHargaDetail = () => {
 
     let total = base * (detailQty || 1);
 
-    const totalEl = document.getElementById('detail-total-price') || document.querySelector('#modal-detail button.bg-amber-500');
-    if (totalEl) {
-        // Deteksi tombol dengan mengecek tag atau isinya
-        if(totalEl.tagName === 'BUTTON' || totalEl.innerText.includes('Tambah') || totalEl.innerHTML.includes('fa-cart')) {
-             // Mengganti teks "Tambah" dengan Ikon Keranjang (+) agar muat banyak angka
-             totalEl.innerHTML = `
-                <div class="flex items-center justify-center gap-2 w-full whitespace-nowrap">
-                    <i class="fa-solid fa-cart-plus text-lg"></i>
-                    <span class="bg-white/20 border border-white/20 px-2 py-0.5 rounded-lg font-black text-[14px] tracking-wide">
-                        Rp ${total.toLocaleString('id-ID')}
-                    </span>
-                </div>
-             `;
-        } else {
-             totalEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
-        }
+    // 1. Tembak langsung ke Tombol Tambah-nya
+    const btnTambah = document.querySelector('#modal-detail button.bg-amber-500');
+    if (btnTambah) {
+         btnTambah.innerHTML = `
+            <div class="flex items-center justify-center gap-2 w-full whitespace-nowrap">
+                <i class="fa-solid fa-cart-plus text-lg"></i>
+                <span class="bg-white/20 border border-white/20 px-2 py-0.5 rounded-lg font-black text-[14px] tracking-wide">
+                    Rp ${total.toLocaleString('id-ID')}
+                </span>
+            </div>
+         `;
+    }
+
+    // 2. Tembak juga elemen teks harga (jika ada) agar tidak error
+    const priceSpan = document.getElementById('detail-total-price');
+    if (priceSpan && priceSpan.tagName !== 'BUTTON') {
+         priceSpan.innerText = 'Rp ' + total.toLocaleString('id-ID');
     }
 };
 window.tambahKeKeranjang = () => {
@@ -1639,6 +1640,7 @@ window.renderPanelMenu = () => {
     
     // Rancang HTML List dari Database
     let htmlList = Object.keys(realDbMenus).map(key => `
+    let htmlList = Object.keys(realDbMenus).map(key => `
         <div class="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl mb-3 shadow-sm">
             
             <div class="flex items-center gap-3 overflow-hidden">
@@ -1652,10 +1654,6 @@ window.renderPanelMenu = () => {
             </div>
 
             <div class="flex items-center gap-1.5 shrink-0 ml-2">
-                <!-- TOMBOL PREVIEW (MATA) -->
-                <button onclick="window.bukaModalDetail('${key}')" class="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-500 hover:bg-emerald-100 rounded-lg transition shadow-sm" title="Preview Menu">
-                    <i class="fa-solid fa-eye text-xs"></i>
-                </button>
                 <!-- TOMBOL EDIT (PENA) -->
                 <button onclick="window.siapkanEditMenu('${key}')" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-lg transition shadow-sm" title="Edit Menu">
                     <i class="fa-solid fa-pen text-xs"></i>
@@ -3243,19 +3241,45 @@ window.renderCheckboxVarian = () => {
     const wadah = document.getElementById('wadah-checkbox-varian');
     if (!wadah) return;
 
-    wadah.innerHTML = window.masterVarian.map(v => {
-        const opsiTeks = v.opsi.map(o => o.harga > 0 ? `${o.namaOpsi} (+${o.harga/1000}k)` : o.namaOpsi).join(', ');
-        return `
-        <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
-            <input type="checkbox" value="${v.id}" class="checkbox-varian-menu w-4 h-4 text-purple-500 rounded border-gray-300">
-            <div class="flex flex-col">
-                <span class="text-xs font-bold text-slate-700">${v.nama}</span>
-                <span class="text-[9px] font-medium text-slate-400">${opsiTeks}</span>
-            </div>
-        </label>
-        `;
-    }).join('');
-};
+    // 1. CETAK KOTAK VARIAN
+        let htmlFinal = window.masterVarian.map(v => {
+            const opsiTeks = v.opsi ? v.opsi.map(o => o.namaOpsi).join(', ') : '';
+            return `
+            <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition mb-2 shadow-sm">
+                <!-- Class 'checkbox-varian' dijaga agar sistem simpan tidak error -->
+                <input type="checkbox" value="${v.id}" class="checkbox-varian w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                <div class="flex flex-col">
+                    <span class="text-xs font-black text-slate-700 uppercase">${v.nama}</span>
+                    <span class="text-[10px] text-slate-400">${opsiTeks}</span>
+                </div>
+            </label>
+            `;
+        }).join('');
+
+        // 2. CETAK KOTAK TOPPING (Otomatis Diselipkan di Bawah Varian)
+        let masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
+        if (masterTop.length > 0) {
+            // Judul Pemisah Topping
+            htmlFinal += `<div class="w-full mt-5 mb-2 border-t border-slate-200 pt-3"><span class="text-[11px] font-black text-amber-600 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> HUBUNGKAN TOPPING</span></div>`;
+            
+            // Loop data topping
+            htmlFinal += masterTop.map(t => {
+                return `
+                <label class="flex items-center gap-3 p-3 bg-amber-50/40 border border-amber-200 rounded-xl cursor-pointer hover:border-amber-400 transition mb-2 shadow-sm">
+                    <!-- Class 'checkbox-topping' dijaga agar sistem baca data Boba/Keju -->
+                    <input type="checkbox" value="${t.nama}" class="checkbox-topping w-4 h-4 text-amber-500 rounded border-amber-300 focus:ring-amber-500">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-black text-slate-800">${t.nama}</span>
+                        <span class="text-[10px] font-bold text-amber-600">+Rp ${Number(t.harga).toLocaleString('id-ID')}</span>
+                    </div>
+                </label>
+                `;
+            }).join('');
+        }
+
+        // Tembakkan semua desain ke layar
+        wadah.innerHTML = htmlFinal;
+    };
 
 // ==========================================
 // MESIN PEMBUAT TOMBOL KATEGORI PELANGGAN
