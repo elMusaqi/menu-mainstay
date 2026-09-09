@@ -513,39 +513,56 @@ window.bukaModalDetail = (key) => {
     const menu = globalMenus[key];
     if (!menu) return;
 
-    window.selectedMenuForCart = { id: key, ...menu };
+    // 1. KUNCI HARGA: Gunakan variabel yang dikenali oleh mesin keranjang Mas Ihsan
+    window.currentDetailMenu = { key: key, ...menu };
+    window.detailQty = 1; // Reset jumlah pesanan ke 1 setiap klik menu baru
 
     // Cari elemen pembungkus modal
     const modal = document.getElementById('modal-detail') || document.querySelector('.modal');
     if (!modal) return;
 
-    // 1. Sinkronkan Gambar (Dengan sistem pengaman jika link rusak)
+    // 2. Sinkronkan Gambar
     const img = modal.querySelector('img');
     if (img) {
         img.src = (menu && menu.imageUrl) ? menu.imageUrl : 'https://via.placeholder.com/150';
         img.onerror = () => { img.src = 'https://via.placeholder.com/150'; }; 
     }
 
-    // 2. Sinkronkan Judul & Deskripsi (Pencari Teks Pintar)
-    // Mesin ini mencari teks bawaan template dan menguncinya, sehingga tidak menabrak varian
+    // 3. Sinkronkan Judul & Deskripsi
     const allTags = modal.querySelectorAll('*');
     allTags.forEach(el => {
-        // Hanya targetkan elemen teks ujung
         if (el.children.length === 0) { 
-            // Ganti Judul
             if (el.dataset.target === 'title' || el.innerText.trim() === 'Nama Menu') {
                 el.innerText = menu.name;
-                el.dataset.target = 'title'; // Kunci sebagai target judul
+                el.dataset.target = 'title';
             }
-            // Ganti Deskripsi
             if (el.dataset.target === 'desc' || el.innerText.trim() === 'Deskripsi menu akan muncul di sini.') {
                 el.innerText = menu.description ? menu.description : 'Tidak ada deskripsi.';
-                el.dataset.target = 'desc'; // Kunci sebagai target deskripsi
+                el.dataset.target = 'desc';
             }
         }
     });
 
-    // 3. Tampilkan Pop-up
+    // 4. Reset Angka Qty di Layar menjadi 1
+    const qtyEl = document.getElementById('detail-qty');
+    if (qtyEl) qtyEl.innerText = window.detailQty;
+
+    // 5. Panggil Mesin Penghitung Harga agar "Rp 0" langsung berubah jadi harga asli
+    if (typeof window.hitungTotalHargaDetail === 'function') {
+        window.hitungTotalHargaDetail();
+    }
+
+    // 6. Pasang "Sensor" di setiap tombol varian agar harga otomatis merespon saat diklik (+Rp 3000)
+    const variantInputs = modal.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+    variantInputs.forEach(input => {
+        input.onchange = () => {
+            if (typeof window.hitungTotalHargaDetail === 'function') {
+                window.hitungTotalHargaDetail();
+            }
+        };
+    });
+
+    // 7. Tampilkan Pop-up
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 };
