@@ -424,23 +424,20 @@ window.ubahStatusKedai = async (elemenSakelar) => {
 // 2A. FILTER KATEGORI & PENCARIAN MENU
 // ---------------------------------------------------------
 window.filterKategori = (kategori, btnEl) => {
-    // 1. KUNCI UTAMA (Dikembalikan seperti aslinya agar filter jalan)
+window.filterKategori = (kategori, btnEl) => {
     activeCategoryFilter = kategori;
-
-    // 2. Reset semua tombol kategori ke warna putih/abu-abu
+    
+    // Reset semua tombol kategori ke mode putih
     const allBtns = document.querySelectorAll('.cat-btn');
     allBtns.forEach(btn => {
-        btn.classList.remove('active', 'bg-amber-500', 'text-white', 'shadow-md', 'border-amber-500');
-        btn.classList.add('bg-white', 'text-gray-600', 'border-gray-200');
+        btn.className = "cat-btn bg-white text-gray-600 border border-gray-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm hover:bg-slate-50 transition";
     });
-
-    // 3. Ubah tombol yang diklik menjadi warna amber (oranye)
+    
+    // Ubah tombol yang sedang diklik menjadi orange aktif
     if (btnEl) {
-        btnEl.classList.remove('bg-white', 'text-gray-600', 'border-gray-200');
-        btnEl.classList.add('active', 'bg-amber-500', 'text-white', 'shadow-md', 'border-amber-500');
+        btnEl.className = "cat-btn active bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition";
     }
-
-    // 4. Panggil fungsi render asli
+    
     window.renderKatalog();
 };
 
@@ -513,36 +510,72 @@ window.renderKatalog = () => {
 // ---------------------------------------------------------
 // 2C. MODAL DETAIL & KUSTOMISASI MINUMAN
 // ---------------------------------------------------------
-window.bukaModalDetail = (menuKey) => {
-    // BLOKIR AKSES JIKA TOKO TUTUP
-    if (!isStoreOpen) {
-        return alert("Mohon maaf, Mainstay Drink sedang tutup. Silakan datang kembali di jam operasional kami!");
+window.bukaModalDetail = (key) => {
+    const menu = globalMenus[key];
+    if (!menu) return;
+
+    // Simpan menu yang sedang dipilih
+    window.selectedMenuForCart = { id: key, ...menu };
+
+    // 1. Munculkan Nama & Gambar
+    const titleEl = document.getElementById('modal-title') || document.getElementById('modal-menu-name');
+    if (titleEl) titleEl.innerText = menu.name;
+
+    const imgEl = document.getElementById('modal-img') || document.getElementById('modal-menu-img');
+    if (imgEl) imgEl.src = menu.imageUrl || 'https://via.placeholder.com/150';
+
+    // 2. Munculkan Deskripsi Asli dari Owner
+    const descEl = document.getElementById('modal-desc') || document.getElementById('modal-menu-desc');
+    if (descEl) {
+        descEl.innerText = menu.description ? menu.description : 'Tidak ada deskripsi untuk menu ini.';
     }
-    
-    currentDetailMenu = { key: menuKey, ...globalMenus[menuKey] };
-    detailQty = 1;
-    
-    // Injeksi data ke modal
-    document.getElementById('detail-name').innerText = currentDetailMenu.name;
-    document.getElementById('detail-img').src = currentDetailMenu.imageUrl || PLACEHOLDER_IMG;
-    document.getElementById('detail-qty').innerText = detailQty;
-    
-    // Reset radio buttons ke default (opsional)
-    const radioSizeR = document.getElementById('opt-size-r');
-    const radioSugarN = document.getElementById('opt-sugar-normal');
-    const radioIceN = document.getElementById('opt-ice-normal');
-    if(radioSizeR) radioSizeR.checked = true;
-    if(radioSugarN) radioSugarN.checked = true;
-    if(radioIceN) radioIceN.checked = true;
 
-    window.hitungTotalHargaDetail();
-    
-    // Tampilkan Modal
-    const modal = document.getElementById('modal-detail');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    // 3. Render Varian yang terhubung ke menu ini
+    const wadahVarian = document.getElementById('modal-varian-container') || document.getElementById('wadah-modal-varian');
+    if (wadahVarian) {
+        let vHtml = '';
+        const linkedVarianIds = menu.varianIds || [];
+        
+        // Ambil data master varian
+        let masterVar = window.masterVarian || [];
+        if (masterVar.length === 0) {
+            const savedVar = localStorage.getItem('master_varian');
+            if (savedVar) masterVar = JSON.parse(savedVar);
+        }
+
+        const filteredVar = masterVar.filter(v => linkedVarianIds.includes(v.id));
+        
+        if (filteredVar.length > 0) {
+            filteredVar.forEach(v => {
+                vHtml += `
+                    <div class="mb-3">
+                        <label class="text-xs font-black text-slate-700 uppercase block mb-1">${v.nama}</label>
+                        <div class="grid grid-cols-2 gap-2">
+                `;
+                v.opsi.forEach((o, idx) => {
+                    const hargaOpsi = o.harga > 0 ? ` (+Rp ${o.harga.toLocaleString('id-ID')})` : '';
+                    vHtml += `
+                        <label class="flex items-center gap-2 p-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 transition">
+                            <input type="radio" name="modal_var_${v.id}" value="${o.namaOpsi}" ${idx === 0 ? 'checked' : ''} class="text-amber-500 focus:ring-amber-400">
+                            <span class="text-xs font-bold text-slate-700">${o.namaOpsi}<span class="text-[10px] text-slate-400 block">${hargaOpsi}</span></span>
+                        </label>
+                    `;
+                });
+                vHtml += `</div></div>`;
+            });
+        } else {
+            vHtml = '<p class="text-xs text-slate-400 italic">Tidak ada varian khusus untuk menu ini.</p>';
+        }
+        wadahVarian.innerHTML = vHtml;
+    }
+
+    // 4. Buka Modal Preview di Layar Pelanggan
+    const modal = document.getElementById('modal-detail') || document.getElementById('modalMenu');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 };
-
 window.closeModalDetail = () => {
     const modal = document.getElementById('modal-detail');
     modal.classList.add('hidden');
