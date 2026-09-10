@@ -1642,46 +1642,50 @@ window.renderPanelMenu = () => {
     let htmlList = Object.keys(realDbMenus).map(key => {
         const m = realDbMenus[key];
         
-        // 1. Cek status apakah baris ini sedang diedit (Highlight otomatis saat load)
+        // 1. Efek Sorotan Biru
         const isEditing = window.editMenuKeyTarget === key;
         const borderClass = isEditing ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200';
         const bgClass = isEditing ? 'bg-blue-50' : 'bg-white';
         
-        // 2. Buat Informasi Badge Lengkap
         let badges = '';
         
-        // A. Badge Best Seller (Melacak semua versi nama database agar tidak bocor)
-        const isBS = m.isBestseller === true || m.isBestseller === 'true' || m.bestseller === true || m.bestSeller === true;
+        // A. Pelacak Best Seller (Melacak semua variasi nama di database lama & baru)
+        let isBS = false;
+        for (const prop in m) {
+            if (prop.toLowerCase().includes('best')) {
+                if (m[prop] === true || m[prop] === 'true') isBS = true;
+            }
+        }
         if (isBS) {
             badges += `<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-black mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-fire mr-0.5"></i>BEST SELLER</span>`;
         }
         
-        // B. Badge Topping (Menampilkan NAMA topping asli seperti Boba, Keju)
+        // B. Penerjemah ID Topping Menjadi Nama Asli (Boba, Keju, dll)
         if (m.toppingIds && Array.isArray(m.toppingIds) && m.toppingIds.length > 0) {
-            const topNames = m.toppingIds.join(', ');
+            let masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
+            let topNames = m.toppingIds.map(tid => {
+                let match = masterTop.find(mt => mt.id === tid || mt.nama === tid);
+                return match ? match.nama : tid.replace('top_', 'Topping ').replace(/_/g, ' '); // Jika nama dihapus, tampilkan teks rapi
+            }).join(', ');
             badges += `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-cheese mr-0.5"></i>${topNames}</span>`;
         }
         
-        // C. Badge Varian (Menampilkan NAMA varian asli)
+        // C. Penerjemah Varian Menjadi Nama Asli
         if (m.varianIds && Array.isArray(m.varianIds) && m.varianIds.length > 0) {
             let masterVar = window.masterVarian || JSON.parse(localStorage.getItem('master_varian')) || [];
             let varNames = m.varianIds.map(vid => {
                 let match = masterVar.find(mv => mv.id === vid);
                 return match ? match.nama : vid.replace('var_', '').replace(/_/g, ' ').toUpperCase();
             }).join(', ');
-            
             badges += `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-layer-group mr-0.5"></i>${varNames}</span>`;
         }
         
-        // Jika menu reguler polosan
         if (badges === '') {
             badges = `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold mr-1 mt-1">Menu Reguler</span>`;
         }
 
         return `
-        <!-- ID dan class 'row-katalog-menu' untuk sasaran Highlight Biru Terang -->
         <div id="row-menu-${key}" class="row-katalog-menu w-full flex items-center justify-between p-3 ${bgClass} border ${borderClass} rounded-xl mb-3 shadow-sm transition-all duration-300">
-            
             <div class="flex items-center gap-3 overflow-hidden">
                 <div class="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200">
                     <img src="${m.imageUrl || 'logo-192.png'}" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
@@ -1696,7 +1700,6 @@ window.renderPanelMenu = () => {
                     </div>
                 </div>
             </div>
-
             <div class="flex items-center gap-1.5 shrink-0 ml-2">
                 <button onclick="window.siapkanEditMenu('${key}')" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shadow-sm" title="Edit Menu">
                     <i class="fa-solid fa-pen text-xs"></i>
@@ -1708,7 +1711,7 @@ window.renderPanelMenu = () => {
         </div>
         `;
     }).join('');
-
+    
     if (!htmlList) {
         htmlList = `<p class="text-[10px] text-center text-gray-400 py-6 bg-slate-50 rounded-xl border-dashed border border-gray-200">Database Menu Asli Kosong.<br>Silakan tambah menu di atas.</p>`;
     }
@@ -3363,7 +3366,7 @@ window.siapkanEditMenu = (key) => {
 
     window.editMenuKeyTarget = key; 
 
-    // 1. EFEK SOROTAN VISUAL (Biru menyala pada baris yang diklik)
+    // 1. EFEK SOROTAN VISUAL
     document.querySelectorAll('.row-katalog-menu').forEach(el => {
         el.classList.remove('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
         el.classList.add('border-slate-200', 'bg-white');
@@ -3377,7 +3380,7 @@ window.siapkanEditMenu = (key) => {
     const panel = document.getElementById('owner-inner-panels-container');
     if(!panel) return;
 
-    // 2. Otomatis isi data teks & harga
+    // 2. Otomatis isi data teks
     const inputs = panel.querySelectorAll('input:not([type="checkbox"]), textarea, select');
     inputs.forEach(el => {
         const hint = (el.placeholder || el.id || el.name || '').toLowerCase();
@@ -3388,19 +3391,26 @@ window.siapkanEditMenu = (key) => {
         else if (hint.includes('deskripsi') || hint.includes('desc')) el.value = menu.description || '';
     });
 
-    // 3. PENGAMANAN MUTLAK KOTAK BEST SELLER (Anti Bocor/Kosong)
-    const isBS = menu.isBestseller === true || menu.isBestseller === 'true' || menu.bestseller === true || menu.bestSeller === true;
-    const bsCheckbox = document.getElementById('fm-bestseller');
-    if (bsCheckbox) {
-        bsCheckbox.checked = isBS;
+    // 3. PENGAMANAN MUTLAK BEST SELLER (Lacak semua kemungkinan nama di database)
+    let isBS = false;
+    for (const prop in menu) {
+        if (prop.toLowerCase().includes('best')) {
+            if (menu[prop] === true || menu[prop] === 'true') isBS = true;
+        }
     }
 
-    // 4. Centang Checkbox Varian & Topping dengan akurat
+    // 4. Centang Checkbox (Semua data kembali utuh!)
     const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
-        // PERINTAH WAJIB: Jangan sentuh kotak Best Seller!
-        if (cb.id === 'fm-bestseller' || (cb.id || '').toLowerCase().includes('bestseller')) return; 
+        const cbId = (cb.id || '').toLowerCase();
+        
+        // A. Jika ini kotak Best Seller, paksakan status isBS yang sudah dilacak!
+        if (cbId.includes('bestseller') || cbId === 'fm-bestseller') {
+            cb.checked = isBS;
+            return; 
+        }
 
+        // B. Jika ini Varian / Topping
         const isVarian = menu.varianIds && menu.varianIds.includes(cb.value);
         const isTopping = menu.toppingIds && menu.toppingIds.includes(cb.value);
         
@@ -3421,7 +3431,7 @@ window.siapkanEditMenu = (key) => {
         }
     });
 
-    // 6. TAMPILKAN PREVIEW GAMBAR LAMA SAAT DI-EDIT
+    // 6. TAMPILKAN PREVIEW GAMBAR
     if (typeof window.updatePreviewVisual === 'function') {
         window.updatePreviewVisual(menu.imageUrl || '');
     }
