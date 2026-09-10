@@ -1638,33 +1638,61 @@ window.renderPanelMenu = () => {
         }
     });
     
-    // Rancang HTML List dari Database
-    let htmlList = Object.keys(realDbMenus).map(key => `
-        <div class="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl mb-3 shadow-sm">
+    // Rancang HTML List dari Database (Versi Profesional dengan Badge & Penanda)
+    let htmlList = Object.keys(realDbMenus).map(key => {
+        const m = realDbMenus[key];
+        
+        // Cek status apakah baris ini sedang diedit (Highlight otomatis saat load)
+        const isEditing = window.editMenuKeyTarget === key;
+        const borderClass = isEditing ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200';
+        const bgClass = isEditing ? 'bg-blue-50' : 'bg-white';
+        
+        // Buat Informasi Badge Lengkap
+        let badges = '';
+        if (m.isBestseller === true || m.isBestseller === 'true') {
+            badges += `<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-black mr-1 mt-1 shadow-sm"><i class="fa-solid fa-fire mr-0.5"></i>BEST SELLER</span>`;
+        }
+        if (m.toppingIds && m.toppingIds.length > 0) {
+            badges += `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm"><i class="fa-solid fa-cheese mr-0.5"></i>${m.toppingIds.length} Topping</span>`;
+        }
+        if (m.varianIds && m.varianIds.length > 0) {
+            badges += `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm"><i class="fa-solid fa-layer-group mr-0.5"></i>${m.varianIds.length} Varian</span>`;
+        }
+        // Jika menu reguler tanpa ekstensi
+        if (badges === '') {
+            badges = `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold mr-1 mt-1">Menu Reguler</span>`;
+        }
+
+        return `
+        <!-- Tambahan ID dan class 'row-katalog-menu' untuk sasaran Highlight -->
+        <div id="row-menu-${key}" class="row-katalog-menu w-full flex items-center justify-between p-3 ${bgClass} border ${borderClass} rounded-xl mb-3 shadow-sm transition-all duration-300">
             
             <div class="flex items-center gap-3 overflow-hidden">
                 <div class="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200">
-                    <img src="${realDbMenus[key].imageUrl || 'logo-192.png'}" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
+                    <img src="${m.imageUrl || 'logo-192.png'}" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h4 class="text-sm font-black text-slate-800 truncate">${realDbMenus[key].name}</h4>
-                    <p class="text-[10px] font-bold text-amber-500 uppercase truncate">Rp ${Number(realDbMenus[key].price).toLocaleString('id-ID')} &bull; <span class="text-slate-400">${realDbMenus[key].category}</span></p>
+                    <h4 class="text-sm font-black text-slate-800 truncate">${m.name}</h4>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase truncate mb-1">
+                        <span class="text-amber-500">Rp ${Number(m.price).toLocaleString('id-ID')}</span> &bull; ${m.category}
+                    </p>
+                    <div class="flex flex-wrap items-center">
+                        ${badges}
+                    </div>
                 </div>
             </div>
 
             <div class="flex items-center gap-1.5 shrink-0 ml-2">
-                <!-- TOMBOL EDIT (PENA) -->
-                <button onclick="window.siapkanEditMenu('${key}')" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-100 rounded-lg transition shadow-sm" title="Edit Menu">
+                <button onclick="window.siapkanEditMenu('${key}')" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shadow-sm" title="Edit Menu">
                     <i class="fa-solid fa-pen text-xs"></i>
                 </button>
-                <!-- TOMBOL HAPUS (TONG SAMPAH) -->
                 <button onclick="window.hapusNode('menus', '${key}', 'renderPanelMenu')" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition shadow-sm" title="Hapus Menu">
                     <i class="fa-solid fa-trash text-xs"></i>
                 </button>
             </div>
-
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     if (!htmlList) {
         htmlList = `<p class="text-[10px] text-center text-gray-400 py-6 bg-slate-50 rounded-xl border-dashed border border-gray-200">Database Menu Asli Kosong.<br>Silakan tambah menu di atas.</p>`;
@@ -3312,7 +3340,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// FUNGSI PERSIAPAN MODE EDIT (ANTI DATA HILANG)
+// FUNGSI PERSIAPAN MODE EDIT (HIGHLIGHT & ANTI HILANG)
 // ==========================================
 window.siapkanEditMenu = (key) => {
     const menu = globalMenus[key];
@@ -3320,10 +3348,23 @@ window.siapkanEditMenu = (key) => {
 
     window.editMenuKeyTarget = key; 
 
+    // 1. EFEK SOROTAN VISUAL (Animasi Penanda Menu)
+    // Bersihkan semua sorotan dari baris lain
+    document.querySelectorAll('.row-katalog-menu').forEach(el => {
+        el.classList.remove('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
+        el.classList.add('border-slate-200', 'bg-white');
+    });
+    // Beri sorotan biru tegas pada baris yang diklik
+    const activeRow = document.getElementById(`row-menu-${key}`);
+    if (activeRow) {
+        activeRow.classList.remove('border-slate-200', 'bg-white');
+        activeRow.classList.add('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
+    }
+
     const panel = document.getElementById('owner-inner-panels-container');
     if(!panel) return;
 
-    // 1. Otomatis isi data teks
+    // 2. Otomatis isi data teks
     const inputs = panel.querySelectorAll('input:not([type="checkbox"]), textarea, select');
     inputs.forEach(el => {
         const hint = (el.placeholder || el.id || el.name || '').toLowerCase();
@@ -3334,16 +3375,18 @@ window.siapkanEditMenu = (key) => {
         else if (hint.includes('deskripsi') || hint.includes('desc')) el.value = menu.description || '';
     });
 
-    // 2. Otomatis centang Checkbox dengan Akurat
+    // 3. PENGAMANAN MUTLAK BEST SELLER
+    const bsCheckbox = document.getElementById('fm-bestseller');
+    if (bsCheckbox) {
+        bsCheckbox.checked = (menu.isBestseller === true || menu.isBestseller === "true");
+    }
+
+    // 4. Centang Checkbox Varian & Topping
     const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
-        // A. Jaga keamanan centang Best Seller
-        if (cb.id === 'fm-bestseller' || (cb.id || '').toLowerCase().includes('bestseller')) {
-            cb.checked = menu.isBestseller === true || menu.isBestseller === "true";
-            return; // Lanjut ke checkbox berikutnya, jangan jalankan kode bawahnya
-        }
+        // PERINTAH WAJIB: Abaikan checkbox Best Seller agar tidak dikosongkan!
+        if (cb.id === 'fm-bestseller') return; 
 
-        // B. Kembalikan centang Varian & Topping
         const isVarian = menu.varianIds && menu.varianIds.includes(cb.value);
         const isTopping = menu.toppingIds && menu.toppingIds.includes(cb.value);
         
@@ -3354,7 +3397,7 @@ window.siapkanEditMenu = (key) => {
         }
     });
 
-    // 3. Ubah tombol "SIMPAN" jadi "UPDATE"
+    // 5. Ubah tombol "SIMPAN" jadi "UPDATE"
     const btns = panel.querySelectorAll('button');
     btns.forEach(btn => {
         if (btn.innerText.toUpperCase().includes('SIMPAN')) {
@@ -3364,7 +3407,86 @@ window.siapkanEditMenu = (key) => {
         }
     });
     
-    // Gulir layar ke form atas
+    // Gulir layar ke atas
     const formArea = panel.querySelector('h2');
     if(formArea) formArea.scrollIntoView({ behavior: 'smooth' });
 };
+
+// ==========================================
+// FITUR TAMBAHAN: PREVIEW GAMBAR OTOMATIS (PLUG & PLAY)
+// ==========================================
+setTimeout(() => {
+    const fileInput = document.getElementById('fm-image-file');
+    const urlInput = document.getElementById('fm-image-url');
+    
+    if (fileInput && urlInput) {
+        // 1. Buat elemen kotak preview secara otomatis
+        const previewDiv = document.createElement('div');
+        previewDiv.id = 'wadah-preview-gambar';
+        previewDiv.className = 'mt-3 p-3 bg-blue-50/50 border border-blue-200 rounded-xl flex items-center gap-4 hidden transition-all duration-300 shadow-sm';
+        previewDiv.innerHTML = `
+            <div class="w-16 h-16 bg-white border-2 border-blue-300 rounded-lg overflow-hidden shrink-0 shadow-sm">
+                <img id="img-preview-target" src="" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
+            </div>
+            <div class="flex-1">
+                <h4 class="text-xs font-black text-blue-800"><i class="fa-solid fa-image mr-1"></i> Preview Gambar</h4>
+                <p class="text-[10px] font-medium text-blue-600 mt-0.5">Gambar ini yang akan tampil di katalog pelanggan.</p>
+            </div>
+        `;
+        
+        // 2. Sisipkan tepat di bawah kotak "Pilih File"
+        fileInput.parentElement.insertAdjacentElement('afterend', previewDiv);
+
+        // 3. Fungsi memunculkan/menyembunyikan gambar
+        window.updatePreviewVisual = (src) => {
+            const wadah = document.getElementById('wadah-preview-gambar');
+            const img = document.getElementById('img-preview-target');
+            if (src && src.trim() !== '') {
+                img.src = src;
+                wadah.classList.remove('hidden');
+            } else {
+                wadah.classList.add('hidden');
+                img.src = '';
+            }
+        };
+
+        // 4. Jika Owner pilih Upload File Lokal
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => window.updatePreviewVisual(event.target.result);
+                reader.readAsDataURL(file);
+                urlInput.value = ''; // Otomatis hapus kolom URL agar tidak bentrok
+            } else {
+                window.updatePreviewVisual(urlInput.value);
+            }
+        });
+
+        // 5. Jika Owner memasukkan Link/URL
+        urlInput.addEventListener('input', (e) => {
+            if (e.target.value.trim() !== '') {
+                window.updatePreviewVisual(e.target.value);
+                fileInput.value = ''; // Otomatis batalkan file upload agar tidak bentrok
+            } else {
+                window.updatePreviewVisual('');
+            }
+        });
+
+        // 6. Integrasi Cerdas dengan Mode Edit (Munculkan gambar lama)
+        const originalEdit = window.siapkanEditMenu;
+        if (typeof originalEdit === 'function') {
+            window.siapkanEditMenu = (key) => {
+                originalEdit(key); // Jalankan fungsi edit yang sudah kita perbaiki sebelumnya
+                
+                // Cek gambar dari database dan tampilkan di preview
+                const menu = globalMenus[key];
+                if (menu && menu.imageUrl) {
+                    window.updatePreviewVisual(menu.imageUrl);
+                } else {
+                    window.updatePreviewVisual('');
+                }
+            };
+        }
+    }
+}, 1000);
