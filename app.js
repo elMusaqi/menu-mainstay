@@ -1866,9 +1866,24 @@ window.renderPanelMenu = () => {
 }; // <--- Penutup Utama Fungsi Panel
 
 // ==========================================
-// FUNGSI PENYIMPAN DATA STAFF ENTERPRISE
+// SISTEM HRD & PAYROLL ENTERPRISE (FOTO, EDIT, TARGET & PIN 6 DIGIT)
 // ==========================================
-window.simpanDataStaffBaru = () => {
+window.editStaffKeyTarget = null; 
+
+// 1. Fungsi Konverter Foto
+window.previewFotoKaryawan = (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('img-preview-staff').src = e.target.result;
+            document.getElementById('fm-staff-photo-data').value = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+// 2. Fungsi Simpan & Update (Pengunci PIN 6 Digit)
+window.simpanDataStaffBaru = async () => {
     const name = document.getElementById('fm-staff-name').value.trim();
     const pin = document.getElementById('fm-staff-pin').value.trim();
     
@@ -1876,82 +1891,201 @@ window.simpanDataStaffBaru = () => {
         alert("Peringatan: Nama Karyawan dan PIN Kasir wajib diisi!");
         return;
     }
+    if(pin.length !== 6) {
+        alert("Peringatan: PIN Kasir WAJIB berisi 6 digit angka!");
+        return;
+    }
 
     const dataBaru = {
         name: name,
         pin: pin,
+        photo: document.getElementById('fm-staff-photo-data').value || '',
         wa: document.getElementById('fm-staff-wa').value.trim(),
         address: document.getElementById('fm-staff-address').value.trim(),
-        status: document.getElementById('fm-staff-status').value,
-        shiftIn: document.getElementById('fm-staff-shift-in').value,
-        shiftOut: document.getElementById('fm-staff-shift-out').value,
-        payType: document.getElementById('fm-staff-pay-type').value,
+        status: document.getElementById('fm-staff-status').value || '',
+        shiftIn: document.getElementById('fm-staff-shift-in').value || '',
+        shiftOut: document.getElementById('fm-staff-shift-out').value || '',
+        payType: document.getElementById('fm-staff-pay-type').value || '',
         salary: document.getElementById('fm-staff-salary').value.trim(),
+        target: document.getElementById('fm-staff-target').value.trim(), // <--- SIMPAN TARGET
         bank: document.getElementById('fm-staff-bank').value.trim(),
         rekening: document.getElementById('fm-staff-rekening').value.trim()
     };
 
-    window.simpanNode('staff', dataBaru, 'renderPanelHRD');
+    const btn = document.getElementById('btn-simpan-staff');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> MENYIMPAN...';
+    
+    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
+    try {
+        if (window.editStaffKeyTarget) {
+            await fetch(`${dbUrl}/staff/${window.editStaffKeyTarget}.json`, { method: 'PATCH', body: JSON.stringify(dataBaru) });
+            window.editStaffKeyTarget = null;
+        } else {
+            await fetch(`${dbUrl}/staff.json`, { method: 'POST', body: JSON.stringify(dataBaru) });
+        }
+        btn.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i> BERHASIL!';
+        btn.classList.replace('bg-purple-600', 'bg-green-500');
+        btn.classList.replace('bg-blue-600', 'bg-green-500');
+        setTimeout(() => { if(typeof window.renderPanelHRD === 'function') window.renderPanelHRD(); }, 800);
+    } catch(e) {
+        alert("Gagal terhubung ke database!");
+        if(typeof window.renderPanelHRD === 'function') window.renderPanelHRD();
+    }
 };
 
-// ==========================================
-// RENDER PANEL HRD (PROFILING & PAYROLL)
-// ==========================================
+// 3. Fungsi Mode Edit
+window.siapkanEditStaff = (key) => {
+    const s = globalStaff[key];
+    if(!s) return;
+    
+    window.editStaffKeyTarget = key;
+    
+    document.querySelectorAll('.row-staff-card').forEach(el => {
+        el.classList.remove('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
+        el.classList.add('border-slate-200', 'bg-white');
+    });
+    const activeRow = document.getElementById(`row-staff-${key}`);
+    if(activeRow) {
+        activeRow.classList.remove('border-slate-200', 'bg-white');
+        activeRow.classList.add('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
+    }
+
+    document.getElementById('fm-staff-name').value = s.name || '';
+    document.getElementById('fm-staff-pin').value = s.pin || '';
+    document.getElementById('fm-staff-wa').value = s.wa || '';
+    document.getElementById('fm-staff-address').value = s.address || '';
+    document.getElementById('fm-staff-status').value = s.status || '';
+    document.getElementById('fm-staff-shift-in').value = s.shiftIn || '';
+    document.getElementById('fm-staff-shift-out').value = s.shiftOut || '';
+    document.getElementById('fm-staff-pay-type').value = s.payType || '';
+    document.getElementById('fm-staff-salary').value = s.salary || '';
+    document.getElementById('fm-staff-target').value = s.target || ''; // <--- TARIK DATA TARGET
+    document.getElementById('fm-staff-bank').value = s.bank || '';
+    document.getElementById('fm-staff-rekening').value = s.rekening || '';
+    document.getElementById('fm-staff-photo-data').value = s.photo || '';
+    document.getElementById('img-preview-staff').src = s.photo || 'logo-192.png';
+
+    const btn = document.getElementById('btn-simpan-staff');
+    if(btn) {
+        btn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2"></i> UPDATE DATA KARYAWAN';
+        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+    }
+    document.getElementById('form-hrd-container').scrollIntoView({ behavior: 'smooth' });
+};
+
+// 4. Fungsi Pop-up Detail Profil
+window.bukaDetailStaff = (key) => {
+    const s = globalStaff[key];
+    if(!s) return;
+    
+    const photo = s.photo || 'logo-192.png';
+    const noWa = s.wa ? (s.wa.startsWith('0') ? '62' + s.wa.substring(1) : s.wa) : '';
+    const btnWa = noWa ? `<a href="https://wa.me/${noWa}" target="_blank" class="w-full mt-4 bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl font-black shadow-md flex justify-center items-center gap-2 transition"><i class="fa-brands fa-whatsapp text-lg"></i> Hubungi WhatsApp</a>` : '';
+
+    const modalHtml = `
+    <div id="modal-detail-staff" class="fixed inset-0 z-[400] flex items-center justify-center p-4 fade-in">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="document.getElementById('modal-detail-staff').remove()"></div>
+        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 scale-in">
+            <div class="relative h-32 bg-gradient-to-r from-purple-600 to-indigo-600">
+                <button onclick="document.getElementById('modal-detail-staff').remove()" class="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-white flex justify-center items-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="px-6 pb-6 relative">
+                <div class="w-24 h-24 rounded-full border-4 border-white bg-slate-100 shadow-lg mx-auto -mt-12 overflow-hidden flex justify-center items-center">
+                    <img src="${photo}" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
+                </div>
+                <div class="text-center mt-3 mb-5">
+                    <h2 class="text-xl font-black text-slate-800 leading-tight">${s.name}</h2>
+                    <p class="text-xs font-bold text-purple-600 mt-1 uppercase tracking-wider">${s.status || 'Belum diatur'}</p>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <span class="text-slate-500 font-bold"><i class="fa-solid fa-key w-5 text-center text-amber-500"></i> PIN Kasir</span>
+                        <span class="font-black text-slate-800 tracking-widest">${s.pin}</span>
+                    </div>
+                    <div class="flex justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <span class="text-slate-500 font-bold"><i class="fa-solid fa-clock w-5 text-center text-blue-500"></i> Shift</span>
+                        <span class="font-bold text-slate-700">${s.shiftIn || '-'} s/d ${s.shiftOut || '-'}</span>
+                    </div>
+                    <!-- TAMPILAN TARGET OMZET -->
+                    <div class="flex justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <span class="text-slate-500 font-bold"><i class="fa-solid fa-bullseye w-5 text-center text-red-500"></i> Target Omzet</span>
+                        <span class="font-bold text-slate-700">${s.target ? 'Rp '+Number(s.target).toLocaleString('id-ID') : '-'}</span>
+                    </div>
+                    <div class="flex justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <span class="text-slate-500 font-bold"><i class="fa-solid fa-money-bill-wave w-5 text-center text-emerald-500"></i> Gaji</span>
+                        <span class="font-bold text-slate-700">${s.salary ? 'Rp '+Number(s.salary).toLocaleString('id-ID') : '-'} / ${s.payType ? s.payType.replace('Per ','') : '-'}</span>
+                    </div>
+                    <div class="flex justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <span class="text-slate-500 font-bold"><i class="fa-solid fa-building-columns w-5 text-center text-indigo-500"></i> Rekening</span>
+                        <span class="font-bold text-slate-700">${s.bank || '-'} (${s.rekening || '-'})</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <span class="text-slate-500 font-bold block mb-1"><i class="fa-solid fa-location-dot w-5 text-center text-red-500"></i> Alamat & Kontak</span>
+                        <span class="font-medium text-slate-700 text-xs leading-relaxed block">${s.address || 'Belum ada data alamat'}</span>
+                        <span class="font-medium text-slate-700 text-xs leading-relaxed block mt-1"><i class="fa-brands fa-whatsapp text-green-500 mr-1"></i> ${s.wa || 'Belum ada no WA'}</span>
+                    </div>
+                </div>
+                ${btnWa}
+            </div>
+        </div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+// 5. Render Panel Utama HRD
 window.renderPanelHRD = () => {
     let htmlList = Object.keys(globalStaff).map(key => {
         const s = globalStaff[key];
+        const isEditing = window.editStaffKeyTarget === key;
+        const borderClass = isEditing ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50' : 'border-slate-200 bg-white';
+        const photo = s.photo || 'logo-192.png';
         
-        // Pembuat Badge & Tombol Pintar Otomatis
         const badgeStatus = s.status ? `<span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold mr-1 shadow-sm">${s.status}</span>` : '';
         const badgeShift = s.shiftIn ? `<span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold mr-1 shadow-sm"><i class="fa-regular fa-clock mr-0.5"></i>${s.shiftIn} - ${s.shiftOut}</span>` : '';
-        const badgeGaji = s.salary ? `<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold mr-1 shadow-sm"><i class="fa-solid fa-money-bill-wave mr-0.5"></i>Rp ${Number(s.salary).toLocaleString('id-ID')}/${s.payType.replace('Per ', '')}</span>` : '';
-        
-        // Tombol WhatsApp (Otomatis ubah 08 jadi 62)
-        let btnWA = '';
-        if (s.wa) {
-            let noWa = s.wa.startsWith('0') ? '62' + s.wa.substring(1) : s.wa;
-            btnWA = `<a href="https://wa.me/${noWa}" target="_blank" class="px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded text-[10px] font-black hover:bg-green-100 transition shadow-sm flex items-center gap-1"><i class="fa-brands fa-whatsapp text-xs"></i>Chat WA</a>`;
-        }
+        const badgeTarget = s.target ? `<span class="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold mr-1 shadow-sm"><i class="fa-solid fa-bullseye mr-0.5"></i>Target: Rp ${Number(s.target).toLocaleString('id-ID')}</span>` : '';
 
         return `
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 mb-3 relative overflow-hidden transition hover:shadow-md">
+        <div id="row-staff-${key}" class="row-staff-card p-4 rounded-xl border ${borderClass} shadow-sm flex flex-col gap-3 mb-3 relative overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer" onclick="if(event.target.tagName !== 'BUTTON' && event.target.tagName !== 'I' && event.target.tagName !== 'A') window.bukaDetailStaff('${key}')">
             <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-purple-500"></div>
             
             <div class="flex items-start justify-between pl-2">
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0 border border-slate-200">
-                        <i class="fa-solid fa-user-tie text-lg"></i>
+                    <div class="w-12 h-12 rounded-full bg-slate-100 overflow-hidden shrink-0 border border-slate-200 flex justify-center items-center shadow-sm">
+                        <img src="${photo}" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
                     </div>
                     <div>
                         <h4 class="text-sm font-black text-slate-800 leading-tight">${s.name}</h4>
-                        <p class="text-[10px] text-slate-500 font-bold mt-0.5 mb-1">
-                            PIN Akses: <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded shadow-sm">${s.pin}</span>
+                        <p class="text-[10px] text-slate-500 font-bold mt-0.5 mb-1.5">
+                            PIN Akses: <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded shadow-sm tracking-widest">${s.pin}</span>
                         </p>
-                        <div class="flex flex-wrap items-center mt-1.5 gap-y-1.5">
+                        <div class="flex flex-wrap items-center mt-1 gap-y-1.5">
                             ${badgeStatus}
                             ${badgeShift}
-                            ${badgeGaji}
+                            ${badgeTarget}
                         </div>
                     </div>
                 </div>
-                <button onclick="window.hapusNode('staff', '${key}', 'renderPanelHRD')" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition shadow-sm shrink-0" title="Hapus Karyawan">
-                    <i class="fa-solid fa-trash text-xs"></i>
-                </button>
-            </div>
-            
-            ${s.wa || s.bank ? `<div class="pl-2 flex items-center justify-between border-t border-slate-100 pt-2 mt-1">
-                <div class="text-[9px] font-bold text-slate-400">
-                    ${s.bank ? `<i class="fa-solid fa-building-columns mr-1"></i>${s.bank} - ${s.rekening}` : ''}
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button onclick="event.stopPropagation(); window.siapkanEditStaff('${key}')" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shadow-sm" title="Edit Karyawan">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); window.hapusNode('staff', '${key}', 'renderPanelHRD')" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition shadow-sm" title="Hapus Karyawan">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
                 </div>
-                ${btnWA}
-            </div>` : ''}
+            </div>
+            <div class="pl-2 pt-2 border-t border-slate-100 mt-1 flex justify-between items-center">
+               <span class="text-[9px] font-black text-slate-400"><i class="fa-solid fa-fingerprint mr-1"></i>Klik kartu untuk lihat detail profil</span>
+            </div>
         </div>
         `;
     }).join('');
 
-    if (!htmlList) {
-        htmlList = `<p class="text-[10px] text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">Belum ada data staf di database.</p>`;
-    }
+    if (!htmlList) htmlList = `<p class="text-[10px] text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 font-bold">Belum ada karyawan yang terdaftar.</p>`;
 
     document.getElementById('owner-inner-panels-container').innerHTML = `
         <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in pb-safe overflow-hidden">
@@ -1966,29 +2100,44 @@ window.renderPanelHRD = () => {
             </div>
 
             <div class="flex-1 overflow-y-auto p-5 hide-scrollbar">
-                <!-- FORMULIR HRD ENTERPRISE -->
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-6 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-5"><i class="fa-solid fa-address-card text-6xl"></i></div>
+                <!-- FORMULIR INPUT -->
+                <div id="form-hrd-container" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-6 relative overflow-hidden">
                     <h3 class="text-sm font-black text-slate-800 mb-5 flex items-center relative z-10">
-                        <i class="fa-solid fa-user-plus text-purple-600 mr-2"></i> Formulir Karyawan Baru
+                        <i class="fa-solid fa-user-plus text-purple-600 mr-2"></i> Formulir Karyawan
                     </h3>
                     
                     <div class="grid grid-cols-1 gap-4 relative z-10">
-                        <!-- 1. Kredensial -->
+                        <!-- UPLOAD FOTO PROFIL -->
                         <div class="space-y-3">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kredensial Login</label>
-                            <input type="text" id="fm-staff-name" placeholder="Nama Lengkap Karyawan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-400 outline-none transition">
-                            <input type="number" id="fm-staff-pin" placeholder="Buat PIN Kasir (Cth: 123456)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-purple-600 tracking-widest focus:ring-2 focus:ring-purple-400 outline-none transition">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Foto Profil (Opsional)</label>
+                            <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-inner">
+                                <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-purple-300 bg-white shrink-0 shadow-sm flex items-center justify-center">
+                                    <img id="img-preview-staff" src="logo-192.png" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" id="fm-staff-photo" accept="image/*" onchange="window.previewFotoKaryawan(this)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 transition cursor-pointer">
+                                    <input type="hidden" id="fm-staff-photo-data">
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- 2. Kontak -->
+                        <!-- DATA DIRI & PIN 6 DIGIT -->
+                        <div class="space-y-3 pt-2 border-t border-slate-100">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kredensial Login</label>
+                            <input type="text" id="fm-staff-name" placeholder="Nama Lengkap Karyawan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                            
+                            <!-- INPUT PIN NUMERIK & BATAS 6 DIGIT -->
+                            <input type="text" inputmode="numeric" id="fm-staff-pin" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" placeholder="Buat PIN Kasir (Wajib 6 Digit Angka)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-purple-600 tracking-[0.3em] focus:ring-2 focus:ring-purple-400 outline-none transition text-center">
+                        </div>
+
+                        <!-- KONTAK -->
                         <div class="space-y-3 pt-2 border-t border-slate-100">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kontak & Domisili</label>
                             <input type="number" id="fm-staff-wa" placeholder="No. WhatsApp (Cth: 0812...)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
                             <input type="text" id="fm-staff-address" placeholder="Alamat Lengkap" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
                         </div>
 
-                        <!-- 3. Shift & Status -->
+                        <!-- SHIFT -->
                         <div class="space-y-3 pt-2 border-t border-slate-100">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status & Jam Kerja</label>
                             <select id="fm-staff-status" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 focus:ring-2 focus:ring-purple-400 outline-none transition">
@@ -2010,9 +2159,10 @@ window.renderPanelHRD = () => {
                             </div>
                         </div>
 
-                        <!-- 4. Payroll -->
+                        <!-- PAYROLL & TARGET -->
                         <div class="space-y-3 pt-2 border-t border-slate-100">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payroll & Pencairan</label>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payroll & Target Omzet</label>
+                            
                             <div class="grid grid-cols-2 gap-3">
                                 <select id="fm-staff-pay-type" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 focus:ring-2 focus:ring-purple-400 outline-none transition">
                                     <option value="" disabled selected>Hitungan Gaji...</option>
@@ -2022,13 +2172,17 @@ window.renderPanelHRD = () => {
                                 </select>
                                 <input type="number" id="fm-staff-salary" placeholder="Nominal Gaji (Rp)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-emerald-600 focus:ring-2 focus:ring-purple-400 outline-none transition">
                             </div>
+
+                            <!-- INPUT TARGET OMZET -->
+                            <input type="number" id="fm-staff-target" placeholder="Target Omzet Per Shift (Rp)" class="w-full p-3 bg-red-50 border border-red-200 rounded-xl text-sm font-bold text-red-600 focus:ring-2 focus:ring-red-400 outline-none transition">
+
                             <div class="grid grid-cols-2 gap-3">
                                 <input type="text" id="fm-staff-bank" placeholder="Bank/E-Wallet" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
                                 <input type="number" id="fm-staff-rekening" placeholder="No. Rekening" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
                             </div>
                         </div>
 
-                        <button onclick="window.simpanDataStaffBaru()" class="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold p-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2">
+                        <button id="btn-simpan-staff" onclick="window.simpanDataStaffBaru()" class="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-black p-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2">
                             <i class="fa-solid fa-floppy-disk"></i> SIMPAN KARYAWAN
                         </button>
                     </div>
@@ -2045,6 +2199,8 @@ window.renderPanelHRD = () => {
         </div>
     `;
 };
+
+
 
 
 // ---------------------------------------------------------
