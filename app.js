@@ -3774,3 +3774,104 @@ document.addEventListener('change', (e) => {
         }
     }
 });
+
+// ==========================================
+// TAHAP 1: MESIN ULASAN GOOGLE MAPS (AUTO-SCROLL)
+// ==========================================
+window.renderUlasanPelanggan = () => {
+    // 1. Cari elemen grid menu untuk tempat menempelkan ulasan di bawahnya
+    const menuGrid = document.getElementById('menu-grid');
+    if (!menuGrid) return;
+
+    // 2. Buat wadah ulasan jika belum ada
+    let reviewWrapper = document.getElementById('review-slider-wrapper');
+    if (!reviewWrapper) {
+        reviewWrapper = document.createElement('div');
+        reviewWrapper.id = 'review-slider-wrapper';
+        reviewWrapper.className = 'mt-10 mb-2 px-4 fade-in';
+        // Sisipkan tepat di bawah menu-grid (sebelum peta lokasi)
+        menuGrid.insertAdjacentElement('afterend', reviewWrapper);
+    }
+
+    // 3. Data Dummy (Nanti di Tahap 2 data ini akan diambil dari Firebase)
+    let reviews = window.globalReviews || [
+        { name: "Budi Santoso", text: "Minumannya segar banget, porsi mienya juga pas! Next time pasti mampir lagi. Sukses selalu Mainstay!", stars: 5, time: "2 hari yang lalu" },
+        { name: "Siti Aminah", text: "Pelayanan super ramah. Brown sugar milk-nya the best di Semarang! Harganya juga kantong pelajar.", stars: 5, time: "1 minggu yang lalu" },
+        { name: "Andi Wijaya", text: "Tempat bersih, rasa bintang lima. Topping udang kejunya juara banget! Fix jadi langganan.", stars: 5, time: "3 minggu yang lalu" }
+    ];
+
+    if (reviews.length === 0) {
+        reviewWrapper.innerHTML = '';
+        return;
+    }
+
+    // 4. Rakit Kotak Desain Ala Google Maps
+    let htmlSlides = reviews.map(r => {
+        let starsHtml = '';
+        for(let i=0; i<r.stars; i++) starsHtml += '<i class="fa-solid fa-star text-amber-400 text-[10px]"></i>';
+        for(let i=r.stars; i<5; i++) starsHtml += '<i class="fa-solid fa-star text-slate-200 text-[10px]"></i>';
+        
+        return `
+        <div class="w-full shrink-0 px-1">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-2 relative overflow-hidden h-full">
+                <div class="absolute top-0 right-0 p-3 opacity-[0.03]"><i class="fa-brands fa-google text-6xl"></i></div>
+                <div class="flex items-center justify-between relative z-10">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center font-black text-sm shadow-inner shrink-0">
+                            ${r.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-black text-slate-800 leading-tight">${r.name}</span>
+                            <span class="text-[9px] font-bold text-slate-400 mt-0.5">${r.time}</span>
+                        </div>
+                    </div>
+                    <i class="fa-brands fa-google text-blue-500 shrink-0"></i>
+                </div>
+                <div class="flex items-center gap-0.5 mt-1 relative z-10">
+                    ${starsHtml}
+                </div>
+                <p class="text-[10.5px] font-medium text-slate-600 leading-relaxed line-clamp-3 mt-1 relative z-10">
+                    "${r.text}"
+                </p>
+            </div>
+        </div>
+        `;
+    }).join('');
+
+    // 5. Suntikkan ke dalam layar
+    reviewWrapper.innerHTML = `
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h3 class="text-xs font-black text-slate-800 tracking-wider uppercase flex items-center">
+                <i class="fa-solid fa-star text-amber-500 mr-2"></i> Kata Mereka
+            </h3>
+            <div class="flex gap-1">
+                <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                <div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" style="animation-delay: 0.2s"></div>
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" style="animation-delay: 0.4s"></div>
+            </div>
+        </div>
+        <div class="relative overflow-hidden w-full" id="review-slider-viewport">
+            <div id="review-track" class="flex transition-transform duration-700 ease-in-out">
+                ${htmlSlides}
+            </div>
+        </div>
+    `;
+
+    // 6. Jalankan Mesin Auto-Scroll (Setiap 3 Detik)
+    const track = document.getElementById('review-track');
+    let currentIndex = 0;
+    const totalSlides = reviews.length;
+    
+    if(window.reviewInterval) clearInterval(window.reviewInterval);
+    
+    window.reviewInterval = setInterval(() => {
+        if(totalSlides <= 1 || !track) return;
+        currentIndex = (currentIndex + 1) % totalSlides;
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+    }, 3000); 
+};
+
+// Panggil otomatis saat web pertama kali dimuat
+setTimeout(() => {
+    if(typeof window.renderUlasanPelanggan === 'function') window.renderUlasanPelanggan();
+}, 2000);
