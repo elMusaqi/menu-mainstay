@@ -1638,33 +1638,48 @@ window.renderPanelMenu = () => {
         }
     });
     
-    // Rancang HTML List dari Database (Versi Profesional dengan Badge & Penanda)
+    // Rancang HTML List dari Database (Versi Profesional dengan Detail Badge & Penanda)
     let htmlList = Object.keys(realDbMenus).map(key => {
         const m = realDbMenus[key];
         
-        // Cek status apakah baris ini sedang diedit (Highlight otomatis saat load)
+        // 1. Cek status apakah baris ini sedang diedit (Highlight otomatis saat load)
         const isEditing = window.editMenuKeyTarget === key;
         const borderClass = isEditing ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200';
         const bgClass = isEditing ? 'bg-blue-50' : 'bg-white';
         
-        // Buat Informasi Badge Lengkap
+        // 2. Buat Informasi Badge Lengkap
         let badges = '';
-        if (m.isBestseller === true || m.isBestseller === 'true') {
-            badges += `<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-black mr-1 mt-1 shadow-sm"><i class="fa-solid fa-fire mr-0.5"></i>BEST SELLER</span>`;
+        
+        // A. Badge Best Seller (Melacak semua versi nama database agar tidak bocor)
+        const isBS = m.isBestseller === true || m.isBestseller === 'true' || m.bestseller === true || m.bestSeller === true;
+        if (isBS) {
+            badges += `<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-black mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-fire mr-0.5"></i>BEST SELLER</span>`;
         }
-        if (m.toppingIds && m.toppingIds.length > 0) {
-            badges += `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm"><i class="fa-solid fa-cheese mr-0.5"></i>${m.toppingIds.length} Topping</span>`;
+        
+        // B. Badge Topping (Menampilkan NAMA topping asli seperti Boba, Keju)
+        if (m.toppingIds && Array.isArray(m.toppingIds) && m.toppingIds.length > 0) {
+            const topNames = m.toppingIds.join(', ');
+            badges += `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-cheese mr-0.5"></i>${topNames}</span>`;
         }
-        if (m.varianIds && m.varianIds.length > 0) {
-            badges += `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm"><i class="fa-solid fa-layer-group mr-0.5"></i>${m.varianIds.length} Varian</span>`;
+        
+        // C. Badge Varian (Menampilkan NAMA varian asli)
+        if (m.varianIds && Array.isArray(m.varianIds) && m.varianIds.length > 0) {
+            let masterVar = window.masterVarian || JSON.parse(localStorage.getItem('master_varian')) || [];
+            let varNames = m.varianIds.map(vid => {
+                let match = masterVar.find(mv => mv.id === vid);
+                return match ? match.nama : vid.replace('var_', '').replace(/_/g, ' ').toUpperCase();
+            }).join(', ');
+            
+            badges += `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-layer-group mr-0.5"></i>${varNames}</span>`;
         }
-        // Jika menu reguler tanpa ekstensi
+        
+        // Jika menu reguler polosan
         if (badges === '') {
             badges = `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold mr-1 mt-1">Menu Reguler</span>`;
         }
 
         return `
-        <!-- Tambahan ID dan class 'row-katalog-menu' untuk sasaran Highlight -->
+        <!-- ID dan class 'row-katalog-menu' untuk sasaran Highlight Biru Terang -->
         <div id="row-menu-${key}" class="row-katalog-menu w-full flex items-center justify-between p-3 ${bgClass} border ${borderClass} rounded-xl mb-3 shadow-sm transition-all duration-300">
             
             <div class="flex items-center gap-3 overflow-hidden">
@@ -3340,7 +3355,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// FUNGSI PERSIAPAN MODE EDIT (HIGHLIGHT & ANTI HILANG)
+// FUNGSI PERSIAPAN MODE EDIT (HIGHLIGHT, ANTI HILANG & PREVIEW GAMBAR)
 // ==========================================
 window.siapkanEditMenu = (key) => {
     const menu = globalMenus[key];
@@ -3348,13 +3363,11 @@ window.siapkanEditMenu = (key) => {
 
     window.editMenuKeyTarget = key; 
 
-    // 1. EFEK SOROTAN VISUAL (Animasi Penanda Menu)
-    // Bersihkan semua sorotan dari baris lain
+    // 1. EFEK SOROTAN VISUAL (Biru menyala pada baris yang diklik)
     document.querySelectorAll('.row-katalog-menu').forEach(el => {
         el.classList.remove('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
         el.classList.add('border-slate-200', 'bg-white');
     });
-    // Beri sorotan biru tegas pada baris yang diklik
     const activeRow = document.getElementById(`row-menu-${key}`);
     if (activeRow) {
         activeRow.classList.remove('border-slate-200', 'bg-white');
@@ -3364,7 +3377,7 @@ window.siapkanEditMenu = (key) => {
     const panel = document.getElementById('owner-inner-panels-container');
     if(!panel) return;
 
-    // 2. Otomatis isi data teks
+    // 2. Otomatis isi data teks & harga
     const inputs = panel.querySelectorAll('input:not([type="checkbox"]), textarea, select');
     inputs.forEach(el => {
         const hint = (el.placeholder || el.id || el.name || '').toLowerCase();
@@ -3375,17 +3388,18 @@ window.siapkanEditMenu = (key) => {
         else if (hint.includes('deskripsi') || hint.includes('desc')) el.value = menu.description || '';
     });
 
-    // 3. PENGAMANAN MUTLAK BEST SELLER
+    // 3. PENGAMANAN MUTLAK KOTAK BEST SELLER (Anti Bocor/Kosong)
+    const isBS = menu.isBestseller === true || menu.isBestseller === 'true' || menu.bestseller === true || menu.bestSeller === true;
     const bsCheckbox = document.getElementById('fm-bestseller');
     if (bsCheckbox) {
-        bsCheckbox.checked = (menu.isBestseller === true || menu.isBestseller === "true");
+        bsCheckbox.checked = isBS;
     }
 
-    // 4. Centang Checkbox Varian & Topping
+    // 4. Centang Checkbox Varian & Topping dengan akurat
     const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
-        // PERINTAH WAJIB: Abaikan checkbox Best Seller agar tidak dikosongkan!
-        if (cb.id === 'fm-bestseller') return; 
+        // PERINTAH WAJIB: Jangan sentuh kotak Best Seller!
+        if (cb.id === 'fm-bestseller' || (cb.id || '').toLowerCase().includes('bestseller')) return; 
 
         const isVarian = menu.varianIds && menu.varianIds.includes(cb.value);
         const isTopping = menu.toppingIds && menu.toppingIds.includes(cb.value);
@@ -3406,87 +3420,76 @@ window.siapkanEditMenu = (key) => {
             btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
         }
     });
+
+    // 6. TAMPILKAN PREVIEW GAMBAR LAMA SAAT DI-EDIT
+    if (typeof window.updatePreviewVisual === 'function') {
+        window.updatePreviewVisual(menu.imageUrl || '');
+    }
     
-    // Gulir layar ke atas
+    // 7. Gulir layar ke atas
     const formArea = panel.querySelector('h2');
     if(formArea) formArea.scrollIntoView({ behavior: 'smooth' });
 };
 
 // ==========================================
-// FITUR TAMBAHAN: PREVIEW GAMBAR OTOMATIS (PLUG & PLAY)
+// MESIN PREVIEW GAMBAR (ANTI GAGAL / OTOMATIS BACA DOM BARU)
 // ==========================================
-setTimeout(() => {
+window.updatePreviewVisual = (src) => {
+    let wadah = document.getElementById('wadah-preview-gambar');
     const fileInput = document.getElementById('fm-image-file');
-    const urlInput = document.getElementById('fm-image-url');
     
-    if (fileInput && urlInput) {
-        // 1. Buat elemen kotak preview secara otomatis
-        const previewDiv = document.createElement('div');
-        previewDiv.id = 'wadah-preview-gambar';
-        previewDiv.className = 'mt-3 p-3 bg-blue-50/50 border border-blue-200 rounded-xl flex items-center gap-4 hidden transition-all duration-300 shadow-sm';
-        previewDiv.innerHTML = `
+    // Buat wadah secara instan jika belum ada di dalam form
+    if (!wadah && fileInput) {
+        wadah = document.createElement('div');
+        wadah.id = 'wadah-preview-gambar';
+        wadah.className = 'mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-4 shadow-sm';
+        wadah.innerHTML = `
             <div class="w-16 h-16 bg-white border-2 border-blue-300 rounded-lg overflow-hidden shrink-0 shadow-sm">
                 <img id="img-preview-target" src="" class="w-full h-full object-cover" onerror="this.src='logo-192.png'">
             </div>
             <div class="flex-1">
                 <h4 class="text-xs font-black text-blue-800"><i class="fa-solid fa-image mr-1"></i> Preview Gambar</h4>
-                <p class="text-[10px] font-medium text-blue-600 mt-0.5">Gambar ini yang akan tampil di katalog pelanggan.</p>
+                <p class="text-[10px] font-medium text-blue-600 mt-0.5">Gambar ini yang akan tampil di katalog.</p>
             </div>
         `;
-        
-        // 2. Sisipkan tepat di bawah kotak "Pilih File"
-        fileInput.parentElement.insertAdjacentElement('afterend', previewDiv);
+        // Sisipkan tepat di bawah kotak "Pilih File"
+        fileInput.parentElement.insertAdjacentElement('afterend', wadah);
+    }
 
-        // 3. Fungsi memunculkan/menyembunyikan gambar
-        window.updatePreviewVisual = (src) => {
-            const wadah = document.getElementById('wadah-preview-gambar');
-            const img = document.getElementById('img-preview-target');
-            if (src && src.trim() !== '') {
-                img.src = src;
-                wadah.classList.remove('hidden');
-            } else {
-                wadah.classList.add('hidden');
-                img.src = '';
-            }
-        };
-
-        // 4. Jika Owner pilih Upload File Lokal
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => window.updatePreviewVisual(event.target.result);
-                reader.readAsDataURL(file);
-                urlInput.value = ''; // Otomatis hapus kolom URL agar tidak bentrok
-            } else {
-                window.updatePreviewVisual(urlInput.value);
-            }
-        });
-
-        // 5. Jika Owner memasukkan Link/URL
-        urlInput.addEventListener('input', (e) => {
-            if (e.target.value.trim() !== '') {
-                window.updatePreviewVisual(e.target.value);
-                fileInput.value = ''; // Otomatis batalkan file upload agar tidak bentrok
-            } else {
-                window.updatePreviewVisual('');
-            }
-        });
-
-        // 6. Integrasi Cerdas dengan Mode Edit (Munculkan gambar lama)
-        const originalEdit = window.siapkanEditMenu;
-        if (typeof originalEdit === 'function') {
-            window.siapkanEditMenu = (key) => {
-                originalEdit(key); // Jalankan fungsi edit yang sudah kita perbaiki sebelumnya
-                
-                // Cek gambar dari database dan tampilkan di preview
-                const menu = globalMenus[key];
-                if (menu && menu.imageUrl) {
-                    window.updatePreviewVisual(menu.imageUrl);
-                } else {
-                    window.updatePreviewVisual('');
-                }
-            };
+    // Tampilkan/Sembunyikan gambar sesuai data
+    if (wadah) {
+        const img = document.getElementById('img-preview-target');
+        if (src && src.trim() !== '') {
+            img.src = src;
+            wadah.style.display = 'flex';
+        } else {
+            wadah.style.display = 'none';
+            img.src = '';
         }
     }
-}, 1000);
+};
+
+// Deteksi saat Owner mengetik Link Gambar URL baru
+document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'fm-image-url') {
+        window.updatePreviewVisual(e.target.value);
+    }
+});
+
+// Deteksi saat Owner memilih File Gambar dari Galeri HP
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'fm-image-file') {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => window.updatePreviewVisual(event.target.result);
+            reader.readAsDataURL(file);
+            
+            // Kosongkan kolom URL agar sistem tidak bingung/bentrok
+            const urlInput = document.getElementById('fm-image-url');
+            if(urlInput) urlInput.value = '';
+        } else {
+            window.updatePreviewVisual('');
+        }
+    }
+});
