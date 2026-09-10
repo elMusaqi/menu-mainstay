@@ -1865,63 +1865,178 @@ window.renderPanelMenu = () => {
     }
 }; // <--- Penutup Utama Fungsi Panel
 
-// ---------------------------------------------------------
-// MODUL 2: HRD & STAFF (/staff)
-// ---------------------------------------------------------
+// ==========================================
+// FUNGSI PENYIMPAN DATA STAFF ENTERPRISE
+// ==========================================
+window.simpanDataStaffBaru = () => {
+    const name = document.getElementById('fm-staff-name').value.trim();
+    const pin = document.getElementById('fm-staff-pin').value.trim();
+    
+    if(!name || !pin) {
+        alert("Peringatan: Nama Karyawan dan PIN Kasir wajib diisi!");
+        return;
+    }
+
+    const dataBaru = {
+        name: name,
+        pin: pin,
+        wa: document.getElementById('fm-staff-wa').value.trim(),
+        address: document.getElementById('fm-staff-address').value.trim(),
+        status: document.getElementById('fm-staff-status').value,
+        shiftIn: document.getElementById('fm-staff-shift-in').value,
+        shiftOut: document.getElementById('fm-staff-shift-out').value,
+        payType: document.getElementById('fm-staff-pay-type').value,
+        salary: document.getElementById('fm-staff-salary').value.trim(),
+        bank: document.getElementById('fm-staff-bank').value.trim(),
+        rekening: document.getElementById('fm-staff-rekening').value.trim()
+    };
+
+    window.simpanNode('staff', dataBaru, 'renderPanelHRD');
+};
+
+// ==========================================
+// RENDER PANEL HRD (PROFILING & PAYROLL)
+// ==========================================
 window.renderPanelHRD = () => {
-    let htmlList = Object.keys(globalStaff).map(key => `
-        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-3 fade-in group relative overflow-hidden">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500"></div>
-            <div class="flex items-center gap-3 pl-2">
-                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg border border-gray-200">
-                    <i class="fa-solid fa-user-tie"></i>
+    let htmlList = Object.keys(globalStaff).map(key => {
+        const s = globalStaff[key];
+        
+        // Pembuat Badge & Tombol Pintar Otomatis
+        const badgeStatus = s.status ? `<span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] font-bold mr-1 shadow-sm">${s.status}</span>` : '';
+        const badgeShift = s.shiftIn ? `<span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold mr-1 shadow-sm"><i class="fa-regular fa-clock mr-0.5"></i>${s.shiftIn} - ${s.shiftOut}</span>` : '';
+        const badgeGaji = s.salary ? `<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-bold mr-1 shadow-sm"><i class="fa-solid fa-money-bill-wave mr-0.5"></i>Rp ${Number(s.salary).toLocaleString('id-ID')}/${s.payType.replace('Per ', '')}</span>` : '';
+        
+        // Tombol WhatsApp (Otomatis ubah 08 jadi 62)
+        let btnWA = '';
+        if (s.wa) {
+            let noWa = s.wa.startsWith('0') ? '62' + s.wa.substring(1) : s.wa;
+            btnWA = `<a href="https://wa.me/${noWa}" target="_blank" class="px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded text-[10px] font-black hover:bg-green-100 transition shadow-sm flex items-center gap-1"><i class="fa-brands fa-whatsapp text-xs"></i>Chat WA</a>`;
+        }
+
+        return `
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 mb-3 relative overflow-hidden transition hover:shadow-md">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-purple-500"></div>
+            
+            <div class="flex items-start justify-between pl-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0 border border-slate-200">
+                        <i class="fa-solid fa-user-tie text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black text-slate-800 leading-tight">${s.name}</h4>
+                        <p class="text-[10px] text-slate-500 font-bold mt-0.5 mb-1">
+                            PIN Akses: <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded shadow-sm">${s.pin}</span>
+                        </p>
+                        <div class="flex flex-wrap items-center mt-1.5 gap-y-1.5">
+                            ${badgeStatus}
+                            ${badgeShift}
+                            ${badgeGaji}
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h4 class="text-xs font-black text-gray-900">${globalStaff[key].name}</h4>
-                    <p class="text-[10px] text-gray-500 font-bold mt-0.5">
-                        PIN Akses: <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 tracking-wider">${globalStaff[key].pin}</span>
-                    </p>
-                </div>
+                <button onclick="window.hapusNode('staff', '${key}', 'renderPanelHRD')" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition shadow-sm shrink-0" title="Hapus Karyawan">
+                    <i class="fa-solid fa-trash text-xs"></i>
+                </button>
             </div>
-            <button onclick="hapusNode('staff', '${key}', 'renderPanelHRD')" class="text-red-400 bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition shrink-0 border border-red-100">
-                <i class="fa-solid fa-trash text-[10px]"></i>
-            </button>
+            
+            ${s.wa || s.bank ? `<div class="pl-2 flex items-center justify-between border-t border-slate-100 pt-2 mt-1">
+                <div class="text-[9px] font-bold text-slate-400">
+                    ${s.bank ? `<i class="fa-solid fa-building-columns mr-1"></i>${s.bank} - ${s.rekening}` : ''}
+                </div>
+                ${btnWA}
+            </div>` : ''}
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     if (!htmlList) {
-        htmlList = `<p class="text-[10px] text-center text-gray-400 py-6 bg-slate-50 rounded-xl border-dashed border border-gray-200">Belum ada karyawan yang terdaftar.</p>`;
+        htmlList = `<p class="text-[10px] text-center text-slate-400 py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">Belum ada data staf di database.</p>`;
     }
 
     document.getElementById('owner-inner-panels-container').innerHTML = `
         <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in pb-safe overflow-hidden">
-            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md relative z-10">
-                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center">
+            <div class="bg-slate-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md">
+                <button onclick="closePanel()" class="w-10 h-10 bg-slate-800 rounded-xl hover:bg-slate-700 transition flex items-center justify-center">
                     <i class="fa-solid fa-arrow-left"></i>
                 </button>
                 <div>
-                    <h2 class="font-black text-lg leading-none">HRD & Staff</h2>
-                    <p class="text-[10px] text-amber-400 font-bold tracking-wider">Manajemen Karyawan Aktif</p>
+                    <h2 class="font-black text-lg leading-none">HRD & Payroll</h2>
+                    <p class="text-[10px] text-purple-400 font-bold tracking-wider uppercase mt-0.5">Manajemen Karyawan Aktif</p>
                 </div>
             </div>
-            
+
             <div class="flex-1 overflow-y-auto p-5 hide-scrollbar">
-                <div class="bg-white p-5 rounded-2xl border border-gray-100 mb-6 shadow-sm">
-                    <h3 class="text-xs font-black mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
-                        <i class="fa-solid fa-user-plus text-purple-500"></i> Daftarkan Karyawan Baru
+                <!-- FORMULIR HRD ENTERPRISE -->
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5"><i class="fa-solid fa-address-card text-6xl"></i></div>
+                    <h3 class="text-sm font-black text-slate-800 mb-5 flex items-center relative z-10">
+                        <i class="fa-solid fa-user-plus text-purple-600 mr-2"></i> Formulir Karyawan Baru
                     </h3>
                     
-                    <input type="text" id="fs-name" placeholder="Nama Lengkap Karyawan" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-purple-500 transition">
-                    
-                    <input type="number" id="fs-pin" placeholder="Buat PIN Kasir Khusus (Cth: 123456)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-bold tracking-widest focus:outline-none focus:border-purple-500 transition">
-                    
-                    <button onclick="simpanNode('staff', { name: document.getElementById('fs-name').value, pin: document.getElementById('fs-pin').value, status: 'Aktif' })" class="w-full bg-purple-600 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-purple-700 transition tracking-widest uppercase">
-                        <i class="fa-solid fa-id-card mr-1"></i> Register Staff
-                    </button>
+                    <div class="grid grid-cols-1 gap-4 relative z-10">
+                        <!-- 1. Kredensial -->
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kredensial Login</label>
+                            <input type="text" id="fm-staff-name" placeholder="Nama Lengkap Karyawan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                            <input type="number" id="fm-staff-pin" placeholder="Buat PIN Kasir (Cth: 123456)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-purple-600 tracking-widest focus:ring-2 focus:ring-purple-400 outline-none transition">
+                        </div>
+
+                        <!-- 2. Kontak -->
+                        <div class="space-y-3 pt-2 border-t border-slate-100">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kontak & Domisili</label>
+                            <input type="number" id="fm-staff-wa" placeholder="No. WhatsApp (Cth: 0812...)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
+                            <input type="text" id="fm-staff-address" placeholder="Alamat Lengkap" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
+                        </div>
+
+                        <!-- 3. Shift & Status -->
+                        <div class="space-y-3 pt-2 border-t border-slate-100">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status & Jam Kerja</label>
+                            <select id="fm-staff-status" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                                <option value="" disabled selected>Pilih Status Kontrak...</option>
+                                <option value="Pegawai Tetap">Pegawai Tetap</option>
+                                <option value="Kontrak">Kontrak</option>
+                                <option value="Part-Time">Part-Time</option>
+                            </select>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[10px] font-bold text-slate-400">Jam Masuk (IN)</span>
+                                    <input type="time" id="fm-staff-shift-in" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[10px] font-bold text-slate-400">Jam Pulang (OUT)</span>
+                                    <input type="time" id="fm-staff-shift-out" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Payroll -->
+                        <div class="space-y-3 pt-2 border-t border-slate-100">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payroll & Pencairan</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <select id="fm-staff-pay-type" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                                    <option value="" disabled selected>Hitungan Gaji...</option>
+                                    <option value="Per Jam">Per Jam</option>
+                                    <option value="Per Hari">Per Hari</option>
+                                    <option value="Per Bulan">Per Bulan</option>
+                                </select>
+                                <input type="number" id="fm-staff-salary" placeholder="Nominal Gaji (Rp)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-emerald-600 focus:ring-2 focus:ring-purple-400 outline-none transition">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="text" id="fm-staff-bank" placeholder="Bank/E-Wallet" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
+                                <input type="number" id="fm-staff-rekening" placeholder="No. Rekening" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 outline-none transition">
+                            </div>
+                        </div>
+
+                        <button onclick="window.simpanDataStaffBaru()" class="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold p-3.5 rounded-xl transition shadow-md flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> SIMPAN KARYAWAN
+                        </button>
+                    </div>
                 </div>
-                
-                <h3 class="text-xs font-black mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-users text-blue-500"></i> Data Staff Database
+
+                <!-- DAFTAR STAFF -->
+                <h3 class="text-xs font-black text-slate-500 mb-3 uppercase tracking-wider flex items-center">
+                    <i class="fa-solid fa-users text-slate-400 mr-2"></i> Database Karyawan
                 </h3>
                 <div id="owner-staff-list">
                     ${htmlList}
