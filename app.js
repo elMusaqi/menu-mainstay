@@ -490,7 +490,7 @@ window.renderKatalog = () => {
                 <div class="px-1 flex-1 flex flex-col justify-between">
                     <div>
                         <h3 class="text-xs font-black text-gray-900 leading-tight mb-0.5">${menu.name}</h3>
-                        <p class="text-[9px] text-gray-400 font-bold capitalize">${menu.category}</p>
+                        <p class="text-[9px] font-medium text-gray-500 leading-tight line-clamp-2 mt-0.5 mb-1 h-[26px] overflow-hidden">${menu.description || ''}</p>
                     </div>
                     
                     <div class="mt-2 flex justify-between items-end">
