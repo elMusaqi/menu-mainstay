@@ -3223,10 +3223,9 @@ window.renderSelectKategori = () => {
 };
 
 // ==========================================
-// JEMBATAN 5: PEWARIS VARIAN (AUTO-RENDER 3 VARIAN ASLI) + TOPPING
+// JEMBATAN 5: PEWARIS VARIAN (AUTO-RENDER 3 VARIAN ASLI)
 // ==========================================
 window.renderCheckboxVarian = () => {
-    // Tarik 3 Varian (Ukuran, Gula, Es) ke Data Master agar bisa diedit Owner
     if (!window.masterVarian || window.masterVarian.length === 0) {
         window.masterVarian = [
             { id: 'var_ukuran', nama: 'PILIH UKURAN', opsi: [{namaOpsi: 'Regular', harga: 0}, {namaOpsi: 'Large', harga: 3000}] },
@@ -3240,12 +3239,10 @@ window.renderCheckboxVarian = () => {
     const wadah = document.getElementById('wadah-checkbox-varian');
     if (!wadah) return;
 
-    // 1. CETAK KOTAK VARIAN
     let htmlFinal = window.masterVarian.map(v => {
         const opsiTeks = v.opsi ? v.opsi.map(o => o.namaOpsi).join(', ') : '';
         return `
         <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition mb-2 shadow-sm">
-            <!-- PENTING: Class dikembalikan ke 'checkbox-varian-menu' agar bisa di-save -->
             <input type="checkbox" value="${v.id}" class="checkbox-varian-menu w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
             <div class="flex flex-col">
                 <span class="text-xs font-black text-slate-700 uppercase">${v.nama}</span>
@@ -3255,36 +3252,8 @@ window.renderCheckboxVarian = () => {
         `;
     }).join('');
 
-    // 2. CETAK KOTAK TOPPING (Anti-Crash/Layar Putih)
-    let masterTop = [];
-    try {
-        // Coba tarik data, kalau error tidak akan bikin web mati
-        masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
-    } catch (error) {
-        masterTop = []; 
-    }
-    
-    // Pastikan masterTop adalah Array sebelum di-loop
-    if (Array.isArray(masterTop) && masterTop.length > 0) {
-        htmlFinal += `<div class="w-full mt-5 mb-2 border-t border-slate-200 pt-3"><span class="text-[11px] font-black text-amber-600 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> HUBUNGKAN TOPPING</span></div>`;
-        
-        htmlFinal += masterTop.map(t => {
-            // PENTING: Class diubah ke 'checkbox-topping-menu' agar dikenali sistem simpan
-            return `
-            <label class="flex items-center gap-3 p-3 bg-amber-50/40 border border-amber-200 rounded-xl cursor-pointer hover:border-amber-400 transition mb-2 shadow-sm">
-                <input type="checkbox" value="${t.nama}" class="checkbox-topping-menu w-4 h-4 text-amber-500 rounded border-amber-300 focus:ring-amber-500">
-                <div class="flex flex-col">
-                    <span class="text-xs font-black text-slate-800">${t.nama}</span>
-                    <span class="text-[10px] font-bold text-amber-600">+Rp ${Number(t.harga || 0).toLocaleString('id-ID')}</span>
-                </div>
-            </label>
-            `;
-        }).join('');
-    }
-
     wadah.innerHTML = htmlFinal;
 };
-
 // ==========================================
 // MESIN PEMBUAT TOMBOL KATEGORI PELANGGAN
 // ==========================================
@@ -3343,21 +3312,19 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// FUNGSI PERSIAPAN MODE EDIT (FULL CRUD)
+// FUNGSI PERSIAPAN MODE EDIT (ANTI DATA HILANG)
 // ==========================================
 window.siapkanEditMenu = (key) => {
     const menu = globalMenus[key];
     if(!menu) return;
 
-    // Kunci ID menu agar nanti disave sebagai "Update", bukan "Menu Baru"
     window.editMenuKeyTarget = key; 
 
-    // Cari area form owner
     const panel = document.getElementById('owner-inner-panels-container');
     if(!panel) return;
 
-    // Otomatis isi data ke kolom input
-    const inputs = panel.querySelectorAll('input, textarea, select');
+    // 1. Otomatis isi data teks
+    const inputs = panel.querySelectorAll('input:not([type="checkbox"]), textarea, select');
     inputs.forEach(el => {
         const hint = (el.placeholder || el.id || el.name || '').toLowerCase();
         if (hint.includes('nama') || hint.includes('name')) el.value = menu.name || '';
@@ -3367,17 +3334,27 @@ window.siapkanEditMenu = (key) => {
         else if (hint.includes('deskripsi') || hint.includes('desc')) el.value = menu.description || '';
     });
 
-    // Otomatis centang varian yang sesuai
+    // 2. Otomatis centang Checkbox dengan Akurat
     const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
-        if (cb.value && menu.varianIds) {
-            cb.checked = menu.varianIds.includes(cb.value);
+        // A. Jaga keamanan centang Best Seller
+        if (cb.id === 'fm-bestseller' || (cb.id || '').toLowerCase().includes('bestseller')) {
+            cb.checked = menu.isBestseller === true || menu.isBestseller === "true";
+            return; // Lanjut ke checkbox berikutnya, jangan jalankan kode bawahnya
+        }
+
+        // B. Kembalikan centang Varian & Topping
+        const isVarian = menu.varianIds && menu.varianIds.includes(cb.value);
+        const isTopping = menu.toppingIds && menu.toppingIds.includes(cb.value);
+        
+        if (isVarian || isTopping) {
+            cb.checked = true;
         } else {
             cb.checked = false;
         }
     });
 
-    // Ubah tombol "SIMPAN" jadi "UPDATE" (Warna Biru)
+    // 3. Ubah tombol "SIMPAN" jadi "UPDATE"
     const btns = panel.querySelectorAll('button');
     btns.forEach(btn => {
         if (btn.innerText.toUpperCase().includes('SIMPAN')) {
@@ -3387,7 +3364,7 @@ window.siapkanEditMenu = (key) => {
         }
     });
     
-    // Gulir layar ke atas menuju form
+    // Gulir layar ke form atas
     const formArea = panel.querySelector('h2');
     if(formArea) formArea.scrollIntoView({ behavior: 'smooth' });
 };
