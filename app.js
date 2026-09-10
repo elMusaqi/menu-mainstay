@@ -3795,9 +3795,9 @@ window.renderUlasanPelanggan = () => {
 
     // 3. Data Dummy (Nanti di Tahap 2 data ini akan diambil dari Firebase)
     let reviews = window.globalReviews || [
-        { name: "Budi Santoso", text: "Minumannya segar banget, porsi mienya juga pas! Next time pasti mampir lagi. Sukses selalu Mainstay!", stars: 5, time: "2 hari yang lalu" },
-        { name: "Siti Aminah", text: "Pelayanan super ramah. Brown sugar milk-nya the best di Semarang! Harganya juga kantong pelajar.", stars: 5, time: "1 minggu yang lalu" },
-        { name: "Andi Wijaya", text: "Tempat bersih, rasa bintang lima. Topping udang kejunya juara banget! Fix jadi langganan.", stars: 5, time: "3 minggu yang lalu" }
+        { name: "Nanik Ulifah", text: "Tempatnya nyaman gaes.. you must try it...Minuman enak, nyummy dengan harga yg murce abizz", stars: 5, time: "2 hari yang lalu" },
+        { name: "Fauzi Hanif", text: "Minumannya enak bgt, ga sebanding sama harganya yg murah", stars: 5, time: "1 minggu yang lalu" },
+        { name: "Naufal Luthfi Fadhlurrohman", text: "minuman kekinian, manis pas, rasa pas, masya Allah", stars: 5, time: "3 minggu yang lalu" }
     ];
 
     if (reviews.length === 0) {
