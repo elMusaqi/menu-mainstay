@@ -80,7 +80,7 @@ window.bukaMenuAbsen = () => {
 
 window.tutupMenuAbsen = () => {
     document.getElementById('modal-login-absen').classList.add('hidden');
-    document.getElementById('input-pin').value = ''; // Otomatis bersihkan kolom PIN
+    document.getElementById('input-pin').value = ''; 
 };
 
 window.prosesLoginSistem = () => {
@@ -106,8 +106,8 @@ window.prosesLoginSistem = () => {
         // Daftarkan sebagai kasir aktif
         activeStaff = { ...foundStaff, key: staffKey };
         
-        // Ubah UI Nama Kasir Bertugas di Header
-        const elNama = document.getElementById('active-cashier-name');
+        // Ubah UI Nama Kasir Bertugas di Header (SUDAH DISESUAIKAN)
+        const elNama = document.getElementById('kasir-active-name');
         if(elNama) elNama.innerText = activeStaff.name;
         
         // Tutup Modal
@@ -172,13 +172,17 @@ window.prosesGantiKasir = () => {
     if(pinInput.length !== 6) return alert("Peringatan: Masukkan 6 digit PIN dengan benar!");
 
     if(namaDipilih === "Owner") {
-        // --- CATATAN UNTUK MAS IHSAN ---
-        // Ganti angka "123123" di bawah ini dengan PIN rahasia khusus Owner
+        // PIN Khusus Owner sudah dipatenkan menjadi 888888
         const masterPIN = "888888"; 
         
         if(pinInput === masterPIN) {
-            document.getElementById('active-cashier-name').innerText = "Owner Mainstay";
-            if(typeof activeStaff !== 'undefined') activeStaff = { name: "Owner Mainstay", role: "owner" };
+            // SUDAH DISESUAIKAN MENGGUNAKAN ID KASIR-ACTIVE-NAME
+            document.getElementById('kasir-active-name').innerText = "Owner Mainstay";
+            
+            // Daftarkan state Owner
+            if(typeof activeStaff !== 'undefined') {
+                activeStaff = { name: "Owner Mainstay", role: "owner", pin: masterPIN };
+            }
             
             document.getElementById('modal-ganti-kasir').classList.add('hidden');
             alert("Akses Diberikan: Penginput dialihkan ke Owner!");
@@ -197,13 +201,14 @@ window.prosesGantiKasir = () => {
         }
 
         if(staffValid) {
-            document.getElementById('active-cashier-name').innerText = staffValid.name;
+            // SUDAH DISESUAIKAN MENGGUNAKAN ID KASIR-ACTIVE-NAME
+            document.getElementById('kasir-active-name').innerText = staffValid.name;
             if(typeof activeStaff !== 'undefined') activeStaff = staffValid;
             
             document.getElementById('modal-ganti-kasir').classList.add('hidden');
             alert(`Akses Diberikan: Penginput dialihkan ke ${staffValid.name}!`);
         } else {
-            alert(`Akses Ditolak: PIN tidak cocok dengan identitas ${namaDipilih}!`);
+            alert(`Akses Ditolak: PIN tidak cocok dengan identitas ${namaDipilih}! (Harus sesuai data HRD)`);
         }
     }
 };
