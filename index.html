@@ -499,7 +499,12 @@
                 </div>
                 <div>
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Kasir Bertugas</p>
-                    <h2 id="kasir-active-name" class="text-sm font-black text-amber-400 tracking-wide">Nama Staf</h2>
+                    <div class="flex items-center gap-2 mt-0.5">
+    <h2 id="kasir-active-name" class="text-sm font-black text-amber-400 leading-none">elmusaqi</h2>
+    <button onclick="window.bukaGantiKasir()" class="w-6 h-6 bg-slate-700 hover:bg-slate-600 rounded-md flex items-center justify-center text-slate-300 hover:text-white transition shadow-sm border border-slate-600">
+        <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+    </button>
+</div>
                 </div>
             </div>
 
@@ -916,7 +921,34 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL GANTI PENGINPUT / KASIR -->
+<div id="modal-ganti-kasir" class="hidden fixed inset-0 bg-slate-900/95 z-[2000] flex items-center justify-center p-5 fade-in">
+    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col relative">
+        <div class="bg-slate-800 p-4 flex justify-between items-center">
+            <h2 class="text-white font-black tracking-widest uppercase text-sm">Ganti Penginput</h2>
+            <button onclick="document.getElementById('modal-ganti-kasir').classList.add('hidden')" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full text-white flex justify-center items-center transition shadow-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 flex flex-col">
+            <label class="text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider"><i class="fa-solid fa-users mr-1"></i> Pilih Staff (Aktif Hari Ini)</label>
+            <select id="select-ganti-kasir" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-slate-800 focus:ring-2 focus:ring-blue-400 outline-none mb-5 shadow-inner">
+                <option value="">Memuat data absen...</option>
+            </select>
+
+            <label class="text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider"><i class="fa-solid fa-lock mr-1"></i> Verifikasi PIN Akses</label>
+            <input type="password" id="pin-ganti-kasir" inputmode="numeric" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" class="w-full text-center text-3xl font-black tracking-[0.5em] text-purple-600 border-b-2 border-slate-200 focus:border-purple-500 outline-none pb-2 mb-6 bg-transparent transition-colors" placeholder="••••••">
+
+            <button onclick="window.prosesGantiKasir()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition shadow-lg hover:shadow-xl flex justify-center items-center gap-2">
+                <i class="fa-solid fa-user-check"></i> KONFIRMASI GANTI
+            </button>
+        </div>
+    </div>
+</div>
+    
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=310"></script>
+    <script type="module" src="app.js?v=311"></script>
 </body>
 </html>
