@@ -500,8 +500,9 @@
                 <div>
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Kasir Bertugas</p>
                     <div class="flex items-center gap-2 mt-0.5">
-    <h2 id="kasir-active-name" class="text-sm font-black text-amber-400 leading-none">elmusaqi</h2>
-    <button onclick="window.bukaGantiKasir()" class="w-6 h-6 bg-slate-700 hover:bg-slate-600 rounded-md flex items-center justify-center text-slate-300 hover:text-white transition shadow-sm border border-slate-600">
+    <!-- whitespace-nowrap mencegah teks turun ke bawah, shrink-0 menjaga ukuran tombol pantang mengecil -->
+    <h2 id="kasir-active-name" class="text-sm font-black text-amber-400 leading-none whitespace-nowrap">Owner</h2>
+    <button onclick="window.bukaGantiKasir()" class="w-6 h-6 shrink-0 bg-slate-700 hover:bg-slate-600 rounded-md flex items-center justify-center text-slate-300 hover:text-white transition shadow-sm border border-slate-600">
         <i class="fa-solid fa-pen-to-square text-[10px]"></i>
     </button>
 </div>
@@ -949,6 +950,6 @@
 </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=311"></script>
+    <script type="module" src="app.js?v=313"></script>
 </body>
 </html>
