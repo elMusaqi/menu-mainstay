@@ -120,6 +120,95 @@ window.prosesLoginSistem = () => {
 };
 
 // ==========================================
+// FITUR GANTI KASIR (VALIDASI PIN & ABSENSI)
+// ==========================================
+window.bukaGantiKasir = () => {
+    const modal = document.getElementById('modal-ganti-kasir');
+    const select = document.getElementById('select-ganti-kasir');
+    
+    // Reset Form
+    document.getElementById('pin-ganti-kasir').value = '';
+    modal.classList.remove('hidden');
+    select.innerHTML = '<option value="">Memuat data absen hari ini...</option>';
+
+    // Tarik data siapa saja yang sudah absen masuk HARI INI
+    const tglSekarang = new Date().toLocaleDateString('id-ID', {year: 'numeric', month: '2-digit', day: '2-digit'}).split('/').reverse().join('-');
+    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+    fetch(`${dbUrl}/attendance/${tglSekarang}.json`)
+        .then(res => res.json())
+        .then(data => {
+            let optionsHtml = `<option value="Owner">👑 Owner Mainstay</option>`; 
+            let staffHadir = new Set(); // Menggunakan Set agar nama tidak ganda
+
+            if(data) {
+                Object.values(data).forEach(log => {
+                    // Hanya ambil nama yang log-nya "Masuk"
+                    if(log.tipe === 'Masuk' && log.nama) staffHadir.add(log.nama);
+                });
+            }
+
+            // Masukkan nama staff yang hadir ke dalam dropdown
+            staffHadir.forEach(nama => {
+                optionsHtml += `<option value="${nama}">👤 ${nama}</option>`;
+            });
+
+            select.innerHTML = optionsHtml;
+            
+            if(staffHadir.size === 0) {
+                 select.innerHTML += `<option value="" disabled>-- Belum ada staff yang absen masuk --</option>`;
+            }
+        }).catch(e => {
+            select.innerHTML = `<option value="Owner">👑 Owner Mainstay</option>`;
+            alert("Koneksi gagal. Hanya opsi Owner yang tersedia saat offline.");
+        });
+};
+
+window.prosesGantiKasir = () => {
+    const namaDipilih = document.getElementById('select-ganti-kasir').value;
+    const pinInput = document.getElementById('pin-ganti-kasir').value.trim();
+
+    if(!namaDipilih) return alert("Peringatan: Pilih nama penginput terlebih dahulu!");
+    if(pinInput.length !== 6) return alert("Peringatan: Masukkan 6 digit PIN dengan benar!");
+
+    if(namaDipilih === "Owner") {
+        // --- CATATAN UNTUK MAS IHSAN ---
+        // Ganti angka "123123" di bawah ini dengan PIN rahasia khusus Owner
+        const masterPIN = "888888"; 
+        
+        if(pinInput === masterPIN) {
+            document.getElementById('active-cashier-name').innerText = "Owner Mainstay";
+            if(typeof activeStaff !== 'undefined') activeStaff = { name: "Owner Mainstay", role: "owner" };
+            
+            document.getElementById('modal-ganti-kasir').classList.add('hidden');
+            alert("Akses Diberikan: Penginput dialihkan ke Owner!");
+        } else {
+            alert("Akses Ditolak: PIN Owner Salah!");
+        }
+        
+    } else {
+        // Jika yang dipilih adalah Staff, cari kecocokan PIN di database HRD
+        let staffValid = null;
+        for (const key in globalStaff) {
+            if (globalStaff[key].name === namaDipilih && globalStaff[key].pin === pinInput) {
+                staffValid = globalStaff[key];
+                break;
+            }
+        }
+
+        if(staffValid) {
+            document.getElementById('active-cashier-name').innerText = staffValid.name;
+            if(typeof activeStaff !== 'undefined') activeStaff = staffValid;
+            
+            document.getElementById('modal-ganti-kasir').classList.add('hidden');
+            alert(`Akses Diberikan: Penginput dialihkan ke ${staffValid.name}!`);
+        } else {
+            alert(`Akses Ditolak: PIN tidak cocok dengan identitas ${namaDipilih}!`);
+        }
+    }
+};
+
+// ==========================================
 // MODUL 0: MESIN KAMERA ABSENSI (SMART DETECT)
 // ==========================================
 window.streamKameraAbsensi = null;
