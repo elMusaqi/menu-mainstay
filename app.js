@@ -120,7 +120,7 @@ window.prosesLoginSistem = () => {
 };
 
 // ==========================================
-// MODUL 0: MESIN KAMERA ABSENSI (RUANG KERJA)
+// MODUL 0: MESIN KAMERA ABSENSI (SMART DETECT)
 // ==========================================
 window.streamKameraAbsensi = null;
 
@@ -128,64 +128,90 @@ window.mulaiKameraAbsensi = async () => {
     const video = document.getElementById('video-absensi');
     const placeholder = document.getElementById('kamera-placeholder');
     const btnMulai = document.getElementById('btn-mulai-kamera');
-    const btnMasuk = document.getElementById('btn-jepret-masuk');
-    const btnPulang = document.getElementById('btn-jepret-pulang');
-    const imgHasil = document.getElementById('hasil-foto-absensi');
-    const btnUlang = document.getElementById('btn-ulang-foto');
-
+    
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
         window.streamKameraAbsensi = stream;
         video.srcObject = stream;
-        
         video.classList.remove('hidden');
         placeholder.classList.add('hidden');
-        imgHasil.classList.add('hidden');
+        document.getElementById('hasil-foto-absensi').classList.add('hidden');
         
         btnMulai.classList.add('hidden');
-        btnMasuk.classList.remove('hidden');
-        btnPulang.classList.remove('hidden');
-        btnUlang.classList.add('hidden');
+        document.getElementById('btn-jepret-masuk').classList.remove('hidden');
+        document.getElementById('btn-jepret-pulang').classList.remove('hidden');
+        document.getElementById('btn-ulang-foto').classList.add('hidden');
     } catch (err) {
-        alert("Gagal mengakses kamera! Pastikan izin kamera sudah diizinkan di browser Anda.");
+        alert("Gagal mengakses kamera! Pastikan izin kamera sudah diizinkan.");
     }
 };
 
 window.jepretAbsensi = (tipeAbsen) => {
-    if(typeof activeStaff === 'undefined' || !activeStaff) {
-        alert("Peringatan: Kasir belum login! Silakan login di layar depan terlebih dahulu.");
-        return;
-    }
+    // 1. Cek PIN siapa yang absen (Bisa Dapur, bisa Kasir)
+    const pinInput = document.getElementById('pin-absensi-kamera').value.trim();
+    if(pinInput.length !== 6) return alert("Peringatan: Ketik 6 digit PIN Anda di kolom atas sebelum absen!");
+    
+    let staffAbsen = Object.values(globalStaff).find(s => s.pin === pinInput);
+    if(!staffAbsen) return alert("Akses Ditolak: PIN Tidak Terdaftar di Database HRD!");
 
+    // 2. Ambil Foto
     const video = document.getElementById('video-absensi');
     const canvas = document.getElementById('canvas-absensi');
-    const imgHasil = document.getElementById('hasil-foto-absensi');
-    
-    canvas.width = video.videoWidth;
+    canvas.width = video.videoWidth; 
     canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0); 
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const fotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+    // 3. Kalkulasi Keterlambatan (Hanya untuk Absen Masuk)
+    const now = new Date();
+    const jamStr = now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+    let statusAbsen = "TEPAT WAKTU";
+    let warnaStatus = "green";
     
-    // Trik Mirror agar foto tersimpan normal (tidak terbalik)
-    context.translate(canvas.width, 0);
-    context.scale(-1, 1);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    const fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
-    imgHasil.src = fotoBase64;
-    
-    window.matikanKameraAbsensi();
-    video.classList.add('hidden');
-    imgHasil.classList.remove('hidden');
-    
+    if (tipeAbsen === 'Masuk' && staffAbsen.shiftIn) {
+        const shiftTime = staffAbsen.shiftIn.split(':');
+        const shiftMins = parseInt(shiftTime[0])*60 + parseInt(shiftTime[1]);
+        const nowMins = now.getHours()*60 + now.getMinutes();
+        
+        // Toleransi telat 0 menit (Lewat jam shift = Terlambat)
+        if (nowMins > shiftMins) {
+            statusAbsen = "TERLAMBAT";
+            warnaStatus = "red";
+        }
+    }
+
+    // 4. Proses Simpan Firebase
     document.getElementById('btn-jepret-masuk').classList.add('hidden');
     document.getElementById('btn-jepret-pulang').classList.add('hidden');
-    
     const btnUlang = document.getElementById('btn-ulang-foto');
     btnUlang.classList.remove('hidden');
-    btnUlang.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> MENGIRIM KE DATABASE...';
+    btnUlang.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> MENGIRIM...';
     btnUlang.disabled = true;
 
-    window.prosesSimpanAbsensi(tipeAbsen, fotoBase64);
+    const tglDatabase = now.toLocaleDateString('id-ID', {year: 'numeric', month: '2-digit', day: '2-digit'}).split('/').reverse().join('-');
+    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
+    
+    fetch(`${dbUrl}/attendance/${tglDatabase}/${now.getTime()}.json`, {
+        method: 'PUT',
+        body: JSON.stringify({ nama: staffAbsen.name, tipe: tipeAbsen, waktu: jamStr, status: statusAbsen, foto: fotoBase64, timestamp: now.getTime() })
+    }).then(() => {
+        // Matikan Kamera & Tutup Ruang Kerja
+        window.matikanKameraAbsensi();
+        if(typeof tutupRuangKerja === 'function') tutupRuangKerja(); 
+        
+        // Bersihkan Kolom PIN untuk yang absen berikutnya
+        document.getElementById('pin-absensi-kamera').value = '';
+        
+        // TAMPILKAN PREVIEW 5 DETIK
+        window.tampilkanPreviewAbsen(staffAbsen.name, tipeAbsen, fotoBase64, statusAbsen, jamStr, warnaStatus);
+    }).catch(e => {
+        alert("Gagal mengirim absen! Periksa koneksi internet.");
+        btnUlang.disabled = false;
+        btnUlang.innerHTML = '<i class="fa-solid fa-rotate-right"></i> COBA LAGI';
+    });
 };
 
 window.matikanKameraAbsensi = () => {
@@ -195,46 +221,42 @@ window.matikanKameraAbsensi = () => {
     }
 };
 
-window.ulangFotoAbsensi = () => {
-    window.mulaiKameraAbsensi();
-};
+window.ulangFotoAbsensi = () => window.mulaiKameraAbsensi();
 
-window.prosesSimpanAbsensi = (tipe, fotoBase64) => {
-    const timeNow = new Date();
-    const jamStr = timeNow.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-    const tglDatabase = timeNow.toLocaleDateString('id-ID', {year: 'numeric', month: '2-digit', day: '2-digit'}).split('/').reverse().join('-');
+// ==========================================
+// MESIN PREVIEW ABSEN (5 DETIK OTOMATIS)
+// ==========================================
+window.tampilkanPreviewAbsen = (nama, tipe, foto, status, jam, warna) => {
+    document.getElementById('modal-preview-absen').classList.remove('hidden');
+    document.getElementById('preview-foto').src = foto;
+    document.getElementById('preview-nama').innerText = nama;
+    document.getElementById('preview-tipe').innerText = `ABSEN ${tipe}`;
+    document.getElementById('preview-jam').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${jam} WIB`;
     
-    const dataAbsen = {
-        nama: activeStaff.name,
-        pin: activeStaff.pin,
-        tipe: tipe, 
-        waktu: jamStr,
-        timestamp: timeNow.getTime(),
-        foto: fotoBase64
-    };
+    const statusBox = document.getElementById('preview-status-box');
+    const statusTeks = document.getElementById('preview-status-teks');
+    statusTeks.innerText = status;
+    
+    if(warna === 'red') {
+        statusBox.className = "w-full p-4 rounded-2xl mb-2 bg-red-50 border border-red-200";
+        statusTeks.className = "text-lg font-black text-red-600 uppercase tracking-widest mb-1";
+    } else {
+        statusBox.className = "w-full p-4 rounded-2xl mb-2 bg-green-50 border border-green-200";
+        statusTeks.className = "text-lg font-black text-green-600 uppercase tracking-widest mb-1";
+    }
 
-    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
-    fetch(`${dbUrl}/attendance/${tglDatabase}/${timeNow.getTime()}.json`, {
-        method: 'PUT',
-        body: JSON.stringify(dataAbsen)
-    }).then(() => {
-        alert(`✅ Absen ${tipe.toUpperCase()} atas nama ${activeStaff.name} pada jam ${jamStr} BERHASIL DISIMPAN!`);
-        
-        document.getElementById('hasil-foto-absensi').classList.add('hidden');
-        document.getElementById('kamera-placeholder').classList.remove('hidden');
-        
-        const btnUlang = document.getElementById('btn-ulang-foto');
-        btnUlang.classList.add('hidden');
-        btnUlang.disabled = false;
-        btnUlang.innerHTML = '<i class="fa-solid fa-rotate-right"></i> ULANGI FOTO';
-        
-        document.getElementById('btn-mulai-kamera').classList.remove('hidden');
-    }).catch(e => {
-        alert("Gagal mengirim absen! Periksa koneksi internet Anda.");
-        const btnUlang = document.getElementById('btn-ulang-foto');
-        btnUlang.disabled = false;
-        btnUlang.innerHTML = '<i class="fa-solid fa-rotate-right"></i> COBA FOTO LAGI';
-    });
+    let detik = 5;
+    document.getElementById('preview-countdown').innerText = detik;
+    
+    if(window.previewInterval) clearInterval(window.previewInterval);
+    window.previewInterval = setInterval(() => {
+        detik--;
+        document.getElementById('preview-countdown').innerText = detik;
+        if(detik <= 0) {
+            clearInterval(window.previewInterval);
+            document.getElementById('modal-preview-absen').classList.add('hidden');
+        }
+    }, 1000);
 };
 
 // ============================================================================
@@ -3916,4 +3938,57 @@ window.renderUlasanPelanggan = () => {
 // Panggil otomatis saat web pertama kali dimuat
 setTimeout(() => {
     if(typeof window.renderUlasanPelanggan === 'function') window.renderUlasanPelanggan();
-}, 2000);
+}, 2000); 
+
+// ==========================================
+// MESIN PENARIK LOG ABSENSI (PANEL OWNER)
+// ==========================================
+window.lihatLogAbsensi = () => {
+    const tglSekarang = new Date().toLocaleDateString('id-ID', {year: 'numeric', month: '2-digit', day: '2-digit'}).split('/').reverse().join('-');
+    
+    alert(`Menarik data absensi tanggal ${tglSekarang}... Mohon tunggu.`);
+    
+    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
+    fetch(`${dbUrl}/attendance/${tglSekarang}.json`)
+        .then(res => res.json())
+        .then(data => {
+            if(!data) return alert("Belum ada data absensi hari ini!");
+            
+            let htmlList = '';
+            Object.values(data).reverse().forEach(log => {
+                const warnaStatus = log.status === 'TERLAMBAT' ? 'text-red-500 bg-red-50' : 'text-green-600 bg-green-50';
+                htmlList += `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 mb-3 flex items-center gap-3">
+                    <img src="${log.foto}" class="w-14 h-14 rounded-lg object-cover border border-slate-100 shrink-0">
+                    <div class="flex-1">
+                        <h4 class="font-black text-sm text-slate-800">${log.nama}</h4>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">Absen ${log.tipe}</span>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded ${warnaStatus}">${log.status}</span>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-xs font-black text-slate-700">${log.waktu}</p>
+                    </div>
+                </div>`;
+            });
+            
+            // Tampilkan ke Panel Kanan (Owner Dashboard)
+            document.getElementById('owner-inner-panels-container').innerHTML = `
+                <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in pb-safe">
+                    <div class="bg-slate-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md">
+                        <button onclick="closePanel()" class="w-10 h-10 bg-slate-800 rounded-xl hover:bg-slate-700 transition flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div>
+                            <h2 class="font-black text-lg leading-none">Log Absensi</h2>
+                            <p class="text-[10px] text-blue-400 font-bold tracking-wider uppercase mt-0.5">Hari Ini: ${tglSekarang}</p>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                        ${htmlList}
+                    </div>
+                </div>
+            `;
+        }).catch(e => alert("Gagal memuat log absensi!"));
+};
