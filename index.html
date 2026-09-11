@@ -76,60 +76,35 @@
     </script>
 </head>
 <body class="bg-slate-100 text-gray-800 antialiased selection:bg-amber-200">
-<!-- ========================================== -->
-<!-- MODAL LOGIN & ABSENSI KAMERA LIVE          -->
-<!-- ========================================== -->
-<!-- Tambahkan kata 'hidden' di class paling depan -->
-<div id="modal-login-absen" class="hidden fixed inset-0 bg-slate-900 z-[1000] flex items-center justify-center p-5">
+    
+<!-- MODAL LOGIN KASIR (SEDERHANA TANPA KAMERA) -->
+<div id="modal-login-absen" class="hidden fixed inset-0 bg-slate-900/95 z-[1000] flex items-center justify-center p-5 fade-in">
     <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col relative">
-        
-        <!-- Header dengan Tombol Tutup (X) -->
         <div class="bg-slate-800 p-4 flex justify-between items-center">
             <div>
-                <h2 class="text-white font-black tracking-widest uppercase text-sm">Absensi Kamera</h2>
+                <h2 class="text-white font-black tracking-widest uppercase text-sm">Login Kasir</h2>
                 <p class="text-[10px] text-gray-400 font-bold mt-0.5">Mainstay Drink POS</p>
             </div>
-            <!-- Tombol Silang untuk menutup -->
-            <button onclick="tutupMenuAbsen()" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full text-white flex justify-center items-center transition">
+            <button onclick="tutupMenuAbsen()" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full text-white flex justify-center items-center transition shadow-sm">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-
-        <!-- ... (Kode bawahnya / area kamera tetap sama) ... -->
-
-        <!-- Area Kamera Live -->
-        <div class="relative bg-black h-72 w-full overflow-hidden flex items-center justify-center">
-            <!-- playsinline mencegah video terbuka fullscreen di HP, scale-x-[-1] membuat efek cermin (selfie) -->
-            <video id="kamera-absen" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+        
+        <div class="p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-5"><i class="fa-solid fa-lock text-7xl"></i></div>
             
-            <!-- Indikator Loading Kamera -->
-            <div id="kamera-loading" class="absolute inset-0 flex flex-col items-center justify-center text-white/50 bg-slate-900">
-                <i class="fa-solid fa-camera fa-spin text-3xl mb-3"></i>
-                <span class="text-[10px] font-bold tracking-widest uppercase">Menyiapkan Kamera...</span>
+            <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex justify-center items-center mb-4 border-4 border-blue-100 relative z-10 shadow-inner">
+                <i class="fa-solid fa-user-lock text-3xl"></i>
             </div>
-        </div>
-
-        <!-- Form PIN & Tombol -->
-        <div class="p-6 flex flex-col gap-5">
-            <div class="text-center">
-                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">Masukkan PIN Anda</p>
-                <!-- inputmode="numeric" memunculkan keyboard angka besar di HP -->
-                <input type="password" id="input-pin" inputmode="numeric" maxlength="6" class="w-full text-center text-3xl tracking-[0.5em] font-black border-b-2 border-slate-200 focus:border-blue-500 focus:outline-none py-2 transition-colors bg-transparent text-slate-800" placeholder="••••">
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="prosesAbsen('MASUK')" class="bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-md flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-right-to-bracket text-sm"></i> Masuk
-                </button>
-                <button onclick="prosesAbsen('PULANG')" class="bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-md flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-right-from-bracket text-sm"></i> Pulang
-                </button>
-            </div>
+            <h3 class="text-lg font-black text-slate-800 mb-1 relative z-10">Masukkan PIN</h3>
+            <p class="text-xs text-slate-500 font-medium mb-6 relative z-10">Silakan masukkan 6 digit PIN akses Anda.</p>
             
-            <!-- Kanvas tersembunyi untuk proses "menjepret" foto nanti -->
-            <canvas id="canvas-foto" class="hidden"></canvas>
+            <input type="password" id="input-pin" inputmode="numeric" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" class="w-full text-center text-3xl font-black tracking-[0.5em] text-purple-600 border-b-2 border-slate-200 focus:border-purple-500 outline-none pb-2 mb-8 bg-transparent relative z-10 transition-colors" placeholder="••••••">
+            
+            <button onclick="window.prosesLoginSistem()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition shadow-lg hover:shadow-xl flex justify-center items-center gap-2 relative z-10">
+                <i class="fa-solid fa-right-to-bracket"></i> MASUK SISTEM
+            </button>
         </div>
-
     </div>
 </div>
 
@@ -741,11 +716,46 @@
             
             <!-- Halaman Konten 1: Absensi -->
             <div id="content-tab-absensi" class="block">
-                <div class="border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-2xl p-10 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
-                    <i class="fa-solid fa-camera text-4xl text-blue-300 mb-3"></i>
-                    <p class="text-sm font-bold text-blue-800">Layar Kamera Absensi</p>
-                    <p class="text-xs text-blue-500 mt-1">Video kamera akan muncul di sini.</p>
-                </div>
+                <!-- AREA KAMERA ABSENSI RUANG KERJA -->
+<div id="area-kamera-absensi" class="w-full flex flex-col items-center p-2">
+    <!-- 1. Layar Viewfinder Kamera -->
+    <div class="relative w-full max-w-sm aspect-[3/4] bg-slate-900 rounded-3xl overflow-hidden shadow-inner mb-5 flex items-center justify-center border-4 border-slate-100">
+        <!-- Video Live -->
+        <video id="video-absensi" autoplay playsinline class="w-full h-full object-cover hidden scale-x-[-1]"></video>
+        <!-- Hasil Jepretan -->
+        <img id="hasil-foto-absensi" src="" class="w-full h-full object-cover hidden scale-x-[-1]">
+        
+        <!-- Layar Standby -->
+        <div id="kamera-placeholder" class="text-center text-slate-400 flex flex-col items-center">
+            <div class="w-20 h-20 bg-slate-800 rounded-full flex justify-center items-center mb-3">
+                <i class="fa-solid fa-camera text-3xl text-slate-500"></i>
+            </div>
+            <p class="text-xs font-bold tracking-widest uppercase">Kamera Standby</p>
+        </div>
+    </div>
+
+    <!-- 2. Tombol Kendali (Berubah Dinamis) -->
+    <div class="flex flex-wrap justify-center gap-3 w-full max-w-sm">
+        <button id="btn-mulai-kamera" onclick="window.mulaiKameraAbsensi()" class="w-full bg-blue-100 text-blue-600 font-black py-3.5 px-4 rounded-xl hover:bg-blue-200 transition shadow-sm text-sm border border-blue-200 flex justify-center items-center gap-2">
+            <i class="fa-solid fa-video"></i> NYALAKAN KAMERA DEPAN
+        </button>
+        
+        <button id="btn-jepret-masuk" onclick="window.jepretAbsensi('Masuk')" class="flex-1 bg-green-500 text-white font-black py-3.5 px-2 rounded-xl hover:bg-green-600 transition text-xs hidden shadow-md border-b-4 border-green-700 active:border-b-0 active:translate-y-1 flex justify-center items-center gap-1">
+            <i class="fa-solid fa-right-to-bracket"></i> ABSEN MASUK
+        </button>
+        
+        <button id="btn-jepret-pulang" onclick="window.jepretAbsensi('Pulang')" class="flex-1 bg-orange-500 text-white font-black py-3.5 px-2 rounded-xl hover:bg-orange-600 transition text-xs hidden shadow-md border-b-4 border-orange-700 active:border-b-0 active:translate-y-1 flex justify-center items-center gap-1">
+            <i class="fa-solid fa-right-from-bracket"></i> ABSEN PULANG
+        </button>
+        
+        <button id="btn-ulang-foto" onclick="window.ulangFotoAbsensi()" class="w-full bg-slate-100 text-slate-600 font-black py-3.5 px-4 rounded-xl hover:bg-slate-200 transition text-sm hidden mt-2 border border-slate-300 flex justify-center items-center gap-2">
+            <i class="fa-solid fa-rotate-right"></i> ULANGI FOTO
+        </button>
+    </div>
+    
+    <!-- Canvas Tersembunyi untuk Ekstrak Foto -->
+    <canvas id="canvas-absensi" class="hidden"></canvas>
+</div>
             </div>
 
             <!-- Halaman Konten 2: Arus Kas -->
