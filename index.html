@@ -654,6 +654,14 @@
                         <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-xl text-cyan-500 group-hover:bg-cyan-50 group-hover:border-cyan-200 transition"><i class="fa-solid fa-database"></i></div>
                         <span class="text-[9px] font-bold text-gray-600 text-center leading-tight">Data &<br>Backup</span>
                     </button>
+
+                    <!-- Panel 9: Log Absensi -->
+    <button onclick="window.lihatLogAbsensi()" class="flex flex-col items-center gap-2">
+        <div class="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-blue-500 text-xl hover:bg-blue-50 transition">
+            <i class="fa-solid fa-clipboard-user"></i>
+        </div>
+        <span class="text-[9px] font-bold text-gray-600 text-center leading-tight">Log<br>Absen</span>
+    </button>
                 </div>
             </div>
             
@@ -736,6 +744,10 @@
 
     <!-- 2. Tombol Kendali (Berubah Dinamis) -->
     <div class="flex flex-wrap justify-center gap-3 w-full max-w-sm">
+        
+        <!-- KOLOM PIN KHUSUS ABSEN -->
+        <input type="password" id="pin-absensi-kamera" inputmode="numeric" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" placeholder="Ketik 6 Digit PIN Anda" class="w-full p-3 bg-white border-2 border-slate-200 rounded-xl text-center font-black tracking-[0.5em] text-purple-600 focus:border-purple-500 outline-none shadow-sm mb-1">
+
         <button id="btn-mulai-kamera" onclick="window.mulaiKameraAbsensi()" class="w-full bg-blue-100 text-blue-600 font-black py-3.5 px-4 rounded-xl hover:bg-blue-200 transition shadow-sm text-sm border border-blue-200 flex justify-center items-center gap-2">
             <i class="fa-solid fa-video"></i> NYALAKAN KAMERA DEPAN
         </button>
@@ -879,8 +891,32 @@
     <!-- ========================================== -->
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+
+    <!-- MODAL PREVIEW ABSEN (5 DETIK) -->
+    <div id="modal-preview-absen" class="hidden fixed inset-0 bg-slate-900/95 z-[2000] flex items-center justify-center p-5 fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col text-center">
+            <div class="bg-blue-600 p-4 shadow-md z-10">
+                <h2 class="text-white font-black tracking-widest uppercase text-sm"><i class="fa-solid fa-circle-check mr-2"></i>Absensi Berhasil</h2>
+            </div>
+            <div class="p-6 flex flex-col items-center bg-slate-50 relative">
+                <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg mb-4 relative z-10 bg-slate-200">
+                    <img id="preview-foto" src="" class="w-full h-full object-cover">
+                </div>
+                <h3 id="preview-nama" class="text-xl font-black text-slate-800 uppercase tracking-wider mb-1">NAMA STAFF</h3>
+                <p id="preview-tipe" class="text-[10px] font-bold text-white bg-slate-800 px-3 py-1 rounded-full mb-4 shadow-sm">ABSEN MASUK</p>
+                
+                <div id="preview-status-box" class="w-full p-4 rounded-2xl mb-2 bg-white shadow-sm border border-slate-200">
+                    <p id="preview-status-teks" class="text-lg font-black uppercase tracking-widest mb-1">TEPAT WAKTU</p>
+                    <p id="preview-jam" class="text-xs font-bold text-gray-500"><i class="fa-regular fa-clock mr-1"></i>00:00 WIB</p>
+                </div>
+                
+                <p class="text-[10px] text-gray-400 font-bold mt-4 uppercase tracking-widest">
+                    Menutup otomatis dalam <span id="preview-countdown" class="text-blue-500 font-black text-lg mx-1">5</span> detik
+                </p>
+            </div>
+        </div>
+    </div>
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=309"></script>
+    <script type="module" src="app.js?v=310"></script>
 </body>
 </html>
