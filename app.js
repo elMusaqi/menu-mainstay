@@ -11,7 +11,9 @@ import {
     set, 
     update, 
     get, 
-    remove 
+    remove,
+    query,          // <--- TAMBAHKAN INI
+    limitToLast     // <--- TAMBAHKAN INI
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 // ==========================================
@@ -451,8 +453,8 @@ const initFirebaseListeners = () => {
         }
     });
 
-    // 5B. Listener Database: Orders
-    onValue(ref(db, 'orders'), (snapshot) => {
+    // 5B. Listener Database Orders (DIBATASI AGAR WEB NGEBUT)
+    onValue(query(ref(db, 'orders'), limitToLast(150)), (snapshot) => {
         if (snapshot.exists()) {
             globalOrders = snapshot.val();
         } else {
