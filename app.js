@@ -14,6 +14,29 @@ import {
     remove 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
+// ==========================================
+// SISTEM SAPU JAGAT (ANTI CACHE & ANTI BUG)
+// ==========================================
+(function initSapuJagat() {
+    // ⚠️ GANTI ANGKA VERSI INI JIKA ADA UPDATE MENU BESAR-BESARAN!
+    const versiTerbaru = "mainstay_update_1"; 
+    
+    try {
+        // Cek stempel memori di HP pembeli
+        const versiDiHPPembeli = localStorage.getItem('versi_cache_mainstay');
+        
+        // Jika HP pembeli pakai data lawas, kita cuci bersih!
+        if (versiDiHPPembeli !== versiTerbaru) {
+            localStorage.clear();
+            sessionStorage.clear();
+            localStorage.setItem('versi_cache_mainstay', versiTerbaru);
+            window.location.reload(true);
+        }
+    } catch (e) {
+        console.log("Browser tidak mendukung auto-clear.");
+    }
+})();
+
 // 1. FIREBASE CONFIGURATION (Sesuai Blueprint Blueprint)
 const firebaseConfig = {
     apiKey: "AIzaSyAwBNnNulXL2MA1QGUOu1BAEqnihqHFn0o",
