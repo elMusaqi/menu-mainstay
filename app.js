@@ -72,127 +72,169 @@ window.alert = (pesan) => {
 // ----------------------------------------------------------------------
 
 // ==========================================
-// MODUL 0: MESIN KAMERA & ABSENSI
+// MESIN LOGIN KASIR (POP-UP PIN)
 // ==========================================
-let streamKamera = null;
-
-// Fungsi menyalakan kamera depan HP
-window.mulaiKamera = async () => {
-    const videoEl = document.getElementById('kamera-absen');
-    const loadingEl = document.getElementById('kamera-loading');
-    
-    try {
-        // Minta akses kamera depan (facingMode: "user")
-        streamKamera = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user" }, 
-            audio: false 
-        });
-        
-        videoEl.srcObject = streamKamera;
-        
-        // Hilangkan layar loading saat kamera sudah berhasil memancarkan gambar
-        videoEl.onloadedmetadata = () => {
-            loadingEl.classList.add('hidden');
-        };
-    } catch (err) {
-        console.error("Kamera gagal diakses:", err);
-        loadingEl.innerHTML = `
-            <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl mb-3"></i>
-            <span class="text-[10px] font-bold text-red-400 uppercase text-center px-4">Gagal akses kamera.<br>Pastikan izin kamera diizinkan di browser/HP Anda!</span>
-        `;
-    }
-};
-
-// Fungsi mematikan kamera (Penting agar baterai HP tidak bocor saat layar kasir sudah terbuka)
-window.matikanKamera = () => {
-    if (streamKamera) {
-        streamKamera.getTracks().forEach(track => track.stop());
-    }
-};
-
-
-// Kerangka fungsi tombol absen (Logika jepret & validasi PIN akan kita kerjakan di tahap 2)
-// Fungsi mengeksekusi jepretan foto dan preview
-window.prosesAbsen = (tipeAbsen) => {
-    const pin = document.getElementById('input-pin').value;
-    if(!pin) return alert("PIN wajib diisi!");
-
-    // 1. Ambil elemen video dan canvas
-    const video = document.getElementById('kamera-absen');
-    const canvas = document.getElementById('canvas-foto');
-    const ctx = canvas.getContext('2d');
-
-    // 2. Sesuaikan ukuran canvas dengan video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // 3. Jepret gambar dari stream video ke canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // 4. Ubah gambar jadi format Data URL (Base64)
-    const fotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
-    // 5. Matikan kamera dan tutup pop-up login
-    tutupMenuAbsen();
-    document.getElementById('input-pin').value = ''; // Kosongkan PIN
-
-    // 6. Siapkan Data Preview
-    const waktuSekarang = new Date();
-    const jam = waktuSekarang.getHours();
-    const menit = waktuSekarang.getMinutes();
-    const waktuFormat = waktuSekarang.toLocaleTimeString('id-ID') + ' WIB';
-
-    document.getElementById('preview-foto').src = fotoBase64;
-    document.getElementById('preview-nama').innerText = "STAF (PIN: " + pin + ")"; // Nanti dicocokkan dengan DB
-    document.getElementById('preview-tipe').innerText = "ABSEN " + tipeAbsen;
-    document.getElementById('preview-jam').innerText = waktuFormat;
-
-    // Logika Terlambat (Contoh: Shift pagi batas jam 09:00)
-    const statusBox = document.getElementById('preview-status-box');
-    const statusTeks = document.getElementById('preview-status-teks');
-    
-    if (tipeAbsen === 'MASUK' && (jam > 9 || (jam === 9 && menit > 0))) {
-        // Terlambat
-        statusBox.className = "w-full p-3 rounded-xl mb-2 bg-red-50 border border-red-200";
-        statusTeks.className = "text-sm font-black text-red-600 uppercase tracking-widest mb-1";
-        statusTeks.innerText = "TERLAMBAT";
-    } else {
-        // Tepat Waktu / Pulang
-        statusBox.className = "w-full p-3 rounded-xl mb-2 bg-green-50 border border-green-200";
-        statusTeks.className = "text-sm font-black text-green-600 uppercase tracking-widest mb-1";
-        statusTeks.innerText = tipeAbsen === 'MASUK' ? "TEPAT WAKTU" : "SELESAI SHIFT";
-    }
-
-    // 7. Tampilkan Pop-up Preview
-    const modalPreview = document.getElementById('modal-preview-absen');
-    modalPreview.classList.remove('hidden');
-
-    // 8. Hitung Mundur 5 Detik
-    let detik = 5;
-    const countdownEl = document.getElementById('preview-countdown');
-    countdownEl.innerText = detik;
-
-    const interval = setInterval(() => {
-        detik--;
-        countdownEl.innerText = detik;
-        if (detik <= 0) {
-            clearInterval(interval);
-            modalPreview.classList.add('hidden');
-            // Di sini nantinya kita sisipkan kode untuk menyimpan data ke Firebase
-            alert("Sistem: Data absen tersimpan!");
-        }
-    }, 1000);
-};
-// Fungsi untuk memunculkan pop-up absensi dan menyalakan kamera
 window.bukaMenuAbsen = () => {
     document.getElementById('modal-login-absen').classList.remove('hidden');
-    mulaiKamera(); // Kamera baru menyala di sini
 };
 
-// Fungsi untuk menutup pop-up dan mematikan kamera (Hemat Baterai)
 window.tutupMenuAbsen = () => {
     document.getElementById('modal-login-absen').classList.add('hidden');
-    matikanKamera(); // Matikan lampu kamera
+    document.getElementById('input-pin').value = ''; // Otomatis bersihkan kolom PIN
+};
+
+window.prosesLoginSistem = () => {
+    const pinInput = document.getElementById('input-pin').value.trim();
+    if(!pinInput || pinInput.length !== 6) {
+        alert("Peringatan: Masukkan 6 digit PIN dengan benar!");
+        return;
+    }
+
+    let foundStaff = null;
+    let staffKey = null;
+
+    // Cari PIN di database staff
+    for (const key in globalStaff) {
+        if (globalStaff[key].pin === pinInput) {
+            foundStaff = globalStaff[key];
+            staffKey = key;
+            break;
+        }
+    }
+
+    if (foundStaff) {
+        // Daftarkan sebagai kasir aktif
+        activeStaff = { ...foundStaff, key: staffKey };
+        
+        // Ubah UI Nama Kasir Bertugas di Header
+        const elNama = document.getElementById('active-cashier-name');
+        if(elNama) elNama.innerText = activeStaff.name;
+        
+        // Tutup Modal
+        window.tutupMenuAbsen();
+        
+        alert(`Akses Diberikan. Selamat bertugas, ${activeStaff.name}!`);
+    } else {
+        alert("Akses Ditolak: PIN tidak terdaftar di sistem HRD!");
+    }
+};
+
+// ==========================================
+// MODUL 0: MESIN KAMERA ABSENSI (RUANG KERJA)
+// ==========================================
+window.streamKameraAbsensi = null;
+
+window.mulaiKameraAbsensi = async () => {
+    const video = document.getElementById('video-absensi');
+    const placeholder = document.getElementById('kamera-placeholder');
+    const btnMulai = document.getElementById('btn-mulai-kamera');
+    const btnMasuk = document.getElementById('btn-jepret-masuk');
+    const btnPulang = document.getElementById('btn-jepret-pulang');
+    const imgHasil = document.getElementById('hasil-foto-absensi');
+    const btnUlang = document.getElementById('btn-ulang-foto');
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        window.streamKameraAbsensi = stream;
+        video.srcObject = stream;
+        
+        video.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        imgHasil.classList.add('hidden');
+        
+        btnMulai.classList.add('hidden');
+        btnMasuk.classList.remove('hidden');
+        btnPulang.classList.remove('hidden');
+        btnUlang.classList.add('hidden');
+    } catch (err) {
+        alert("Gagal mengakses kamera! Pastikan izin kamera sudah diizinkan di browser Anda.");
+    }
+};
+
+window.jepretAbsensi = (tipeAbsen) => {
+    if(typeof activeStaff === 'undefined' || !activeStaff) {
+        alert("Peringatan: Kasir belum login! Silakan login di layar depan terlebih dahulu.");
+        return;
+    }
+
+    const video = document.getElementById('video-absensi');
+    const canvas = document.getElementById('canvas-absensi');
+    const imgHasil = document.getElementById('hasil-foto-absensi');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    
+    // Trik Mirror agar foto tersimpan normal (tidak terbalik)
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+    imgHasil.src = fotoBase64;
+    
+    window.matikanKameraAbsensi();
+    video.classList.add('hidden');
+    imgHasil.classList.remove('hidden');
+    
+    document.getElementById('btn-jepret-masuk').classList.add('hidden');
+    document.getElementById('btn-jepret-pulang').classList.add('hidden');
+    
+    const btnUlang = document.getElementById('btn-ulang-foto');
+    btnUlang.classList.remove('hidden');
+    btnUlang.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> MENGIRIM KE DATABASE...';
+    btnUlang.disabled = true;
+
+    window.prosesSimpanAbsensi(tipeAbsen, fotoBase64);
+};
+
+window.matikanKameraAbsensi = () => {
+    if (window.streamKameraAbsensi) {
+        window.streamKameraAbsensi.getTracks().forEach(track => track.stop());
+        window.streamKameraAbsensi = null;
+    }
+};
+
+window.ulangFotoAbsensi = () => {
+    window.mulaiKameraAbsensi();
+};
+
+window.prosesSimpanAbsensi = (tipe, fotoBase64) => {
+    const timeNow = new Date();
+    const jamStr = timeNow.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+    const tglDatabase = timeNow.toLocaleDateString('id-ID', {year: 'numeric', month: '2-digit', day: '2-digit'}).split('/').reverse().join('-');
+    
+    const dataAbsen = {
+        nama: activeStaff.name,
+        pin: activeStaff.pin,
+        tipe: tipe, 
+        waktu: jamStr,
+        timestamp: timeNow.getTime(),
+        foto: fotoBase64
+    };
+
+    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
+    fetch(`${dbUrl}/attendance/${tglDatabase}/${timeNow.getTime()}.json`, {
+        method: 'PUT',
+        body: JSON.stringify(dataAbsen)
+    }).then(() => {
+        alert(`✅ Absen ${tipe.toUpperCase()} atas nama ${activeStaff.name} pada jam ${jamStr} BERHASIL DISIMPAN!`);
+        
+        document.getElementById('hasil-foto-absensi').classList.add('hidden');
+        document.getElementById('kamera-placeholder').classList.remove('hidden');
+        
+        const btnUlang = document.getElementById('btn-ulang-foto');
+        btnUlang.classList.add('hidden');
+        btnUlang.disabled = false;
+        btnUlang.innerHTML = '<i class="fa-solid fa-rotate-right"></i> ULANGI FOTO';
+        
+        document.getElementById('btn-mulai-kamera').classList.remove('hidden');
+    }).catch(e => {
+        alert("Gagal mengirim absen! Periksa koneksi internet Anda.");
+        const btnUlang = document.getElementById('btn-ulang-foto');
+        btnUlang.disabled = false;
+        btnUlang.innerHTML = '<i class="fa-solid fa-rotate-right"></i> COBA FOTO LAGI';
+    });
 };
 
 // ============================================================================
