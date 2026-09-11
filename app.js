@@ -1420,7 +1420,7 @@ window.renderKasirOrders = () => {
             // Rancang List Item pesanan (minuman apa saja yang dibeli)
             const itemsHtml = order.items.map(item => `
                 <p class="text-[10px] font-bold text-gray-700">
-                    - ${item.qty}x ${item.name} <span class="text-gray-400">(${item.notes})</span>
+                    - ${item.qty}x ${item.name} <span class="text-gray-400">${item.notes ? `(${item.notes})` : ''}</span>
                 </p>
             `).join('');
             
