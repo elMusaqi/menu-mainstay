@@ -2445,69 +2445,212 @@ window.renderPanelInventory = () => {
 // MAINSTAY DRINK POS - TAHAP 7: MODUL 4-8, STAMP, ABSENSI, & INISIALISASI
 // ============================================================================
 
-// ---------------------------------------------------------
-// MODUL 4: LAPORAN KEUANGAN & PENGELUARAN (/expenses)
-// ---------------------------------------------------------
+// ==========================================
+// MODUL FINANCIAL & CASH FLOW ANALYTICS
+// ==========================================
+
 window.renderPanelLaporan = () => {
-    let htmlList = Object.keys(globalExpenses).map(key => `
-        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between mb-3 fade-in group">
-            <div>
-                <h4 class="text-xs font-black text-red-500">${globalExpenses[key].desc}</h4>
-                <p class="text-[9px] text-gray-400 font-bold mt-0.5">
-                    ${new Date(globalExpenses[key].date).toLocaleDateString('id-ID')} - ${new Date(globalExpenses[key].date).toLocaleTimeString('id-ID')}
-                </p>
-            </div>
-            <div class="flex items-center gap-3 shrink-0">
-                <span class="text-xs font-black text-gray-800 tracking-wider">
-                    -${formatRupiah(globalExpenses[key].amount)}
-                </span>
-                <button onclick="hapusNode('expenses', '${key}', 'renderPanelLaporan')" class="text-red-400 bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition border border-red-100">
-                    <i class="fa-solid fa-trash text-[10px]"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
+    const container = document.getElementById('owner-inner-panels-container');
+    if(!container) return;
 
-    if (!htmlList) {
-        htmlList = `<p class="text-[10px] text-center text-gray-400 py-6 bg-slate-50 rounded-xl border-dashed border border-gray-200">Buku pengeluaran masih kosong.</p>`;
-    }
-
-    document.getElementById('owner-inner-panels-container').innerHTML = `
-        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in pb-safe overflow-hidden">
-            <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md relative z-10">
-                <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center">
-                    <i class="fa-solid fa-arrow-left"></i>
-                </button>
-                <div>
-                    <h2 class="font-black text-lg leading-none">Buku Keuangan</h2>
-                    <p class="text-[10px] text-amber-400 font-bold tracking-wider">Tracker Pengeluaran Operasional</p>
+    // Render UI Dasbor Keuangan langsung ke dalam layar
+    container.innerHTML = `
+        <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in pb-safe">
+            <!-- Header -->
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between shadow-md shrink-0 z-10">
+                <div class="flex items-center gap-3">
+                    <button onclick="closePanel()" class="w-10 h-10 bg-slate-800 rounded-xl hover:bg-slate-700 transition flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h2 class="font-black text-lg leading-none tracking-wide">Cash Flow Analytics</h2>
+                        <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-1">Laporan Omzet Mainstay</p>
+                    </div>
                 </div>
+                <i class="fa-solid fa-chart-line text-2xl text-slate-700"></i>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-5 hide-scrollbar">
-                <div class="bg-white p-5 rounded-2xl border border-gray-100 mb-6 shadow-sm">
-                    <h3 class="text-xs font-black mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-50 pb-2">
-                        <i class="fa-solid fa-money-bill-transfer text-red-500"></i> Catat Pengeluaran Baru
-                    </h3>
-                    
-                    <input type="text" id="fe-desc" placeholder="Keterangan (Contoh: Beli Es Batu, Listrik)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-3 text-xs font-bold focus:outline-none focus:border-red-500 transition">
-                    
-                    <input type="number" id="fe-amount" placeholder="Nominal Rp (Contoh: 50000)" class="w-full bg-slate-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-bold focus:outline-none focus:border-red-500 transition">
-                    
-                    <button onclick="simpanNode('expenses', { desc: document.getElementById('fe-desc').value, amount: Number(document.getElementById('fe-amount').value), date: Date.now() })" class="w-full bg-green-500 text-white py-3.5 rounded-xl font-black text-xs shadow-md hover:bg-green-600 transition tracking-widest uppercase">
-                        <i class="fa-solid fa-file-invoice-dollar mr-1"></i> Simpan Pengeluaran
+
+            <!-- Mesin Filter Kalender -->
+            <div class="bg-white p-4 shadow-sm border-b border-slate-200 shrink-0 z-10">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block"><i class="fa-solid fa-calendar-days mr-1"></i> Filter Tanggal Laporan</label>
+                <div class="flex items-center gap-2 mb-3">
+                    <input type="date" id="filter-start" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-700 outline-none focus:border-blue-500">
+                    <span class="text-slate-400 font-black">-</span>
+                    <input type="date" id="filter-end" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-700 outline-none focus:border-blue-500">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.setFilterCepat('hari-ini')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[10px] py-2 rounded-lg border border-slate-200 transition">HARI INI</button>
+                    <button onclick="window.setFilterCepat('bulan-ini')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[10px] py-2 rounded-lg border border-slate-200 transition">BULAN INI</button>
+                    <button onclick="window.tarikLaporanKeuangan()" class="flex-[1.5] bg-blue-600 hover:bg-blue-700 text-white font-black text-xs py-2 rounded-lg shadow-md flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-magnifying-glass"></i> TARIK DATA
                     </button>
                 </div>
-                
-                <h3 class="text-xs font-black mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left text-gray-500"></i> Histori Pengeluaran
-                </h3>
-                <div id="owner-laporan-list">
-                    ${htmlList}
+            </div>
+
+            <!-- Area Hasil Laporan -->
+            <div class="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                <div id="loading-laporan" class="hidden flex-col items-center justify-center py-10">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Mengkalkulasi Omzet...</p>
+                </div>
+
+                <div id="hasil-laporan" class="hidden flex-col gap-4">
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 shadow-lg relative overflow-hidden border border-slate-700">
+                        <i class="fa-solid fa-sack-dollar absolute -right-4 -bottom-4 text-7xl text-white/5"></i>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Omzet (Kotor)</p>
+                        <h3 id="lap-total-omzet" class="text-3xl font-black text-amber-400 tracking-tight">Rp 0</h3>
+                        <p id="lap-teks-tanggal" class="text-[10px] text-slate-500 font-bold mt-2"><i class="fa-regular fa-calendar mr-1"></i>Periode: -</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                            </div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Uang Tunai</p>
+                            <h4 id="lap-total-cash" class="text-lg font-black text-slate-800">Rp 0</h4>
+                            <p id="lap-qty-cash" class="text-[10px] text-slate-400 font-bold mt-1">0 Transaksi</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">QRIS</p>
+                            <h4 id="lap-total-qris" class="text-lg font-black text-slate-800">Rp 0</h4>
+                            <p id="lap-qty-qris" class="text-[10px] text-slate-400 font-bold mt-1">0 Transaksi</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xs font-black text-slate-700 uppercase tracking-widest mt-2 mb-1 border-b border-slate-200 pb-2">Rincian Data</h3>
+                    <div id="lap-list-rincian" class="flex flex-col gap-2"></div>
                 </div>
             </div>
         </div>
     `;
+
+    // Otomatis klik "HARI INI" 0.1 detik setelah panel terbuka
+    setTimeout(() => {
+        if(typeof window.setFilterCepat === 'function') window.setFilterCepat('hari-ini');
+    }, 100);
+};
+
+// ==========================================
+// MESIN PENGHITUNG FIREBASE (LOGIC)
+// ==========================================
+const formatUang = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+window.setFilterCepat = (tipe) => {
+    const today = new Date();
+    const inputStart = document.getElementById('filter-start');
+    const inputEnd = document.getElementById('filter-end');
+    
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const tglHariIni = `${yyyy}-${mm}-${dd}`;
+
+    if (tipe === 'hari-ini') {
+        inputStart.value = tglHariIni;
+        inputEnd.value = tglHariIni;
+    } else if (tipe === 'bulan-ini') {
+        inputStart.value = `${yyyy}-${mm}-01`;
+        inputEnd.value = tglHariIni;
+    }
+    
+    window.tarikLaporanKeuangan();
+};
+
+window.tarikLaporanKeuangan = async () => {
+    const startDate = document.getElementById('filter-start').value;
+    const endDate = document.getElementById('filter-end').value;
+
+    if (!startDate || !endDate) return alert("Pilih tanggal awal dan akhir terlebih dahulu!");
+    if (new Date(startDate) > new Date(endDate)) return alert("Tanggal Awal tidak boleh lebih dari Tanggal Akhir!");
+
+    document.getElementById('hasil-laporan').classList.add('hidden');
+    document.getElementById('loading-laporan').classList.remove('hidden');
+    document.getElementById('loading-laporan').classList.add('flex');
+
+    const dbUrl = "https://mainstay-pos-default-rtdb.asia-southeast1.firebasedatabase.app";
+    
+    let listTanggal = [];
+    let currentDate = new Date(startDate);
+    let lastDate = new Date(endDate);
+    
+    while (currentDate <= lastDate) {
+        const d = String(currentDate.getDate()).padStart(2, '0');
+        const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const y = currentDate.getFullYear();
+        listTanggal.push(`${d}-${m}-${y}`);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    let grandTotalOmzet = 0;
+    let totalCash = 0;
+    let qtyCash = 0;
+    let totalQris = 0;
+    let qtyQris = 0;
+    let htmlRincian = "";
+
+    try {
+        const responses = await Promise.all(
+            listTanggal.map(tgl => fetch(`${dbUrl}/orders/${tgl}.json`).then(res => res.json()))
+        );
+
+        responses.forEach((dataHarian, index) => {
+            const tgl = listTanggal[index];
+            if (dataHarian) {
+                let omzetHariIni = 0;
+                let trxHariIni = 0;
+
+                Object.values(dataHarian).forEach(order => {
+                    if(order.status === 'Selesai') {
+                        const totalBelanja = order.total || 0;
+                        omzetHariIni += totalBelanja;
+                        grandTotalOmzet += totalBelanja;
+                        trxHariIni++;
+
+                        if (order.metode_bayar === 'Cash') {
+                            totalCash += totalBelanja;
+                            qtyCash++;
+                        } else if (order.metode_bayar === 'QRIS') {
+                            totalQris += totalBelanja;
+                            qtyQris++;
+                        }
+                    }
+                });
+
+                if(trxHariIni > 0) {
+                    htmlRincian += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm">
+                        <div>
+                            <p class="text-xs font-black text-slate-800">${tgl}</p>
+                            <p class="text-[9px] font-bold text-slate-400 mt-0.5">${trxHariIni} Transaksi Selesai</p>
+                        </div>
+                        <h5 class="text-sm font-black text-green-600">${formatUang(omzetHariIni)}</h5>
+                    </div>`;
+                }
+            }
+        });
+
+        document.getElementById('lap-total-omzet').innerText = formatUang(grandTotalOmzet);
+        document.getElementById('lap-total-cash').innerText = formatUang(totalCash);
+        document.getElementById('lap-total-qris').innerText = formatUang(totalQris);
+        document.getElementById('lap-qty-cash').innerText = `${qtyCash} Transaksi`;
+        document.getElementById('lap-qty-qris').innerText = `${qtyQris} Transaksi`;
+        document.getElementById('lap-teks-tanggal').innerHTML = `<i class="fa-regular fa-calendar mr-1"></i>Periode: ${startDate} s/d ${endDate}`;
+        document.getElementById('lap-list-rincian').innerHTML = htmlRincian || `<p class="text-xs text-center text-slate-400 font-bold italic py-4">Tidak ada data transaksi selesai.</p>`;
+
+        document.getElementById('loading-laporan').classList.add('hidden');
+        document.getElementById('loading-laporan').classList.remove('flex');
+        document.getElementById('hasil-laporan').classList.remove('hidden');
+        document.getElementById('hasil-laporan').classList.add('flex');
+
+    } catch (error) {
+        alert("Gagal menarik data keuangan! Periksa koneksi internet.");
+        document.getElementById('loading-laporan').classList.add('hidden');
+        document.getElementById('loading-laporan').classList.remove('flex');
+    }
 };
 
 // ---------------------------------------------------------
