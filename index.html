@@ -984,13 +984,16 @@
             <!-- 1. Tipe Pelanggan / Platform Ojol -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <h3 class="text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-motorcycle mr-2 text-indigo-500"></i>Sumber Pesanan</h3>
-                <select id="pos-tipe-pesanan" onchange="hitungUlangTotalKasir()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none font-medium">
-                    <option value="biasa">Pelanggan Biasa (Offline / Harga Normal)</option>
-                    <option value="gofood">GoFood (+ Markup Harga)</option>
-                    <option value="grabfood">GrabFood (+ Markup Harga)</option>
-                    <option value="shopeefood">ShopeeFood (+ Markup Harga)</option>
+                <select id="pos-tipe-pesanan" onchange="renderKeranjangPOS()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none font-medium">
+                    <option value="biasa">Pelanggan Biasa (Harga Normal)</option>
+                    <option value="gofood">GoFood (Markup +20%)</option>
+                    <option value="grabfood">GrabFood (Markup +20%)</option>
+                    <option value="shopeefood">ShopeeFood (Markup +20%)</option>
                 </select>
-                <p class="text-[10px] text-slate-400 mt-1">*Kategori ini nanti bisa ditambah/diedit melalui panel Owner.</p>
+                <div class="flex justify-between items-center mt-1.5">
+                    <p id="pos-info-markup" class="text-[10px] text-slate-400">*Harga normal tanpa penyesuaian.</p>
+                    <span id="pos-badge-markup" class="hidden text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">Markup Aktif (+20%)</span>
+                </div>
             </div>
 
             <!-- 2. KATALOG MENU (KLIK UNTUK ORDER) -->
@@ -1058,6 +1061,6 @@
     </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=325"></script>
+    <script type="module" src="app.js?v=326"></script>
 </body>
 </html>
