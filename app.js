@@ -3980,10 +3980,10 @@ window.siapkanEditMenu = (key) => {
 
     // -- PEMBERSIH FORMULIR MASTER AGAR TIDAK NYASAR --
     if (document.getElementById('input-kategori-baru')) document.getElementById('input-kategori-baru').value = '';
-    if (document.getElementById('input-topping-baru')) document.getElementById('input-topping-baru').value = '';
-    if (document.getElementById('input-topping-harga-baru')) document.getElementById('input-topping-harga-baru').value = '';
-    if (document.getElementById('input-varian-bebas-id')) document.getElementById('input-varian-bebas-id').value = '';
-    if (document.getElementById('input-varian-bebas-opsi')) document.getElementById('input-varian-bebas-opsi').value = '';
+    if (document.getElementById('input-topping-nama')) document.getElementById('input-topping-nama').value = '';
+    if (document.getElementById('input-topping-harga')) document.getElementById('input-topping-harga').value = '';
+    if (document.getElementById('input-varian-nama')) document.getElementById('input-varian-nama').value = '';
+    if (document.getElementById('input-varian-opsi')) document.getElementById('input-varian-opsi').value = '';
     
 
     // 3. PENGAMANAN MUTLAK BEST SELLER (Lacak semua kemungkinan nama di database)
