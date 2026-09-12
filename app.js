@@ -1093,6 +1093,8 @@ window.switchRoleView = (role) => {
     // --- SISTEM ANTI REFRESH (SESSION MEMORY) ---
     if (role === 'customer') {
         localStorage.removeItem('mainstay_session_role');
+        const fab = document.getElementById('fab-kasir-container');
+            if(fab) fab.classList.add('hidden');
     } else {
         localStorage.setItem('mainstay_session_role', role);
     }
@@ -1101,6 +1103,8 @@ window.switchRoleView = (role) => {
     if (role === 'kasir') {
         window.matikanBGM();
         window.requestWakeLock(); // Layar nyala terus saat jaga kasir!
+        const fab = document.getElementById('fab-kasir-container');
+            if(fab) fab.classList.remove('hidden');
     } else if (role === 'owner') {
         window.matikanBGM();
         window.releaseWakeLock(); // Lepas kunci layar agar HP bisa istirahat
