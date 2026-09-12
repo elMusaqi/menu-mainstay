@@ -993,11 +993,22 @@
                 <p class="text-[10px] text-slate-400 mt-1">*Kategori ini nanti bisa ditambah/diedit melalui panel Owner.</p>
             </div>
 
-            <!-- 2. Area Keranjang (Sementara Placeholder untuk Tahap Selanjutnya) -->
+            <!-- 2. KATALOG MENU (KLIK UNTUK ORDER) -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-mug-hot mr-2 text-indigo-500"></i>Pilih Menu</h3>
+                <div id="pos-katalog-menu" class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-1">
+                    <!-- Tombol Menu otomatis digenerate JS di sini -->
+                </div>
+            </div>
+
+            <!-- 3. KERANJANG PESANAN KASIR -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <h3 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-basket-shopping mr-2 text-indigo-500"></i>Keranjang Pesanan</h3>
-                <div class="p-8 border-2 border-dashed border-slate-200 rounded-lg text-center bg-slate-50">
-                    <p class="text-xs text-slate-500 font-medium">Menu katalog akan muncul di sini (Tahap 2)</p>
+                <div id="pos-keranjang-list" class="flex flex-col gap-2 mb-3 max-h-40 overflow-y-auto">
+                    <!-- List orderan masuk sini -->
+                    <div class="p-4 border-2 border-dashed border-slate-200 rounded-lg text-center bg-slate-50">
+                        <p class="text-xs text-slate-500 font-medium">Keranjang masih kosong</p>
+                    </div>
                 </div>
                 
                 <!-- Total Tagihan -->
@@ -1006,7 +1017,7 @@
                     <span id="pos-total-tagihan" class="text-xl font-black text-indigo-700">Rp 0</span>
                 </div>
             </div>
-
+            
             <!-- 3. Kalkulator & Hitung Cepat -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-20">
                 <h3 class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-wallet mr-2 text-indigo-500"></i>Pembayaran (Hitung Cepat)</h3>
