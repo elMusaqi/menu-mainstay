@@ -1840,7 +1840,7 @@ window.renderPanelMenu = () => {
             let masterTop = window.masterTopping || JSON.parse(localStorage.getItem('master_topping')) || [];
             let topNames = m.toppingIds.map(tid => {
                 let match = masterTop.find(mt => mt.id === tid || mt.nama === tid);
-                return match ? match.nama : tid.replace('top_', 'Topping ').replace(/_/g, ' '); // Jika nama dihapus, tampilkan teks rapi
+                return match ? match.nama : '(Data Lokal Kosong)'; // Jika nama dihapus, tampilkan teks rapi
             }).join(', ');
             badges += `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-cheese mr-0.5"></i>${topNames}</span>`;
         }
@@ -1850,7 +1850,7 @@ window.renderPanelMenu = () => {
             let masterVar = window.masterVarian || JSON.parse(localStorage.getItem('master_varian')) || [];
             let varNames = m.varianIds.map(vid => {
                 let match = masterVar.find(mv => mv.id === vid);
-                return match ? match.nama : vid.replace('var_', '').replace(/_/g, ' ').toUpperCase();
+                return match ? match.nama : '(Data Lokal Kosong)';
             }).join(', ');
             badges += `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold mr-1 mt-1 shadow-sm flex-shrink-0"><i class="fa-solid fa-layer-group mr-0.5"></i>${varNames}</span>`;
         }
@@ -3951,7 +3951,14 @@ window.siapkanEditMenu = (key) => {
     const menu = globalMenus[key];
     if(!menu) return;
 
-    window.editMenuKeyTarget = key; 
+    window.editMenuKeyTarget = key;
+
+    // -- PEMBERSIH FORMULIR MASTER AGAR TIDAK NYASAR --
+    if (document.getElementById('input-kategori-baru')) document.getElementById('input-kategori-baru').value = '';
+    if (document.getElementById('input-topping-baru')) document.getElementById('input-topping-baru').value = '';
+    if (document.getElementById('input-topping-harga-baru')) document.getElementById('input-topping-harga-baru').value = '';
+    if (document.getElementById('input-varian-bebas-id')) document.getElementById('input-varian-bebas-id').value = '';
+    if (document.getElementById('input-varian-bebas-opsi')) document.getElementById('input-varian-bebas-opsi').value = '';
 
     // 1. EFEK SOROTAN VISUAL
     document.querySelectorAll('.row-katalog-menu').forEach(el => {
