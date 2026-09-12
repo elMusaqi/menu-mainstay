@@ -4252,3 +4252,78 @@ window.lihatLogAbsensi = () => {
             `;
         }).catch(e => alert("Gagal memuat log absensi!"));
 };
+
+// ==========================================
+// LOGIKA FITUR POS KASIR MANUAL & WA OWNER
+// ==========================================
+
+// Variabel Sementara (Nanti akan dihubungkan dengan Keranjang di Tahap 2)
+let simulasiTotalTagihan = 28000; // Contoh tagihan sementara
+
+window.hubungiOwner = () => {
+    // GANTI NOMOR INI DENGAN NOMOR WA MAS IHSAN (Gunakan 62, tanpa spasi)
+    const noWAOwner = "628977099557"; 
+    const pesan = encodeURIComponent("Halo Bos, saya kasir Mainstay mau laporan/tanya sesuatu...");
+    window.open(`https://wa.me/${noWAOwner}?text=${pesan}`, '_blank');
+};
+
+window.bukaPanelKasirManual = () => {
+    const panel = document.getElementById('panel-kasir-manual');
+    if(panel) {
+        panel.classList.remove('hidden');
+        panel.classList.add('flex');
+        
+        // Simulasi cetak total tagihan awal saat panel dibuka
+        document.getElementById('pos-total-tagihan').innerText = `Rp ${simulasiTotalTagihan.toLocaleString('id-ID')}`;
+        hitungKembalian(); // Reset kembalian
+    }
+};
+
+window.tutupPanelKasirManual = () => {
+    const panel = document.getElementById('panel-kasir-manual');
+    if(panel) {
+        panel.classList.add('hidden');
+        panel.classList.remove('flex');
+    }
+};
+
+// Logika Hitung Uang Instan (Uang Pas, 50rb, 100rb, dll)
+window.setUangCepat = (nominal) => {
+    const inputUang = document.getElementById('pos-uang-diterima');
+    
+    if (nominal === 'pas') {
+        inputUang.value = simulasiTotalTagihan;
+    } else if (nominal === 'clear') {
+        inputUang.value = '';
+    } else {
+        inputUang.value = nominal; // Langsung set nilai (seperti mesin kasir asli)
+    }
+    
+    hitungKembalian(); // Panggil fungsi hitung kembalian
+};
+
+// Mesin Kalkulasi Kembalian Real-time
+window.hitungKembalian = () => {
+    const inputUang = document.getElementById('pos-uang-diterima').value;
+    const nominalUang = parseInt(inputUang) || 0;
+    const kembalian = nominalUang - simulasiTotalTagihan;
+    const teksKembalian = document.getElementById('pos-teks-kembalian');
+
+    if (nominalUang === 0) {
+        teksKembalian.innerText = "Rp 0";
+        teksKembalian.className = "text-3xl font-black text-indigo-200";
+    } else if (kembalian < 0) {
+        teksKembalian.innerText = "Uang Kurang!";
+        teksKembalian.className = "text-3xl font-black text-red-400";
+    } else {
+        teksKembalian.innerText = `Rp ${kembalian.toLocaleString('id-ID')}`;
+        teksKembalian.className = "text-3xl font-black text-emerald-400";
+    }
+};
+
+// Fungsi ini nanti akan mengupdate harga sesuai S&K Pajak Ojol
+window.hitungUlangTotalKasir = () => {
+    const tipe = document.getElementById('pos-tipe-pesanan').value;
+    // Nanti di Tahap 2, fungsi ini akan mengalikan harga keranjang dengan 20% jika tipe = gofood/grabfood
+    console.log("Tipe pesanan diubah ke:", tipe);
+};
