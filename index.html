@@ -953,14 +953,20 @@
     <!-- FITUR KASIR MANUAL & BANTUAN WA OWNER      -->
     <!-- ========================================== -->
 
-    <!-- Container Floating Button Kasir -->
-    <div id="fab-kasir-container" class="fixed bottom-6 right-6 flex flex-col gap-4 z-40 hidden">
-        <button onclick="hubungiOwner()" class="w-12 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110">
-            <i class="fa-brands fa-whatsapp text-2xl"></i>
-        </button>
+    <!-- Container Floating Dock Modern -->
+    <div id="fab-kasir-container" class="fixed bottom-6 right-6 flex flex-col items-center gap-3 z-40 hidden bg-slate-900/80 backdrop-blur-md p-2 rounded-full shadow-2xl border border-white/10">
         
-        <button onclick="bukaPanelKasirManual()" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-xl flex items-center justify-center transition-transform transform hover:scale-110 border-2 border-white">
-            <i class="fa-solid fa-plus text-2xl"></i>
+        <!-- Tombol 1: Bantuan WA Owner -->
+        <button onclick="hubungiOwner()" title="Chat Owner" class="w-11 h-11 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-md flex items-center justify-center transition-all transform hover:scale-110 active:scale-95">
+            <i class="fa-brands fa-whatsapp text-xl"></i>
+        </button>
+
+        <!-- Garis Pemisah Tipis -->
+        <div class="w-6 h-[1px] bg-white/20"></div>
+        
+        <!-- Tombol 2: Input Orderan Manual (Plus) -->
+        <button onclick="bukaPanelKasirManual()" title="POS Kasir Manual" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all transform hover:scale-110 active:scale-95">
+            <i class="fa-solid fa-plus text-xl"></i>
         </button>
     </div>
 
@@ -1061,6 +1067,6 @@
     </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=326"></script>
+    <script type="module" src="app.js?v=327"></script>
 </body>
 </html>
