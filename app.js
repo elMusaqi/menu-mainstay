@@ -3904,11 +3904,9 @@ window.renderClientKategoriButtons = () => {
         </button>
     `;
 
-    let listKat = window.masterKategori || [];
-    if (listKat.length === 0) {
-        const saved = localStorage.getItem('master_kategori');
-        if (saved) listKat = JSON.parse(saved);
-    }
+    // AMBIL KATEGORI LANGSUNG DARI DATABASE FIREBASE
+const semuaMenu = Object.values(globalMenus);
+let listKat = [...new Set(semuaMenu.map(menu => menu.category).filter(Boolean))];
 
     listKat.forEach(kat => {
         const katName = typeof kat === 'object' ? (kat.nama || kat.name || kat.id) : kat;
