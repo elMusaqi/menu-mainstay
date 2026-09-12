@@ -3953,13 +3953,6 @@ window.siapkanEditMenu = (key) => {
 
     window.editMenuKeyTarget = key;
 
-    // -- PEMBERSIH FORMULIR MASTER AGAR TIDAK NYASAR --
-    if (document.getElementById('input-kategori-baru')) document.getElementById('input-kategori-baru').value = '';
-    if (document.getElementById('input-topping-baru')) document.getElementById('input-topping-baru').value = '';
-    if (document.getElementById('input-topping-harga-baru')) document.getElementById('input-topping-harga-baru').value = '';
-    if (document.getElementById('input-varian-bebas-id')) document.getElementById('input-varian-bebas-id').value = '';
-    if (document.getElementById('input-varian-bebas-opsi')) document.getElementById('input-varian-bebas-opsi').value = '';
-
     // 1. EFEK SOROTAN VISUAL
     document.querySelectorAll('.row-katalog-menu').forEach(el => {
         el.classList.remove('border-blue-500', 'ring-2', 'ring-blue-200', 'bg-blue-50');
@@ -3984,6 +3977,14 @@ window.siapkanEditMenu = (key) => {
         else if (hint.includes('gambar') || hint.includes('url')) el.value = menu.imageUrl || '';
         else if (hint.includes('deskripsi') || hint.includes('desc')) el.value = menu.description || '';
     });
+
+    // -- PEMBERSIH FORMULIR MASTER AGAR TIDAK NYASAR --
+    if (document.getElementById('input-kategori-baru')) document.getElementById('input-kategori-baru').value = '';
+    if (document.getElementById('input-topping-baru')) document.getElementById('input-topping-baru').value = '';
+    if (document.getElementById('input-topping-harga-baru')) document.getElementById('input-topping-harga-baru').value = '';
+    if (document.getElementById('input-varian-bebas-id')) document.getElementById('input-varian-bebas-id').value = '';
+    if (document.getElementById('input-varian-bebas-opsi')) document.getElementById('input-varian-bebas-opsi').value = '';
+    
 
     // 3. PENGAMANAN MUTLAK BEST SELLER (Lacak semua kemungkinan nama di database)
     let isBS = false;
