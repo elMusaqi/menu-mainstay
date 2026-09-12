@@ -4302,13 +4302,29 @@ window.tambahKeKeranjangPOS = (key) => {
     renderKeranjangPOS();
 };
 
-// 4. Render List Keranjang
+// 4. Render List Keranjang (Dilengkapi Mesin Markup Ojol Otomatis)
 window.renderKeranjangPOS = () => {
     const wadah = document.getElementById('pos-keranjang-list');
-    posTotalTagihan = 0;
+    const tipePesanan = document.getElementById('pos-tipe-pesanan').value;
+    const infoMarkup = document.getElementById('pos-info-markup');
+    const badgeMarkup = document.getElementById('pos-badge-markup');
+    
+    let subtotalMurni = 0;
+    
+    // Cek apakah ini pesanan Ojol (GoFood/GrabFood/ShopeeFood)
+    let pengaliHarga = 1;
+    if (tipePesanan !== 'biasa') {
+        pengaliHarga = 1.20; // Markup kenaikan 20% untuk menutupi potongan komisi ojol
+        infoMarkup.innerText = "Harga otomatis dinaikkan 20% untuk menyesuaikan potongan S&K Ojol.";
+        badgeMarkup.classList.remove('hidden');
+    } else {
+        infoMarkup.innerText = "*Harga normal tanpa penyesuaian.";
+        badgeMarkup.classList.add('hidden');
+    }
     
     if (posKeranjang.length === 0) {
         wadah.innerHTML = `<div class="p-4 border-2 border-dashed border-slate-200 rounded-lg text-center bg-slate-50"><p class="text-xs text-slate-500 font-medium">Keranjang masih kosong</p></div>`;
+        posTotalTagihan = 0;
         document.getElementById('pos-total-tagihan').innerText = "Rp 0";
         hitungKembalian(); 
         return;
@@ -4316,24 +4332,32 @@ window.renderKeranjangPOS = () => {
     
     wadah.innerHTML = '';
     posKeranjang.forEach((item, i) => {
-        const subtotal = item.harga * item.qty;
-        posTotalTagihan += subtotal;
+        // Harga satuan dikali pengali ojol (dibulatkan ke ratusan terdekat agar rapi)
+        let hargaFinalItem = Math.round((item.harga * pengaliHarga) / 100) * 100;
+        const subtotalItem = hargaFinalItem * item.qty;
+        subtotalMurni += subtotalItem;
         
         wadah.innerHTML += `
             <div class="flex justify-between items-center bg-white border border-slate-100 p-2 rounded shadow-sm mb-1">
                 <div class="flex-1">
-                    <h4 class="text-xs font-bold text-slate-800">${item.nama}</h4>
-                    <p class="text-[10px] text-slate-500">${item.qty} x Rp ${item.harga.toLocaleString('id-ID')}</p>
+                    <h4 class="text-xs font-bold text-slate-800">${item.nama} ${tipePesanan !== 'biasa' ? '<span class="text-[9px] text-indigo-500 font-normal">(Ojol)</span>' : ''}</h4>
+                    <p class="text-[10px] text-slate-500">${item.qty} x Rp ${hargaFinalItem.toLocaleString('id-ID')}</p>
                 </div>
-                <div class="font-black text-sm text-indigo-600 mr-3">Rp ${subtotal.toLocaleString('id-ID')}</div>
+                <div class="font-black text-sm text-indigo-600 mr-3">Rp ${subtotalItem.toLocaleString('id-ID')}</div>
                 <button onclick="hapusDariKeranjangPOS(${i})" class="w-7 h-7 bg-red-50 text-red-500 rounded flex items-center justify-center hover:bg-red-100"><i class="fa-solid fa-xmark"></i></button>
             </div>
         `;
     });
     
+    posTotalTagihan = subtotalMurni;
     document.getElementById('pos-total-tagihan').innerText = `Rp ${posTotalTagihan.toLocaleString('id-ID')}`;
     hitungKembalian(); 
-    document.getElementById('pos-uang-diterima').value = ''; // Auto reset input uang tiap kali menu ditambah
+    document.getElementById('pos-uang-diterima').value = ''; 
+};
+
+// Hapus fungsi lama hitungUlangTotalKasir dan ganti dengan pemicu ini
+window.hitungUlangTotalKasir = () => {
+    renderKeranjangPOS();
 };
 
 // 5. Hapus Item Keranjang
