@@ -4640,7 +4640,7 @@ window.prosesOrderanPOS = () => {
         total: posTotalTagihan,
         bayar: nominalUang,
         kembalian: kembalian,
-        metode: metodeBayarTerpilih, // <-- Otomatis menyesuaikan Tunai/QRIS
+        metode: metodeBayarTerpilih,
         status: "selesai"
     };
 
@@ -4663,3 +4663,4 @@ window.prosesOrderanPOS = () => {
     // Tutup panel kasir manual
     window.tutupPanelKasirManual();
 };
+    
