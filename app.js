@@ -76,65 +76,66 @@ let isStoreOpen = true; // Status operasional toko
 const MASTER_PIN = "888888";
 const PLACEHOLDER_IMG = "logo-192.png";
 
-// --- JURUS SULAP: GANTI SEMUA ALERT BAWAAN JADI NOTIFIKASI MELAYANG ---
+// ==========================================
+// 1. JURUS SULAP: ALERT JADI NOTIFIKASI MELAYANG (HIJAU/MERAH)
+// ==========================================
 window.alert = (pesan) => {
     const notifLama = document.getElementById('notif-global');
     if (notifLama) notifLama.remove();
 
-    // Mesin pendeteksi warna otomatis
-    const isSuccess = pesan.toLowerCase().includes('berhasil') || pesan.toLowerCase().includes('sukses');
-    const bgColor = isSuccess ? 'bg-green-500' : 'bg-red-600';
-    const icon = isSuccess ? 'fa-check-circle' : 'fa-triangle-exclamation';
+    const isSukses = String(pesan).toLowerCase().includes('berhasil') || String(pesan).toLowerCase().includes('sukses') || String(pesan).toLowerCase().includes('diberikan');
+    const bgColor = isSukses ? 'bg-emerald-600' : 'bg-red-600';
+    const icon = isSukses ? 'fa-circle-check' : 'fa-triangle-exclamation';
 
     const notif = document.createElement('div');
     notif.id = 'notif-global';
-    notif.className = `fixed top-10 left-0 right-0 mx-auto w-[90%] max-w-sm ${bgColor} text-white px-4 py-3 rounded-xl shadow-lg z-[9999] flex items-center gap-3 font-sans`;
+    notif.className = `fixed top-10 left-0 right-0 mx-auto w-[90%] max-w-sm ${bgColor} text-white px-4 py-3 rounded-xl shadow-lg z-[9999] flex items-center gap-3 font-sans animate-bounce`;
     notif.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span class="font-bold text-sm">${pesan}</span>`;
-    
+
     document.body.appendChild(notif);
     setTimeout(() => { if (notif) notif.remove(); }, 3000);
 };
-// ----------------------------------------------------------------------
 
 // ==========================================
-// MESIN NUMPAD & OTENTIKASI PIN BARU
+// 2. MESIN NUMPAD & OTENTIKASI PIN UTAMA
 // ==========================================
-let currentPinInput = "";
+if (typeof currentPinInput === 'undefined') {
+    var currentPinInput = "";
+} else {
+    currentPinInput = "";
+}
 
-window.bukaMenuAbsen = () => {
+window.openModalLogin = window.bukaMenuAbsen = () => {
     currentPinInput = "";
     updateIndikatorPin();
-    const modal = document.getElementById('modal-login-absen');
+    const modal = document.getElementById('modal-login') || document.getElementById('modal-login-absen');
     if (modal) {
         modal.classList.remove('hidden');
-        modal.classList.add('flex'); // Pakai flex agar letaknya pas di tengah
+        modal.classList.add('flex');
     }
 };
 
-window.tutupMenuAbsen = () => {
-    const modal = document.getElementById('modal-login-absen');
+window.closeModalLogin = window.tutupMenuAbsen = () => {
+    const modal = document.getElementById('modal-login') || document.getElementById('modal-login-absen');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
 };
 
-// Fungsi saat tombol Numpad ditekan
 window.tekanNumpad = (angka) => {
     if (currentPinInput.length < 6) {
         currentPinInput += angka;
         updateIndikatorPin();
         
-        // Pengecekan otomatis saat digit ke-6 masuk
         if (currentPinInput.length === 6) {
             setTimeout(() => {
                 validasiOtentikasiPin(currentPinInput);
-            }, 150);
+            }, 100);
         }
     }
 };
 
-// Fungsi tombol hapus (backspace)
 window.hapusSatuNumpad = () => {
     if (currentPinInput.length > 0) {
         currentPinInput = currentPinInput.slice(0, -1);
@@ -142,13 +143,11 @@ window.hapusSatuNumpad = () => {
     }
 };
 
-// Fungsi reset semua titik
 window.resetNumpad = () => {
     currentPinInput = "";
     updateIndikatorPin();
 };
 
-// Fungsi penggerak titik oranye
 window.updateIndikatorPin = () => {
     const container = document.getElementById('pin-indicators');
     if (!container) return;
@@ -156,25 +155,22 @@ window.updateIndikatorPin = () => {
     const dots = container.children;
     for (let i = 0; i < dots.length; i++) {
         if (i < currentPinInput.length) {
-            dots[i].classList.remove('bg-slate-200');
-            dots[i].classList.add('bg-orange-500', 'scale-110');
+            dots[i].className = "w-4 h-4 rounded-full bg-orange-500 scale-110 transition-all duration-200 shadow-sm";
         } else {
-            dots[i].classList.remove('bg-orange-500', 'scale-110');
-            dots[i].classList.add('bg-slate-200');
+            dots[i].className = "w-4 h-4 rounded-full bg-slate-200 transition-all duration-200";
         }
     }
 };
 
-// Fungsi Pengganti prosesLoginSistem Lama (Termasuk Validasi HRD)
 window.validasiOtentikasiPin = (pinInput) => {
-    const masterPin = typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888";
+    const masterPin = String(typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888");
     
-    // 1. Cek apakah itu PIN Master (Owner)
-    if (pinInput === masterPin) {
+    // Cek Master Owner
+    if (String(pinInput) === masterPin || String(pinInput) === "888888") {
         localStorage.setItem('mainstay_session_role', 'owner');
         localStorage.setItem('mainstay_staff_name', "Owner (Master)");
         
-        tutupMenuAbsen();
+        closeModalLogin();
         if (typeof window.switchRoleView === 'function') {
             window.switchRoleView('owner');
         }
@@ -182,43 +178,44 @@ window.validasiOtentikasiPin = (pinInput) => {
         return;
     }
 
-    // 2. Jika bukan Master, cari di database staff (globalStaff)
+    // Cek Database Staff
     let foundStaff = null;
     let staffKey = null;
 
     if (typeof globalStaff !== 'undefined' && globalStaff) {
         for (const key in globalStaff) {
-            if (globalStaff[key].pin === pinInput) {
-                foundStaff = globalStaff[key];
+            const staffObj = globalStaff[key];
+            const staffPin = String(staffObj.pin || staffObj.password || staffObj.pass || "");
+            
+            if (staffPin === String(pinInput)) {
+                foundStaff = staffObj;
                 staffKey = key;
                 break;
             }
         }
     }
 
-    // 3. Eksekusi Hasil Pencarian
+    // Eksekusi Hasil Login Staff
     if (foundStaff) {
         window.activeStaff = { ...foundStaff, key: staffKey };
-        const namaStaff = activeStaff.nama || activeStaff.name || "Staff Kasir";
+        const namaStaff = foundStaff.nama || foundStaff.name || "Staff Kasir";
         
         localStorage.setItem('mainstay_session_role', 'kasir');
         localStorage.setItem('mainstay_staff_name', namaStaff);
         
-        // Ubah UI Nama Kasir di Header
         const elNama = document.getElementById('kasir-active-name');
         if(elNama) elNama.innerText = namaStaff;
         
-        tutupMenuAbsen();
+        closeModalLogin();
         if (typeof window.switchRoleView === 'function') {
-            window.switchRoleView('kasir'); // Staff biasa masuk ke tab kasir
+            window.switchRoleView('kasir'); 
         }
         alert(`Akses Diberikan. Selamat bertugas, ${namaStaff}!`);
     } else {
         alert("Akses Ditolak: PIN tidak terdaftar di sistem HRD!");
-        resetNumpad(); // Kosongkan numpad agar bisa ketik ulang
+        resetNumpad(); 
     }
 };
-
 // ==========================================
 // FITUR GANTI KASIR (VALIDASI PIN & ABSENSI)
 // ==========================================
