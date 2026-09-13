@@ -4338,11 +4338,18 @@ window.renderKatalogPOS = () => {
         const keyUnik = menu.key !== undefined ? menu.key : index;
         const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
         const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
-        const gambarMenu = menu.gambar || menu.image || menu.img || 'https://via.placeholder.com/150?text=Menu'; 
+        
+        // Ambil link gambar dari database
+        const gambarMenu = menu.gambar || menu.image || menu.img; 
+
+        // LOGIKA CERDAS: Jika ada gambar pakai IMG, jika tidak ada pakai kotak ikon
+        const elemenVisual = gambarMenu 
+            ? `<img src="${gambarMenu}" onerror="this.style.display='none'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-100 shrink-0 border border-slate-200">`
+            : `<div class="w-12 h-12 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0 border border-indigo-100"><i class="fa-solid fa-utensils text-sm"></i></div>`;
 
         wadah.innerHTML += `
             <div onclick="klikMenuPOS('${keyUnik}')" class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center gap-2.5 shadow-sm active:scale-95">
-                <img src="${gambarMenu}" onerror="this.src='https://via.placeholder.com/150?text=No+Img'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-200 shrink-0 border border-slate-200">
+                ${elemenVisual}
                 <div class="flex flex-col justify-center w-full overflow-hidden">
                     <h4 class="text-[11px] font-bold text-slate-700 leading-tight truncate">${namaMenu}</h4>
                     <p class="text-[10px] text-indigo-600 font-black mt-1">Rp ${hargaMenu.toLocaleString('id-ID')}</p>
