@@ -3932,18 +3932,16 @@ let listKat = [...new Set(semuaMenu.map(menu => menu.category).filter(Boolean))]
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        // 1. Cek Pintu Utama (Owner / Kasir) berdasarkan key asli aplikasi
         const sesiAktif = localStorage.getItem('mainstay_session_role');
         if (sesiAktif === 'owner' || sesiAktif === 'kasir') {
             if (typeof window.switchRoleView === 'function') {
                 window.switchRoleView(sesiAktif);
             }
-        }
-
-        // 2. Cek panel aktif terakhir yang sedang dibuka
-        const panelAktif = localStorage.getItem('mainstay_active_panel');
-        if (panelAktif && typeof window.openPanel === 'function') {
-            window.openPanel(panelAktif);
+            const namaSimpanan = localStorage.getItem('mainstay_staff_name') || "Owner (Master)";
+            const elemenNamaKasir = document.getElementById('kasir-nama-petugas');
+            if (elemenNamaKasir) {
+                elemenNamaKasir.innerText = namaSimpanan;
+            }
         }
     }, 500);
 });
@@ -4341,11 +4339,21 @@ window.renderKatalogPOS = () => {
         const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
         const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
         
-        // Deteksi berbagai variasi nama properti gambar
-        const gambarMenu = menu.gambar || menu.image || menu.img || menu.foto || menu.imgUrl || menu.url; 
+        // Pindai SEMUA kemungkinan nama field gambar dari database Firebase
+        let gambarMenu = menu.gambar || menu.image || menu.img || menu.foto || menu.imgUrl || menu.url || menu.photo || menu.pic;
+        
+        // Jika masih belum ketemu, cari properti apa saja yang isinya mengandung link gambar
+        if (!gambarMenu) {
+            for (let k in menu) {
+                if (typeof menu[k] === 'string' && (menu[k].startsWith('http') || menu[k].startsWith('data:image') || menu[k].includes('.png') || menu[k].includes('.jpg') || menu[k].includes('.jpeg'))) {
+                    gambarMenu = menu[k];
+                    break;
+                }
+            }
+        }
 
         const elemenVisual = gambarMenu 
-            ? `<img src="${gambarMenu}" onerror="this.style.display='none'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-100 shrink-0 border border-slate-200">`
+            ? `<img src="${gambarMenu}" onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=No+Img';" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-100 shrink-0 border border-slate-200">`
             : `<div class="w-12 h-12 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0 border border-indigo-100"><i class="fa-solid fa-utensils text-sm"></i></div>`;
 
         wadah.innerHTML += `
@@ -4403,11 +4411,22 @@ window.bukaModalVarian = (data) => {
     titleEl.innerText = data.nama;
     optionsEl.innerHTML = '';
 
-    const list = Array.isArray(data.varianList) ? data.varianList : Object.values(data.varianList);
+    // Ubah data varian/topping menjadi array yang bersih
+    const rawList = data.varianList;
+    const list = Array.isArray(rawList) ? rawList : Object.values(rawList);
 
     list.forEach((v, idx) => {
-        const namaVarian = typeof v === 'string' ? v : (v.nama || v.name || `Pilihan ${idx+1}`);
-        const extraHarga = Number(v.harga || v.price || 0);
+        // Ambil nama dan harga secara aman dari berbagai bentuk objek database
+        let namaVarian = "Pilihan " + (idx + 1);
+        let extraHarga = 0;
+
+        if (typeof v === 'string') {
+            namaVarian = v;
+        } else if (typeof v === 'object' && v !== null) {
+            namaVarian = v.nama || v.name || v.title || v.text || v.label || JSON.stringify(v);
+            extraHarga = Number(v.harga || v.price || v.cost || v.nominal || 0);
+        }
+
         const formatExtra = extraHarga > 0 ? ` (+Rp ${extraHarga.toLocaleString('id-ID')})` : '';
 
         optionsEl.innerHTML += `
@@ -4422,6 +4441,7 @@ window.bukaModalVarian = (data) => {
     });
 
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
 };
 
 window.tutupModalVarian = () => {
@@ -4647,21 +4667,19 @@ window.prosesOrderanPOS = () => {
 // FUNGSI OWNER MASUK KASIR TANPA ABSEN
 // ==========================================
 window.ownerMasukKasirTanpaAbsen = () => {
-    // 1. Definisikan status aktif langsung sebagai Owner
     window.activeStaff = {
         name: "Owner (Master)",
         role: "owner"
     };
     
-    // Simpan ke memori sesi kasir
-    localStorage.setItem('mainstay_active_staff', JSON.stringify(window.activeStaff));
+    // Simpan role DAN status aktif ke localStorage
+    localStorage.setItem('mainstay_session_role', 'kasir');
+    localStorage.setItem('mainstay_staff_name', "Owner (Master)");
     
-    // 2. Pindahkan tampilan utama ke mode kasir
     if (typeof window.switchRoleView === 'function') {
         window.switchRoleView('kasir');
     }
     
-    // 3. Update nama kasir bertugas di layar agar menampilkan "Owner"
     const elemenNamaKasir = document.getElementById('kasir-nama-petugas');
     if (elemenNamaKasir) {
         elemenNamaKasir.innerText = "Owner (Master)";
