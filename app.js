@@ -4618,3 +4618,28 @@ window.prosesOrderanPOS = () => {
     alert("Transaksi Berhasil!\nID: " + idTransaksi + "\nTotal: Rp " + posTotalTagihan.toLocaleString('id-ID') + "\nKembalian: Rp " + kembalian.toLocaleString('id-ID'));
     window.tutupPanelKasirManual();
 };
+
+// ==========================================
+// FUNGSI OWNER MASUK KASIR TANPA ABSEN
+// ==========================================
+window.ownerMasukKasirTanpaAbsen = () => {
+    // 1. Definisikan status aktif langsung sebagai Owner
+    window.activeStaff = {
+        name: "Owner (Master)",
+        role: "owner"
+    };
+    
+    // Simpan ke memori sesi kasir
+    localStorage.setItem('mainstay_active_staff', JSON.stringify(window.activeStaff));
+    
+    // 2. Pindahkan tampilan utama ke mode kasir
+    if (typeof window.switchRoleView === 'function') {
+        window.switchRoleView('kasir');
+    }
+    
+    // 3. Update nama kasir bertugas di layar agar menampilkan "Owner"
+    const elemenNamaKasir = document.getElementById('kasir-nama-petugas');
+    if (elemenNamaKasir) {
+        elemenNamaKasir.innerText = "Owner (Master)";
+    }
+};
