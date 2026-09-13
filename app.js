@@ -729,7 +729,7 @@ window.renderKatalog = () => {
         // Rancang Card HTML Menu (KEMBALI KE VERSI ASLI - BESAR & LEGA)
         const cardHtml = `
             <div onclick="bukaModalDetail('${key}')" class="w-full bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:-translate-y-1 hover:shadow-md transition duration-200">
-                <div class="w-full h-28 bg-slate-100 rounded-xl overflow-hidden relative mb-2">
+                <div class="w-full aspect-square bg-slate-100 rounded-xl overflow-hidden relative mb-2">
                     <img src="${imgUrl}" alt="${menu.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     ${menu.isBestSeller ? '<span class="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-2 py-1 rounded-md shadow-sm z-10">BEST</span>' : ''}
                 </div>
@@ -839,7 +839,7 @@ window.bukaModalDetail = (key) => {
         filteredVar.forEach(v => {
             vHtml += `
                 <div class="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <label class="text-xs font-black text-slate-700 uppercase block mb-2">${v.nama}</label>
+                    <label class="text-xs font-black text-slate-700 uppercase block mb-2">${v.name || v.nama}</label>
                     <div class="grid grid-cols-2 gap-2">
             `;
             v.opsi.forEach((o, idx) => {
@@ -847,8 +847,8 @@ window.bukaModalDetail = (key) => {
                 const hargaOpsi = extraPrice > 0 ? ` (+Rp ${extraPrice.toLocaleString('id-ID')})` : '';
                 vHtml += `
                     <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 transition shadow-sm">
-                        <input type="radio" name="modal_var_${v.id}" value="${o.namaOpsi}" data-harga="${extraPrice}" ${idx === 0 ? 'checked' : ''} class="text-amber-500 focus:ring-amber-400" onchange="window.hitungTotalHargaDetail()">
-                        <span class="text-xs font-bold text-slate-700">${o.namaOpsi}<span class="text-[10px] text-slate-400 block">${hargaOpsi}</span></span>
+                        <input type="radio" name="modal_var_${v.id}" value="${o.name || o.namaOpsi}" data-harga="${extraPrice}" ${idx === 0 ? 'checked' : ''} class="text-amber-500 focus:ring-amber-400" onchange="window.hitungTotalHargaDetail()">
+                        <span class="text-xs font-bold text-slate-700">${o.name || o.namaOpsi}<span class="text-[10px] text-slate-400 block">${hargaOpsi}</span></span>
                     </label>
                 `;
             });
@@ -3604,7 +3604,7 @@ window.renderMasterTopping = () => {
     wadah.innerHTML = window.masterTopping.map(top => `
         <div class="bg-white border border-slate-200 p-2.5 rounded-xl flex justify-between items-center shadow-sm">
             <div>
-                <p class="text-xs font-bold text-slate-800">${top.nama}</p>
+                <p class="text-xs font-bold text-slate-800">${top.name || top.nama}</p>
                 <p class="text-[10px] font-black text-emerald-500">+ Rp ${top.harga.toLocaleString('id-ID')}</p>
             </div>
             <button onclick="window.hapusMasterTopping('${top.id}')" class="bg-red-50 text-red-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-100 transition active:scale-95"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
@@ -3896,7 +3896,7 @@ window.renderCheckboxTopping = () => {
     wadah.innerHTML = window.masterTopping.map(top => `
         <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-amber-50 transition">
             <input type="checkbox" value="${top.id}" class="checkbox-topping-menu w-4 h-4 text-amber-500 rounded border-gray-300">
-            <span class="text-xs font-bold text-slate-700">${top.nama} <span class="text-[10px] text-emerald-500 ml-1 font-black">(+Rp ${top.harga.toLocaleString('id-ID')})</span></span>
+            <span class="text-xs font-bold text-slate-700">${top.name || top.nama} <span class="text-[10px] text-emerald-500 ml-1 font-black">(+Rp ${top.harga.toLocaleString('id-ID')})</span></span>
         </label>
     `).join('');
 };
@@ -4711,19 +4711,24 @@ window.prosesOrderanPOS = () => {
     const metodeBayarTerpilih = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
     const petugasAktif = localStorage.getItem('mainstay_staff_name') || "Owner (Master)";
 
-    const transaksiBaru = {
-        id: idTransaksi,
-        waktu: new Date().toLocaleTimeString('id-ID'),
-        tanggal: new Date().toLocaleDateString('id-ID'),
-        namaPelanggan: "Manual POS (" + tipePesanan.toUpperCase() + ")",
-        items: [...posKeranjang],
-        total: posTotalTagihan,
-        bayar: nominalUang,
-        kembalian: kembalian,
-        metode: metodeBayarTerpilih,
-        kasir: petugasAktif,
-        status: "selesai"
-    };
+// --- TAMBAHAN: Tarik nomor WA dari input HTML ---
+const elemenWa = document.getElementById('input-wa-kasir');
+const nomorWaKasir = elemenWa && elemenWa.value ? elemenWa.value : '-';
+
+const transaksiBaru = {
+    id: idTransaksi,
+    waktu: new Date().toLocaleTimeString('id-ID'),
+    tanggal: new Date().toLocaleDateString('id-ID'),
+    namaPelanggan: "Manual POS (" + tipePesanan.toUpperCase() + ")",
+    nomorWa: nomorWaKasir, // <-- Data WA masuk ke sini
+    items: [...posKeranjang],
+    total: posTotalTagihan,
+    bayar: nominalUang,
+    kembalian: kembalian,
+    metode: metodeBayarTerpilih,
+    kasir: petugasAktif,
+    status: "selesai"
+};
 
     try {
         let savedOrders = JSON.parse(localStorage.getItem('mainstay_offline_orders') || '[]');
