@@ -3932,20 +3932,20 @@ let listKat = [...new Set(semuaMenu.map(menu => menu.category).filter(Boolean))]
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        // 1. Cek Pintu Utama (Owner / Kasir)
+        // 1. Cek Pintu Utama (Owner / Kasir) berdasarkan key asli aplikasi
         const sesiAktif = localStorage.getItem('mainstay_session_role');
         if (sesiAktif === 'owner' || sesiAktif === 'kasir') {
             if (typeof window.switchRoleView === 'function') {
-                window.switchRoleView(sesiAktif); 
-            }
-            
-            // 2. Cek Laci spesifik yang sedang terbuka
-            const panelAktif = localStorage.getItem('mainstay_active_panel');
-            if (panelAktif && typeof window.openPanel === 'function') {
-                window.openPanel(panelAktif); // Buka panel apapun yang terakhir dilihat!
+                window.switchRoleView(sesiAktif);
             }
         }
-    }, 500); 
+
+        // 2. Cek panel aktif terakhir yang sedang dibuka
+        const panelAktif = localStorage.getItem('mainstay_active_panel');
+        if (panelAktif && typeof window.openPanel === 'function') {
+            window.openPanel(panelAktif);
+        }
+    }, 500);
 });
 
 // ==========================================
@@ -4367,11 +4367,24 @@ window.klikMenuPOS = (keyUnik) => {
 
     if (!menu) return;
 
-    const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
-    const hargaDasar = Number(menu.harga || menu.price || menu.cost || 0);
+    const namaMenu = menu.nama || menu.title || menu.name || menu.menu || "Menu Tanpa Nama";
+    const hargaDasar = Number(menu.harga || menu.price || menu.cost || menu.nominal || 0);
     
-    // Deteksi berbagai variasi nama properti varian/topping di database
-    const varianList = menu.varian || menu.variants || menu.topping || menu.options || menu.pilihan || menu.opsi;
+    // Cek semua kemungkinan properti varian, opsi, atau topping secara otomatis
+    let varianList = menu.varian || menu.variants || menu.topping || menu.options || menu.pilihan || menu.opsi;
+    
+    // Jika masih kosong, cari properti apa saja di objek menu yang bentuknya Array atau Object turunan
+    if (!varianList) {
+        for (let key in menu) {
+            if (typeof menu[key] === 'object' && menu[key] !== null && Object.keys(menu[key]).length > 0) {
+                // Jangan ambil jika itu bukan data pilihan/varian
+                if (key !== 'key' && key !== 'gambar' && key !== 'image') {
+                    varianList = menu[key];
+                    break;
+                }
+            }
+        }
+    }
 
     if (varianList && (Array.isArray(varianList) ? varianList.length > 0 : Object.keys(varianList).length > 0)) {
         menuDipilihSementara = { key: keyUnik, nama: namaMenu, hargaDasar, varianList };
@@ -4604,7 +4617,7 @@ window.prosesOrderanPOS = () => {
         status: "selesai"
     };
 
-    // PENANGANAN AMAN UNTUK GLOBALORDERS (OBJECT / ARRAY)
+    // Simpan ke riwayat global orders
     if (typeof globalOrders !== 'undefined') {
         if (Array.isArray(globalOrders)) {
             globalOrders.unshift(transaksiBaru);
@@ -4613,6 +4626,7 @@ window.prosesOrderanPOS = () => {
         }
     }
 
+    // Refresh data tab kasir & laci kas secara otomatis
     if (typeof window.updateLiveCashDrawer === 'function') {
         window.updateLiveCashDrawer();
     }
@@ -4620,10 +4634,15 @@ window.prosesOrderanPOS = () => {
         window.renderKasirOrders();
     }
 
+    // Reset keranjang setelah sukses
+    posKeranjang = [];
+    renderKeranjangPOS();
+
     alert("Transaksi Berhasil!\nID: " + idTransaksi + "\nTotal: Rp " + posTotalTagihan.toLocaleString('id-ID') + "\nKembalian: Rp " + kembalian.toLocaleString('id-ID'));
+    
+    // Tutup panel kasir manual dan arahkan ke tab kasir utama
     window.tutupPanelKasirManual();
 };
-
 // ==========================================
 // FUNGSI OWNER MASUK KASIR TANPA ABSEN
 // ==========================================
