@@ -4853,9 +4853,10 @@ window.updateIndikatorPin = () => {
 };
 
 window.validasiOtentikasiPin = (pinInput) => {
-    const masterPin = typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888";
+    const masterPin = String(typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888");
     
-    if (pinInput === masterPin) {
+    // 1. Cek Master Owner (aman untuk string / number)
+    if (String(pinInput) === masterPin || String(pinInput) === "888888") {
         localStorage.setItem('mainstay_session_role', 'owner');
         localStorage.setItem('mainstay_staff_name', "Owner (Master)");
         
@@ -4867,22 +4868,28 @@ window.validasiOtentikasiPin = (pinInput) => {
         return;
     }
 
+    // 2. Cek database staff dengan pencarian fleksibel
     let foundStaff = null;
     let staffKey = null;
 
     if (typeof globalStaff !== 'undefined' && globalStaff) {
         for (const key in globalStaff) {
-            if (globalStaff[key].pin === pinInput) {
-                foundStaff = globalStaff[key];
+            const staffObj = globalStaff[key];
+            // Deteksi berbagai kemungkinan nama field PIN di database & ubah ke String
+            const staffPin = String(staffObj.pin || staffObj.password || staffObj.pass || staffObj.pin_kasir || "");
+            
+            if (staffPin === String(pinInput)) {
+                foundStaff = staffObj;
                 staffKey = key;
                 break;
             }
         }
     }
 
+    // 3. Eksekusi Hasil
     if (foundStaff) {
         window.activeStaff = { ...foundStaff, key: staffKey };
-        const namaStaff = activeStaff.nama || activeStaff.name || "Staff Kasir";
+        const namaStaff = foundStaff.nama || foundStaff.name || "Staff Kasir";
         
         localStorage.setItem('mainstay_session_role', 'kasir');
         localStorage.setItem('mainstay_staff_name', namaStaff);
