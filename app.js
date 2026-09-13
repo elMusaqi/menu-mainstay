@@ -4411,20 +4411,21 @@ window.bukaModalVarian = (data) => {
     titleEl.innerText = data.nama;
     optionsEl.innerHTML = '';
 
-    // Ubah data varian/topping menjadi array yang bersih
     const rawList = data.varianList;
-    const list = Array.isArray(rawList) ? rawList : Object.values(rawList);
+    const list = Array.isArray(rawList) ? rawList : Object.entries(rawList).map(([k, v]) => {
+        if (typeof v === 'object' && v !== null) return { id: k, ...v };
+        return { id: k, nama: v, harga: 0 };
+    });
 
     list.forEach((v, idx) => {
-        // Ambil nama dan harga secara aman dari berbagai bentuk objek database
-        let namaVarian = "Pilihan " + (idx + 1);
-        let extraHarga = 0;
+        let namaVarian = v.nama || v.name || v.title || v.text || v.label || v.pilihan || (typeof v === 'string' ? v : `Pilihan ${idx+1}`);
+        let extraHarga = Number(v.harga || v.price || v.cost || v.nominal || 0);
 
-        if (typeof v === 'string') {
-            namaVarian = v;
-        } else if (typeof v === 'object' && v !== null) {
-            namaVarian = v.nama || v.name || v.title || v.text || v.label || JSON.stringify(v);
-            extraHarga = Number(v.harga || v.price || v.cost || v.nominal || 0);
+        // Jika nama masih berupa ID (misal berawalan top_), cek ke master database globalToppings jika ada
+        if (namaVarian.toString().startsWith('top_') && typeof globalToppings !== 'undefined' && globalToppings[namaVarian]) {
+            const master = globalToppings[namaVarian];
+            namaVarian = master.nama || master.name || namaVarian;
+            extraHarga = Number(master.harga || master.price || extraHarga);
         }
 
         const formatExtra = extraHarga > 0 ? ` (+Rp ${extraHarga.toLocaleString('id-ID')})` : '';
@@ -4624,45 +4625,56 @@ window.prosesOrderanPOS = () => {
     const tipePesanan = document.getElementById('pos-tipe-pesanan').value;
     const idTransaksi = "CSH-" + Math.floor(100000 + Math.random() * 900000);
     const metodeBayarTerpilih = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
+    const petugasAktif = localStorage.getItem('mainstay_staff_name') || "Owner (Master)";
 
     const transaksiBaru = {
         id: idTransaksi,
         waktu: new Date().toLocaleTimeString('id-ID'),
+        tanggal: new Date().toLocaleDateString('id-ID'),
         namaPelanggan: "Manual POS (" + tipePesanan.toUpperCase() + ")",
         items: [...posKeranjang],
         total: posTotalTagihan,
         bayar: nominalUang,
         kembalian: kembalian,
         metode: metodeBayarTerpilih,
-        status: "selesai"
+        kasir: petugasAktif, // Mencatat siapa penginputnya
+        status: "selesai",
+        tab: "selesai"
     };
 
-    // Simpan ke riwayat global orders
+    // Masukkan ke penyimpanan global orders
     if (typeof globalOrders !== 'undefined') {
         if (Array.isArray(globalOrders)) {
             globalOrders.unshift(transaksiBaru);
-        } else {
+        } else if (globalOrders && typeof globalOrders === 'object') {
             globalOrders[idTransaksi] = transaksiBaru;
         }
     }
 
-    // Refresh data tab kasir & laci kas secara otomatis
-    if (typeof window.updateLiveCashDrawer === 'function') {
-        window.updateLiveCashDrawer();
-    }
-    if (typeof window.renderKasirOrders === 'function') {
-        window.renderKasirOrders();
-    }
+    // Simpan backup ke localStorage agar langsung masuk tab riwayat kasir
+    try {
+        let savedOrders = JSON.parse(localStorage.getItem('mainstay_offline_orders') || '[]');
+        savedOrders.unshift(transaksiBaru);
+        localStorage.setItem('mainstay_offline_orders', JSON.stringify(savedOrders));
+    } catch(e) {}
 
-    // Reset keranjang setelah sukses
+    // Panggil semua fungsi render tab kasir yang ada di aplikasi
+    if (typeof window.renderKasirOrders === 'function') window.renderKasirOrders();
+    if (typeof window.updateLiveCashDrawer === 'function') window.updateLiveCashDrawer();
+    if (typeof window.renderOrders === 'function') window.renderOrders();
+    if (typeof window.loadOrders === 'function') window.loadOrders();
+
+    // Reset keranjang
     posKeranjang = [];
-    renderKeranjangPOS();
+    if (typeof renderKeranjangPOS === 'function') renderKeranjangPOS();
 
     alert("Transaksi Berhasil!\nID: " + idTransaksi + "\nTotal: Rp " + posTotalTagihan.toLocaleString('id-ID') + "\nKembalian: Rp " + kembalian.toLocaleString('id-ID'));
     
-    // Tutup panel kasir manual dan arahkan ke tab kasir utama
-    window.tutupPanelKasirManual();
+    if (typeof window.tutupPanelKasirManual === 'function') {
+        window.tutupPanelKasirManual();
+    }
 };
+
 // ==========================================
 // FUNGSI OWNER MASUK KASIR TANPA ABSEN
 // ==========================================
@@ -4672,9 +4684,9 @@ window.ownerMasukKasirTanpaAbsen = () => {
         role: "owner"
     };
     
-    // Simpan role DAN status aktif ke localStorage
     localStorage.setItem('mainstay_session_role', 'kasir');
     localStorage.setItem('mainstay_staff_name', "Owner (Master)");
+    localStorage.setItem('mainstay_active_staff', JSON.stringify(window.activeStaff));
     
     if (typeof window.switchRoleView === 'function') {
         window.switchRoleView('kasir');
@@ -4685,3 +4697,21 @@ window.ownerMasukKasirTanpaAbsen = () => {
         elemenNamaKasir.innerText = "Owner (Master)";
     }
 };
+
+// PEMULIH SESI ANTI-REFRESH ULTIMATE
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const sesiAktif = localStorage.getItem('mainstay_session_role');
+        const savedStaffName = localStorage.getItem('mainstay_staff_name') || "Owner (Master)";
+        
+        if (sesiAktif === 'owner' || sesiAktif === 'kasir') {
+            if (typeof window.switchRoleView === 'function') {
+                window.switchRoleView(sesiAktif);
+            }
+            const elemenNamaKasir = document.getElementById('kasir-nama-petugas');
+            if (elemenNamaKasir) {
+                elemenNamaKasir.innerText = savedStaffName;
+            }
+        }
+    }, 400);
+});
