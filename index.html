@@ -1156,14 +1156,30 @@
     }
 </script>
 
-                <!-- Input Nomor WA Pelanggan Kasir -->
-<div class="mb-4">
-    <label class="text-xs font-bold text-gray-600 mb-1 block">Nomor WA Pelanggan (Opsional)</label>
-    <div class="relative">
-        <i class="fa-brands fa-whatsapp absolute left-3 top-1/2 -translate-y-1/2 text-green-500"></i>
-        <input type="number" id="input-wa-kasir" class="w-full bg-slate-50 border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-500" placeholder="08xxxxxx">
+                <!-- FORM DATA PELANGGAN (KASIR) -->
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Data Pelanggan</h3>
+    <div class="space-y-3">
+        <!-- Input Nama Pelanggan -->
+        <input type="text" id="pos-nama" class="w-full bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500" placeholder="Nama Pelanggan (Wajib Diisi)">
+        
+        <!-- Input Nomor WhatsApp -->
+        <div class="relative">
+            <i class="fa-brands fa-whatsapp absolute left-3 top-1/2 -translate-y-1/2 text-green-500"></i>
+            <input type="number" id="pos-wa" class="w-full bg-slate-50 border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-500" placeholder="Nomor WhatsApp (Opsional)">
+        </div>
+
+        <!-- Checkbox Member (Stamp) -->
+        <label class="flex items-center gap-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="pos-member" class="w-4 h-4 text-amber-600 rounded">
+            <div>
+                <p class="text-xs font-black text-amber-900">Daftar Member (Gratis)</p>
+                <p class="text-[9px] text-amber-700 font-bold">Dapatkan poin stamp loyalty</p>
+            </div>
+        </label>
     </div>
 </div>
+                
                 <!-- Input Manual -->
                 <div class="relative w-full mb-3">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -1222,6 +1238,6 @@
 
 
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=364"></script>
+    <script type="module" src="app.js?v=365"></script>
 </body>
 </html>
