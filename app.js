@@ -4785,23 +4785,29 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 400);
 });
 
-// ==========================================
-// MESIN NUMPAD UNTUK MODAL UTAMA (modal-login)
-// ==========================================
-currentPinInput = "";
 
-window.openModalLogin = () => {
+
+// ==========================================
+// MESIN NUMPAD UTAMA (DIJAMIN TEMBUS & RESPONSIF)
+// ==========================================
+if (typeof currentPinInput === 'undefined') {
+    var currentPinInput = "";
+} else {
     currentPinInput = "";
-    if (typeof updateIndikatorPin === 'function') updateIndikatorPin();
-    const modal = document.getElementById('modal-login');
+}
+
+window.openModalLogin = window.bukaMenuAbsen = () => {
+    currentPinInput = "";
+    updateIndikatorPin();
+    const modal = document.getElementById('modal-login') || document.getElementById('modal-login-absen');
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
 };
 
-window.closeModalLogin = () => {
-    const modal = document.getElementById('modal-login');
+window.closeModalLogin = window.tutupMenuAbsen = () => {
+    const modal = document.getElementById('modal-login') || document.getElementById('modal-login-absen');
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
@@ -4816,7 +4822,7 @@ window.tekanNumpad = (angka) => {
         if (currentPinInput.length === 6) {
             setTimeout(() => {
                 validasiOtentikasiPin(currentPinInput);
-            }, 150);
+            }, 100);
         }
     }
 };
@@ -4833,6 +4839,7 @@ window.resetNumpad = () => {
     updateIndikatorPin();
 };
 
+// Fungsi Indikator Titik (Menggunakan Style Langsung agar Pasti Berubah Warna)
 window.updateIndikatorPin = () => {
     const container = document.getElementById('pin-indicators');
     if (!container) return;
@@ -4840,11 +4847,13 @@ window.updateIndikatorPin = () => {
     const dots = container.children;
     for (let i = 0; i < dots.length; i++) {
         if (i < currentPinInput.length) {
-            dots[i].classList.remove('bg-slate-200');
-            dots[i].classList.add('bg-orange-500', 'scale-110');
+            // Berubah jadi Oranye Terang
+            dots[i].style.backgroundColor = "#f97316"; 
+            dots[i].style.transform = "scale(1.15)";
         } else {
-            dots[i].classList.remove('bg-orange-500', 'scale-110');
-            dots[i].classList.add('bg-slate-200');
+            // Kembali Abu-abu
+            dots[i].style.backgroundColor = "#e2e8f0"; 
+            dots[i].style.transform = "scale(1)";
         }
     }
 };
@@ -4852,7 +4861,6 @@ window.updateIndikatorPin = () => {
 window.validasiOtentikasiPin = (pinInput) => {
     const masterPin = String(typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888");
     
-    // 1. Cek Master Owner (aman untuk string / number)
     if (String(pinInput) === masterPin || String(pinInput) === "888888") {
         localStorage.setItem('mainstay_session_role', 'owner');
         localStorage.setItem('mainstay_staff_name', "Owner (Master)");
@@ -4865,15 +4873,13 @@ window.validasiOtentikasiPin = (pinInput) => {
         return;
     }
 
-    // 2. Cek database staff dengan pencarian fleksibel
     let foundStaff = null;
     let staffKey = null;
 
     if (typeof globalStaff !== 'undefined' && globalStaff) {
         for (const key in globalStaff) {
             const staffObj = globalStaff[key];
-            // Deteksi berbagai kemungkinan nama field PIN di database & ubah ke String
-            const staffPin = String(staffObj.pin || staffObj.password || staffObj.pass || staffObj.pin_kasir || "");
+            const staffPin = String(staffObj.pin || staffObj.password || staffObj.pass || "");
             
             if (staffPin === String(pinInput)) {
                 foundStaff = staffObj;
@@ -4883,7 +4889,6 @@ window.validasiOtentikasiPin = (pinInput) => {
         }
     }
 
-    // 3. Eksekusi Hasil
     if (foundStaff) {
         window.activeStaff = { ...foundStaff, key: staffKey };
         const namaStaff = foundStaff.nama || foundStaff.name || "Staff Kasir";
