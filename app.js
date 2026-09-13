@@ -4278,7 +4278,6 @@ window.hubungiOwner = () => {
 let kategoriAktifPOS = 'Semua';
 let menuDipilihSementara = null;
 
-// A. Render Tombol Kategori
 window.renderKategoriPOS = (daftarMenu) => {
     const kontainerKat = document.getElementById('pos-kategori-container');
     if (!kontainerKat) return;
@@ -4305,7 +4304,6 @@ window.pilihKategoriPOS = (kat) => {
     window.renderKatalogPOS();
 };
 
-// B. Render Menu dari Database ke Layar POS (Dengan Filter)
 window.renderKatalogPOS = () => {
     const wadah = document.getElementById('pos-katalog-menu');
     if (!wadah) return;
@@ -4323,10 +4321,8 @@ window.renderKatalogPOS = () => {
         return;
     }
 
-    // Render navigasi kategori
     window.renderKategoriPOS(daftarMenu);
 
-    // Filter menu sesuai kategori
     const menuTampil = daftarMenu.filter(m => {
         if (kategoriAktifPOS === 'Semua') return true;
         const kat = m.kategori || m.category || m.jenis || 'Lainnya';
@@ -4342,12 +4338,10 @@ window.renderKatalogPOS = () => {
         const keyUnik = menu.key !== undefined ? menu.key : index;
         const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
         const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
-        // Tarik gambar dari database, berikan gambar fallback jika kosong
         const gambarMenu = menu.gambar || menu.image || menu.img || 'https://via.placeholder.com/150?text=Menu'; 
 
-        // Desain baru: Ada gambar thumbnail kecil di sebelah kiri
         wadah.innerHTML += `
-            <div onclick='klikMenuPOS(${JSON.stringify(menu).replace(/'/g, "&#39;")}, "${keyUnik}")' class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center gap-2.5 shadow-sm active:scale-95">
+            <div onclick="klikMenuPOS('${keyUnik}')" class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center gap-2.5 shadow-sm active:scale-95">
                 <img src="${gambarMenu}" onerror="this.src='https://via.placeholder.com/150?text=No+Img'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-200 shrink-0 border border-slate-200">
                 <div class="flex flex-col justify-center w-full overflow-hidden">
                     <h4 class="text-[11px] font-bold text-slate-700 leading-tight truncate">${namaMenu}</h4>
@@ -4356,9 +4350,12 @@ window.renderKatalogPOS = () => {
             </div>
         `;
     });
+};
 
-// C. Klik Menu (Buka Varian/Topping atau Langsung Keranjang)
-window.klikMenuPOS = (menu, keyUnik) => {
+window.klikMenuPOS = (keyUnik) => {
+    const menu = Array.isArray(globalMenus) ? globalMenus.find((m, idx) => (m.key !== undefined ? m.key == keyUnik : idx == keyUnik)) : globalMenus[keyUnik];
+    if (!menu) return;
+
     const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
     const hargaDasar = Number(menu.harga || menu.price || menu.cost || 0);
     const varianList = menu.varian || menu.variants || menu.topping || menu.options;
@@ -4422,12 +4419,10 @@ window.konfirmasiTambahVarian = () => {
     const hargaFinal = menuDipilihSementara.hargaDasar + tambahanHarga;
     const namaLengkap = `${menuDipilihSementara.nama} (${catatanVarian})`;
 
-    // Gabungkan key dengan varian agar item beda varian tidak menumpuk di 1 baris keranjang
     tambahKeKeranjangPOS(menuDipilihSementara.key + "_" + catatanVarian, namaLengkap, hargaFinal, catatanVarian);
     window.tutupModalVarian();
 };
 
-// D. Klik Menu Masuk Keranjang (Fungsi Final)
 window.tambahKeKeranjangPOS = (key, nama, harga, varian = "Normal") => {
     const index = posKeranjang.findIndex(item => item.key === key);
     if(index > -1) {
@@ -4438,184 +4433,139 @@ window.tambahKeKeranjangPOS = (key, nama, harga, varian = "Normal") => {
     renderKeranjangPOS();
 };
 
-// 4. Render List Keranjang (Dilengkapi Mesin Markup Ojol Otomatis)
 window.renderKeranjangPOS = () => {
     const wadah = document.getElementById('pos-keranjang-list');
     const tipePesanan = document.getElementById('pos-tipe-pesanan').value;
     const infoMarkup = document.getElementById('pos-info-markup');
     const badgeMarkup = document.getElementById('pos-badge-markup');
-    
+    if (!wadah) return;
+
     let subtotalMurni = 0;
-    
-    // Cek apakah ini pesanan Ojol (GoFood/GrabFood/ShopeeFood)
     let pengaliHarga = 1;
     if (tipePesanan !== 'biasa') {
-        pengaliHarga = 1.20; // Markup kenaikan 20% untuk menutupi potongan komisi ojol
-        infoMarkup.innerText = "Harga otomatis dinaikkan 20% untuk menyesuaikan potongan S&K Ojol.";
-        badgeMarkup.classList.remove('hidden');
+        pengaliHarga = 1.20;
+        if(infoMarkUp) infoMarkup.innerText = "Harga otomatis dinaikkan 20% untuk menyesuaikan potongan S&K Ojol.";
+        if(badgeMarkup) badgeMarkup.classList.remove('hidden');
     } else {
-        infoMarkup.innerText = "*Harga normal tanpa penyesuaian.";
-        badgeMarkup.classList.add('hidden');
+        if(infoMarkUp) infoMarkup.innerText = "Harga normal tanpa penyesuaian.";
+        if(badgeMarkup) badgeMarkup.classList.add('hidden');
     }
-    
+
     if (posKeranjang.length === 0) {
-        wadah.innerHTML = `<div class="p-4 border-2 border-dashed border-slate-200 rounded-lg text-center bg-slate-50"><p class="text-xs text-slate-500 font-medium">Keranjang masih kosong</p></div>`;
+        wadah.innerHTML = `<div class="p-4 border-2 border-dashed border-slate-200 rounded-xl text-center bg-slate-50"><p class="text-xs text-slate-500 font-medium">Keranjang masih kosong</p></div>`;
         posTotalTagihan = 0;
-        document.getElementById('pos-total-tagihan').innerText = "Rp 0";
-        hitungKembalian(); 
+        const elTotal = document.getElementById('pos-total-tagihan');
+        if(elTotal) elTotal.innerText = "Rp 0";
+        hitungKembalian();
         return;
     }
-    
+
     wadah.innerHTML = '';
     posKeranjang.forEach((item, i) => {
-        // Harga satuan dikali pengali ojol (dibulatkan ke ratusan terdekat agar rapi)
         let hargaFinalItem = Math.round((item.harga * pengaliHarga) / 100) * 100;
-        const subtotalItem = hargaFinalItem * item.qty;
+        let subtotalItem = hargaFinalItem * item.qty;
         subtotalMurni += subtotalItem;
-        
+
         wadah.innerHTML += `
-            <div class="flex justify-between items-center bg-white border border-slate-100 p-2 rounded shadow-sm mb-1">
+            <div class="flex justify-between items-center bg-white border border-slate-100 p-2.5 rounded-xl shadow-sm mb-1.5">
                 <div class="flex-1">
-                    <h4 class="text-xs font-bold text-slate-800">${item.nama} ${tipePesanan !== 'biasa' ? '<span class="text-[9px] text-indigo-500 font-normal">(Ojol)</span>' : ''}</h4>
-                    <p class="text-[10px] text-slate-500">${item.qty} x Rp ${hargaFinalItem.toLocaleString('id-ID')}</p>
+                    <h4 class="text-xs font-bold text-slate-800">${item.nama}</h4>
+                    <p class="text-[10px] text-slate-500">${item.qty} x Rp ${hargaFinalItem.toLocaleString('id-ID')} ${tipePesanan !== 'biasa' ? '<span class="text-[9px] text-indigo-500 font-normal">(Ojol)</span>' : ''}</p>
                 </div>
-                <div class="font-black text-sm text-indigo-600 mr-3">Rp ${subtotalItem.toLocaleString('id-ID')}</div>
-                <button onclick="hapusDariKeranjangPOS(${i})" class="w-7 h-7 bg-red-50 text-red-500 rounded flex items-center justify-center hover:bg-red-100"><i class="fa-solid fa-xmark"></i></button>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-black text-indigo-600">Rp ${subtotalItem.toLocaleString('id-ID')}</span>
+                    <button onclick="hapusDariKeranjangPOS(${i})" class="w-7 h-7 bg-red-50 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-xmark text-xs"></i></button>
+                </div>
             </div>
         `;
     });
-    
+
     posTotalTagihan = subtotalMurni;
-    document.getElementById('pos-total-tagihan').innerText = `Rp ${posTotalTagihan.toLocaleString('id-ID')}`;
-    hitungKembalian(); 
-    document.getElementById('pos-uang-diterima').value = ''; 
+    const elTotal = document.getElementById('pos-total-tagihan');
+    if(elTotal) elTotal.innerText = "Rp " + posTotalTagihan.toLocaleString('id-ID');
+    hitungKembalian();
 };
 
-// Hapus fungsi lama hitungUlangTotalKasir dan ganti dengan pemicu ini
 window.hitungUlangTotalKasir = () => {
     renderKeranjangPOS();
 };
 
-// 5. Hapus Item Keranjang
 window.hapusDariKeranjangPOS = (index) => {
     posKeranjang.splice(index, 1);
     renderKeranjangPOS();
 };
 
-// 6. Fungsi Buka Panel (Memanggil data menu)
 window.bukaPanelKasirManual = () => {
     const panel = document.getElementById('panel-kasir-manual');
-    if(panel) {
+    if (panel) {
         panel.classList.remove('hidden');
         panel.classList.add('flex');
-        
-        renderKatalogPOS(); 
-        posKeranjang = []; 
+        renderKatalogPOS();
+        posKeranjang = [];
         renderKeranjangPOS();
     }
 };
 
-// 7. Fungsi Tutup Panel
 window.tutupPanelKasirManual = () => {
     const panel = document.getElementById('panel-kasir-manual');
-    if(panel) {
+    if (panel) {
         panel.classList.add('hidden');
         panel.classList.remove('flex');
     }
 };
 
-// 8. Mesin Hitung Kembalian
 window.hitungKembalian = () => {
     const inputUang = document.getElementById('pos-uang-diterima').value;
     const nominalUang = parseInt(inputUang) || 0;
     const kembalian = nominalUang - posTotalTagihan;
     const teksKembalian = document.getElementById('pos-teks-kembalian');
+    if(!teksKembalian) return;
 
     if (posTotalTagihan === 0 || nominalUang === 0) {
         teksKembalian.innerText = "Rp 0";
-        teksKembalian.className = "text-3xl font-black text-indigo-200";
+        teksKembalian.className = "text-3xl font-black text-indigo-600";
     } else if (kembalian < 0) {
         teksKembalian.innerText = "Uang Kurang!";
-        teksKembalian.className = "text-3xl font-black text-red-400";
+        teksKembalian.className = "text-3xl font-black text-red-500";
     } else {
-        teksKembalian.innerText = `Rp ${kembalian.toLocaleString('id-ID')}`;
-        teksKembalian.className = "text-3xl font-black text-emerald-400";
+        teksKembalian.innerText = "Rp " + kembalian.toLocaleString('id-ID');
+        teksKembalian.className = "text-3xl font-black text-emerald-600";
     }
 };
 
-// 9. Tombol Hitung Uang Instan
 window.setUangCepat = (nominal) => {
     const inputUang = document.getElementById('pos-uang-diterima');
+    if(!inputUang) return;
     if (nominal === 'pas') inputUang.value = posTotalTagihan;
     else if (nominal === 'clear') inputUang.value = '';
-    else inputUang.value = nominal; 
-    
-    hitungKembalian(); 
+    else inputUang.value = nominal;
+    hitungKembalian();
 };
 
-    // ==========================================
-// TOGGLE METODE PEMBAYARAN POS (CASH / QRIS)
-// ==========================================
 window.toggleMetodeBayarPOS = () => {
     const metode = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
     const wadahQris = document.getElementById('pos-qris-container');
     const inputUang = document.getElementById('pos-uang-diterima');
 
     if (metode === 'QRIS') {
-        if(wadahQris) wadahQris.classList.remove('hidden');   // Munculkan barcode QRIS
+        if(wadahQris) wadahQris.classList.remove('hidden');
         if(inputUang) {
-            inputUang.value = posTotalTagihan;      // Otomatis isi uang pas
-            inputUang.disabled = true;              // Kunci input uang
+            inputUang.value = posTotalTagihan;
+            inputUang.disabled = true;
         }
-        if (typeof hitungKembalian === 'function') hitungKembalian(); // Update tulisan kembalian
+        if (typeof hitungKembalian === 'function') hitungKembalian();
     } else {
-        if(wadahQris) wadahQris.classList.add('hidden');      // Sembunyikan QRIS
-        if(inputUang) inputUang.disabled = false;             // Buka kembali input uang
+        if(wadahQris) wadahQris.classList.add('hidden');
+        if(inputUang) inputUang.disabled = false;
     }
 };
 
-// 10. Placeholder Kalkulasi Ojol (Untuk Tahap Selanjutnya)
-window.hitungUlangTotalKasir = () => {
-    const tipe = document.getElementById('pos-tipe-pesanan').value;
-    console.log("Tipe pesanan diubah ke:", tipe);
-};
-
-// ==========================================
-// FUNGSI OWNER MASUK KASIR TANPA ABSEN
-// ==========================================
-window.ownerMasukKasirTanpaAbsen = () => {
-    // 1. Definisikan status aktif langsung sebagai Owner (Bebas pantangan & absen)
-    window.activeStaff = {
-        name: "Owner (Master)",
-        role: "owner"
-    };
-    
-    // Simpan ke memori sesi kasir
-    localStorage.setItem('mainstay_active_staff', JSON.stringify(window.activeStaff));
-
-    // 2. Pindahkan tampilan utama ke mode Kasir
-    if (typeof window.switchRoleView === 'function') {
-        window.switchRoleView('kasir');
-    }
-
-    // 3. Update nama kasir bertugas di layar agar menampilkan "Owner"
-    const elemenNamaKasir = document.getElementById('kasir-nama-petugas');
-    if (elemenNamaKasir) {
-        elemenNamaKasir.innerText = "Owner (Master)";
-    }
-};
-
-// ==========================================
-// MESIN EKSEKUSI TRANSAKSI POS MANUAL
-// ==========================================
 window.prosesOrderanPOS = () => {
-    // 1. Validasi: Cek keranjang kosong atau belum
     if (posKeranjang.length === 0) {
         alert("Keranjang pesanan masih kosong, Mas!");
         return;
     }
 
-    // 2. Validasi: Cek nominal pembayaran kasir
     const inputUang = document.getElementById('pos-uang-diterima').value;
     const nominalUang = parseInt(inputUang) || 0;
     
@@ -4627,15 +4577,12 @@ window.prosesOrderanPOS = () => {
     const kembalian = nominalUang - posTotalTagihan;
     const tipePesanan = document.getElementById('pos-tipe-pesanan').value;
     const idTransaksi = "CSH-" + Math.floor(100000 + Math.random() * 900000);
-
-    // Ambil metode bayar yang dipilih kasir (Tunai / QRIS)
     const metodeBayarTerpilih = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
 
-    // 3. Susun data transaksi baru
     const transaksiBaru = {
         id: idTransaksi,
         waktu: new Date().toLocaleTimeString('id-ID'),
-        namaPelanggan: `Manual POS (${tipePesanan.toUpperCase()})`,
+        namaPelanggan: "Manual POS (" + tipePesanan.toUpperCase() + ")",
         items: [...posKeranjang],
         total: posTotalTagihan,
         bayar: nominalUang,
@@ -4644,12 +4591,10 @@ window.prosesOrderanPOS = () => {
         status: "selesai"
     };
 
-    // 4. Masukkan ke penyimpanan/array global aplikasi (jika ada)
     if (typeof globalOrders !== 'undefined') {
         globalOrders.unshift(transaksiBaru);
     }
 
-    // 5. Update tampilan Omzet & Laci Kas secara otomatis
     if (typeof window.updateLiveCashDrawer === 'function') {
         window.updateLiveCashDrawer();
     }
@@ -4657,10 +4602,6 @@ window.prosesOrderanPOS = () => {
         window.renderKasirOrders();
     }
 
-    // 6. Notifikasi sukses & reset panel
-    alert(`Transaksi Berhasil! 🎉\nID: ${idTransaksi}\nTotal: Rp ${posTotalTagihan.toLocaleString('id-ID')}\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}`);
-
-    // Tutup panel kasir manual
+    alert("Transaksi Berhasil!\nID: " + idTransaksi + "\nTotal: Rp " + posTotalTagihan.toLocaleString('id-ID') + "\nKembalian: Rp " + kembalian.toLocaleString('id-ID'));
     window.tutupPanelKasirManual();
 };
-    
