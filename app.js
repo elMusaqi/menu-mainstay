@@ -4444,10 +4444,10 @@ window.renderKeranjangPOS = () => {
     let pengaliHarga = 1;
     if (tipePesanan !== 'biasa') {
         pengaliHarga = 1.20;
-        if(infoMarkUp) infoMarkup.innerText = "Harga otomatis dinaikkan 20% untuk menyesuaikan potongan S&K Ojol.";
+        if(infoMarkup) infoMarkup.innerText = "Harga otomatis dinaikkan 20% untuk menyesuaikan potongan S&K Ojol.";
         if(badgeMarkup) badgeMarkup.classList.remove('hidden');
     } else {
-        if(infoMarkUp) infoMarkup.innerText = "Harga normal tanpa penyesuaian.";
+        if(infoMarkup) infoMarkup.innerText = "Harga normal tanpa penyesuaian.";
         if(badgeMarkup) badgeMarkup.classList.add('hidden');
     }
 
