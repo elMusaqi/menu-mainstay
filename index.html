@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script>
+    window.onerror = function(pesan, sumber, baris) {
+        alert("Wah, ada error di baris: " + baris + "\n\nPesan: " + pesan);
+    };
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mainstay Drink POS</title>
@@ -1127,6 +1132,6 @@
     </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=333"></script>
+    <script type="module" src="app.js?v=335"></script>
 </body>
 </html>
