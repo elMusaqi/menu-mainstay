@@ -97,50 +97,125 @@ window.alert = (pesan) => {
 // ----------------------------------------------------------------------
 
 // ==========================================
-// MESIN LOGIN KASIR (POP-UP PIN)
+// MESIN NUMPAD & OTENTIKASI PIN BARU
 // ==========================================
+let currentPinInput = "";
+
 window.bukaMenuAbsen = () => {
-    document.getElementById('modal-login-absen').classList.remove('hidden');
+    currentPinInput = "";
+    updateIndikatorPin();
+    const modal = document.getElementById('modal-login-absen');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex'); // Pakai flex agar letaknya pas di tengah
+    }
 };
 
 window.tutupMenuAbsen = () => {
-    document.getElementById('modal-login-absen').classList.add('hidden');
-    document.getElementById('input-pin').value = ''; 
+    const modal = document.getElementById('modal-login-absen');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 };
 
-window.prosesLoginSistem = () => {
-    const pinInput = document.getElementById('input-pin').value.trim();
-    if(!pinInput || pinInput.length !== 6) {
-        alert("Peringatan: Masukkan 6 digit PIN dengan benar!");
+// Fungsi saat tombol Numpad ditekan
+window.tekanNumpad = (angka) => {
+    if (currentPinInput.length < 6) {
+        currentPinInput += angka;
+        updateIndikatorPin();
+        
+        // Pengecekan otomatis saat digit ke-6 masuk
+        if (currentPinInput.length === 6) {
+            setTimeout(() => {
+                validasiOtentikasiPin(currentPinInput);
+            }, 150);
+        }
+    }
+};
+
+// Fungsi tombol hapus (backspace)
+window.hapusSatuNumpad = () => {
+    if (currentPinInput.length > 0) {
+        currentPinInput = currentPinInput.slice(0, -1);
+        updateIndikatorPin();
+    }
+};
+
+// Fungsi reset semua titik
+window.resetNumpad = () => {
+    currentPinInput = "";
+    updateIndikatorPin();
+};
+
+// Fungsi penggerak titik oranye
+window.updateIndikatorPin = () => {
+    const container = document.getElementById('pin-indicators');
+    if (!container) return;
+    
+    const dots = container.children;
+    for (let i = 0; i < dots.length; i++) {
+        if (i < currentPinInput.length) {
+            dots[i].classList.remove('bg-slate-200');
+            dots[i].classList.add('bg-orange-500', 'scale-110');
+        } else {
+            dots[i].classList.remove('bg-orange-500', 'scale-110');
+            dots[i].classList.add('bg-slate-200');
+        }
+    }
+};
+
+// Fungsi Pengganti prosesLoginSistem Lama (Termasuk Validasi HRD)
+window.validasiOtentikasiPin = (pinInput) => {
+    const masterPin = typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888";
+    
+    // 1. Cek apakah itu PIN Master (Owner)
+    if (pinInput === masterPin) {
+        localStorage.setItem('mainstay_session_role', 'owner');
+        localStorage.setItem('mainstay_staff_name', "Owner (Master)");
+        
+        tutupMenuAbsen();
+        if (typeof window.switchRoleView === 'function') {
+            window.switchRoleView('owner');
+        }
+        alert("Akses Diberikan. Selamat bertugas, Owner (Master)!");
         return;
     }
 
+    // 2. Jika bukan Master, cari di database staff (globalStaff)
     let foundStaff = null;
     let staffKey = null;
 
-    // Cari PIN di database staff
-    for (const key in globalStaff) {
-        if (globalStaff[key].pin === pinInput) {
-            foundStaff = globalStaff[key];
-            staffKey = key;
-            break;
+    if (typeof globalStaff !== 'undefined' && globalStaff) {
+        for (const key in globalStaff) {
+            if (globalStaff[key].pin === pinInput) {
+                foundStaff = globalStaff[key];
+                staffKey = key;
+                break;
+            }
         }
     }
 
+    // 3. Eksekusi Hasil Pencarian
     if (foundStaff) {
-        // Daftarkan sebagai kasir aktif
-        activeStaff = { ...foundStaff, key: staffKey };
+        window.activeStaff = { ...foundStaff, key: staffKey };
+        const namaStaff = activeStaff.nama || activeStaff.name || "Staff Kasir";
         
-        // Ubah UI Nama Kasir Bertugas di Header (SUDAH DISESUAIKAN)
+        localStorage.setItem('mainstay_session_role', 'kasir');
+        localStorage.setItem('mainstay_staff_name', namaStaff);
+        
+        // Ubah UI Nama Kasir di Header
         const elNama = document.getElementById('kasir-active-name');
-        if(elNama) elNama.innerText = activeStaff.name;
+        if(elNama) elNama.innerText = namaStaff;
         
-        // Tutup Modal
-        window.tutupMenuAbsen();
-        
-        alert(`Akses Diberikan. Selamat bertugas, ${activeStaff.name}!`);
+        tutupMenuAbsen();
+        if (typeof window.switchRoleView === 'function') {
+            window.switchRoleView('kasir'); // Staff biasa masuk ke tab kasir
+        }
+        alert(`Akses Diberikan. Selamat bertugas, ${namaStaff}!`);
     } else {
         alert("Akses Ditolak: PIN tidak terdaftar di sistem HRD!");
+        resetNumpad(); // Kosongkan numpad agar bisa ketik ulang
     }
 };
 
@@ -4712,3 +4787,116 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, 400);
 });
+
+// ==========================================
+// MESIN NUMPAD UNTUK MODAL UTAMA (modal-login)
+// ==========================================
+let currentPinInput = "";
+
+window.openModalLogin = () => {
+    currentPinInput = "";
+    if (typeof updateIndikatorPin === 'function') updateIndikatorPin();
+    const modal = document.getElementById('modal-login');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+};
+
+window.closeModalLogin = () => {
+    const modal = document.getElementById('modal-login');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+};
+
+window.tekanNumpad = (angka) => {
+    if (currentPinInput.length < 6) {
+        currentPinInput += angka;
+        updateIndikatorPin();
+        
+        if (currentPinInput.length === 6) {
+            setTimeout(() => {
+                validasiOtentikasiPin(currentPinInput);
+            }, 150);
+        }
+    }
+};
+
+window.hapusSatuNumpad = () => {
+    if (currentPinInput.length > 0) {
+        currentPinInput = currentPinInput.slice(0, -1);
+        updateIndikatorPin();
+    }
+};
+
+window.resetNumpad = () => {
+    currentPinInput = "";
+    updateIndikatorPin();
+};
+
+window.updateIndikatorPin = () => {
+    const container = document.getElementById('pin-indicators');
+    if (!container) return;
+    
+    const dots = container.children;
+    for (let i = 0; i < dots.length; i++) {
+        if (i < currentPinInput.length) {
+            dots[i].classList.remove('bg-slate-200');
+            dots[i].classList.add('bg-orange-500', 'scale-110');
+        } else {
+            dots[i].classList.remove('bg-orange-500', 'scale-110');
+            dots[i].classList.add('bg-slate-200');
+        }
+    }
+};
+
+window.validasiOtentikasiPin = (pinInput) => {
+    const masterPin = typeof MASTER_PIN !== 'undefined' ? MASTER_PIN : "888888";
+    
+    if (pinInput === masterPin) {
+        localStorage.setItem('mainstay_session_role', 'owner');
+        localStorage.setItem('mainstay_staff_name', "Owner (Master)");
+        
+        closeModalLogin();
+        if (typeof window.switchRoleView === 'function') {
+            window.switchRoleView('owner');
+        }
+        alert("Akses Diberikan. Selamat bertugas, Owner (Master)!");
+        return;
+    }
+
+    let foundStaff = null;
+    let staffKey = null;
+
+    if (typeof globalStaff !== 'undefined' && globalStaff) {
+        for (const key in globalStaff) {
+            if (globalStaff[key].pin === pinInput) {
+                foundStaff = globalStaff[key];
+                staffKey = key;
+                break;
+            }
+        }
+    }
+
+    if (foundStaff) {
+        window.activeStaff = { ...foundStaff, key: staffKey };
+        const namaStaff = activeStaff.nama || activeStaff.name || "Staff Kasir";
+        
+        localStorage.setItem('mainstay_session_role', 'kasir');
+        localStorage.setItem('mainstay_staff_name', namaStaff);
+        
+        const elNama = document.getElementById('kasir-active-name');
+        if(elNama) elNama.innerText = namaStaff;
+        
+        closeModalLogin();
+        if (typeof window.switchRoleView === 'function') {
+            window.switchRoleView('kasir'); 
+        }
+        alert(`Akses Diberikan. Selamat bertugas, ${namaStaff}!`);
+    } else {
+        alert("Akses Ditolak: PIN tidak terdaftar di sistem HRD!");
+        resetNumpad(); 
+    }
+};
