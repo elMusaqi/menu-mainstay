@@ -4314,7 +4314,6 @@ window.renderKatalogPOS = () => {
         return;
     }
 
-    // KONVERSI AMAN UNTUK OBJECT / ARRAY FIREBASE
     const daftarMenu = Array.isArray(globalMenus) 
         ? globalMenus 
         : Object.keys(globalMenus).map(key => ({ key, ...globalMenus[key] }));
@@ -4342,8 +4341,8 @@ window.renderKatalogPOS = () => {
         const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
         const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
         
-        // Deteksi gambar dari database (mendukung berbagai variasi nama properti)
-        const gambarMenu = menu.gambar || menu.image || menu.img || menu.foto || menu.imgUrl; 
+        // Deteksi berbagai variasi nama properti gambar
+        const gambarMenu = menu.gambar || menu.image || menu.img || menu.foto || menu.imgUrl || menu.url; 
 
         const elemenVisual = gambarMenu 
             ? `<img src="${gambarMenu}" onerror="this.style.display='none'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-100 shrink-0 border border-slate-200">`
@@ -4362,7 +4361,6 @@ window.renderKatalogPOS = () => {
 };
 
 window.klikMenuPOS = (keyUnik) => {
-    // Ambil data menu dengan aman baik dari Array maupun Object Firebase
     const menu = Array.isArray(globalMenus) 
         ? globalMenus.find((m, idx) => (m.key !== undefined ? m.key == keyUnik : idx == keyUnik)) 
         : globalMenus[keyUnik];
@@ -4371,7 +4369,9 @@ window.klikMenuPOS = (keyUnik) => {
 
     const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
     const hargaDasar = Number(menu.harga || menu.price || menu.cost || 0);
-    const varianList = menu.varian || menu.variants || menu.topping || menu.options;
+    
+    // Deteksi berbagai variasi nama properti varian/topping di database
+    const varianList = menu.varian || menu.variants || menu.topping || menu.options || menu.pilihan || menu.opsi;
 
     if (varianList && (Array.isArray(varianList) ? varianList.length > 0 : Object.keys(varianList).length > 0)) {
         menuDipilihSementara = { key: keyUnik, nama: namaMenu, hargaDasar, varianList };
@@ -4575,7 +4575,7 @@ window.toggleMetodeBayarPOS = () => {
 
 window.prosesOrderanPOS = () => {
     if (posKeranjang.length === 0) {
-        alert("Keranjang pesanan masih kosong, Mas!");
+        alert("Keranjang pesanan masih kosong!");
         return;
     }
 
@@ -4604,8 +4604,13 @@ window.prosesOrderanPOS = () => {
         status: "selesai"
     };
 
+    // PENANGANAN AMAN UNTUK GLOBALORDERS (OBJECT / ARRAY)
     if (typeof globalOrders !== 'undefined') {
-        globalOrders.unshift(transaksiBaru);
+        if (Array.isArray(globalOrders)) {
+            globalOrders.unshift(transaksiBaru);
+        } else {
+            globalOrders[idTransaksi] = transaksiBaru;
+        }
     }
 
     if (typeof window.updateLiveCashDrawer === 'function') {
