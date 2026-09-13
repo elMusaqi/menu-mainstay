@@ -4422,3 +4422,28 @@ window.hitungUlangTotalKasir = () => {
     const tipe = document.getElementById('pos-tipe-pesanan').value;
     console.log("Tipe pesanan diubah ke:", tipe);
 };
+
+// ==========================================
+// FUNGSI OWNER MASUK KASIR TANPA ABSEN
+// ==========================================
+window.ownerMasukKasirTanpaAbsen = () => {
+    // 1. Definisikan status aktif langsung sebagai Owner (Bebas pantangan & absen)
+    window.activeStaff = {
+        name: "Owner (Master)",
+        role: "owner"
+    };
+    
+    // Simpan ke memori sesi kasir
+    localStorage.setItem('mainstay_active_staff', JSON.stringify(window.activeStaff));
+
+    // 2. Pindahkan tampilan utama ke mode Kasir
+    if (typeof window.switchRoleView === 'function') {
+        window.switchRoleView('kasir');
+    }
+
+    // 3. Update nama kasir bertugas di layar agar menampilkan "Owner"
+    const elemenNamaKasir = document.getElementById('kasir-nama-petugas');
+    if (elemenNamaKasir) {
+        elemenNamaKasir.innerText = "Owner (Master)";
+    }
+};
