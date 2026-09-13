@@ -82,34 +82,53 @@
 </head>
 <body class="bg-slate-100 text-gray-800 antialiased selection:bg-amber-200">
     
-<!-- MODAL LOGIN KASIR (SEDERHANA TANPA KAMERA) -->
-<div id="modal-login-absen" class="hidden fixed inset-0 bg-slate-900/95 z-[1000] flex items-center justify-center p-5 fade-in">
-    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col relative">
-        <div class="bg-slate-800 p-4 flex justify-between items-center">
-            <div>
-                <h2 class="text-white font-black tracking-widest uppercase text-sm">Login Kasir</h2>
-                <p class="text-[10px] text-gray-400 font-bold mt-0.5">Mainstay Drink POS</p>
-            </div>
-            <button onclick="tutupMenuAbsen()" class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full text-white flex justify-center items-center transition shadow-sm">
-                <i class="fa-solid fa-xmark"></i>
+<!-- MODAL LOGIN PIN (DESAIN BARU) -->
+<div id="modal-login-absen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] w-full max-w-sm p-7 relative shadow-2xl flex flex-col items-center">
+        <!-- Tombol Silang / Tutup -->
+        <button onclick="tutupMenuAbsen()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 transition">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <!-- Ikon Gembok -->
+        <div class="w-16 h-16 bg-orange-100 text-orange-500 rounded-[1rem] flex items-center justify-center text-3xl mb-4 mt-2 border border-orange-200/50 shadow-sm">
+            <i class="fa-solid fa-lock"></i>
+        </div>
+
+        <h2 class="text-xl font-black text-slate-900 mb-1">Otentikasi PIN</h2>
+        <p class="text-xs text-slate-500 text-center mb-6">Masukkan PIN 6 Digit (Staff atau Master Owner)</p>
+
+        <!-- Indikator 6 Titik PIN -->
+        <div class="flex justify-center gap-2.5 mb-6" id="pin-indicators">
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+        </div>
+
+        <!-- Tombol Numpad Grid -->
+        <div class="grid grid-cols-3 gap-3 w-full">
+            <button onclick="tekanNumpad('1')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">1</button>
+            <button onclick="tekanNumpad('2')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">2</button>
+            <button onclick="tekanNumpad('3')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">3</button>
+            
+            <button onclick="tekanNumpad('4')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">4</button>
+            <button onclick="tekanNumpad('5')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">5</button>
+            <button onclick="tekanNumpad('6')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">6</button>
+            
+            <button onclick="tekanNumpad('7')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">7</button>
+            <button onclick="tekanNumpad('8')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">8</button>
+            <button onclick="tekanNumpad('9')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">9</button>
+            
+            <button onclick="resetNumpad()" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-[13px] font-black text-slate-500 transition active:scale-95 shadow-sm">HAPUS</button>
+            <button onclick="tekanNumpad('0')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">0</button>
+            <button onclick="hapusSatuNumpad()" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-xl font-black text-slate-700 transition active:scale-95 shadow-sm flex items-center justify-center">
+                <i class="fa-solid fa-delete-left"></i>
             </button>
         </div>
-        
-        <div class="p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-5"><i class="fa-solid fa-lock text-7xl"></i></div>
-            
-            <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex justify-center items-center mb-4 border-4 border-blue-100 relative z-10 shadow-inner">
-                <i class="fa-solid fa-user-lock text-3xl"></i>
-            </div>
-            <h3 class="text-lg font-black text-slate-800 mb-1 relative z-10">Masukkan PIN</h3>
-            <p class="text-xs text-slate-500 font-medium mb-6 relative z-10">Silakan masukkan 6 digit PIN akses Anda.</p>
-            
-            <input type="password" id="input-pin" inputmode="numeric" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" class="w-full text-center text-3xl font-black tracking-[0.5em] text-purple-600 border-b-2 border-slate-200 focus:border-purple-500 outline-none pb-2 mb-8 bg-transparent relative z-10 transition-colors" placeholder="••••••">
-            
-            <button onclick="window.prosesLoginSistem()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition shadow-lg hover:shadow-xl flex justify-center items-center gap-2 relative z-10">
-                <i class="fa-solid fa-right-to-bracket"></i> MASUK SISTEM
-            </button>
-        </div>
+        <p class="text-[10px] text-slate-400 mt-6 text-center">Mainstay Drink POS • Sistem Kasir & Manajemen Terpadu</p>
     </div>
 </div>
 
@@ -449,23 +468,56 @@
                 </div>
             </div>
         </div>
-        <!-- ========================================== -->
-        <!-- 4. Modal Login (Role Switcher & Security)  -->
-        <!-- ========================================== -->
-        <div id="modal-login" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] hidden items-center justify-center fade-in px-5">
-            <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center">
-                <button onclick="closeModalLogin()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-900 transition text-2xl"><i class="fa-solid fa-xmark"></i></button>
-                
-                <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5 shadow-inner border border-amber-200"><i class="fa-solid fa-lock"></i></div>
-                <h2 id="login-title" class="text-xl font-black text-gray-900 mb-2 tracking-tight">Otorisasi Sistem</h2>
-                <p id="login-desc" class="text-[11px] text-gray-500 font-bold mb-6">Masukkan PIN Anda untuk mengakses panel.</p>
-                
-                <input type="password" id="login-pin" placeholder="• • • • • •" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-center tracking-[0.5em] font-black text-2xl focus:outline-none focus:border-amber-500 transition mb-2" maxlength="6" inputmode="numeric">
-                <p id="login-error" class="text-[10px] text-red-500 font-bold mb-5 hidden"><i class="fa-solid fa-triangle-exclamation"></i> PIN tidak valid atau salah.</p>
-                
-                <button onclick="prosesLogin()" class="w-full bg-gray-900 text-white font-black py-4 rounded-xl shadow-md hover:bg-black transition uppercase tracking-widest text-sm">Masuk Sistem</button>
-            </div>
+        
+        <!-- 4. Modal Login (Role Switcher & Security) DESAIN NUMPAD BARU -->
+<div id="modal-login" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] w-full max-w-sm p-7 relative shadow-2xl flex flex-col items-center">
+        <!-- Tombol Silang -->
+        <button onclick="closeModalLogin()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 transition">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <!-- Ikon Gembok -->
+        <div class="w-16 h-16 bg-orange-100 text-orange-500 rounded-[1rem] flex items-center justify-center text-3xl mb-4 mt-2 border border-orange-200/50 shadow-sm">
+            <i class="fa-solid fa-lock"></i>
         </div>
+
+        <h2 class="text-xl font-black text-slate-900 mb-1">Otentikasi PIN</h2>
+        <p class="text-xs text-slate-500 text-center mb-6">Masukkan PIN 6 Digit (Staff atau Master Owner)</p>
+
+        <!-- Indikator 6 Titik -->
+        <div class="flex justify-center gap-2.5 mb-6" id="pin-indicators">
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-200 transition-colors duration-200"></div>
+        </div>
+
+        <!-- Tombol Numpad Grid -->
+        <div class="grid grid-cols-3 gap-3 w-full">
+            <button onclick="tekanNumpad('1')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">1</button>
+            <button onclick="tekanNumpad('2')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">2</button>
+            <button onclick="tekanNumpad('3')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">3</button>
+            
+            <button onclick="tekanNumpad('4')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">4</button>
+            <button onclick="tekanNumpad('5')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">5</button>
+            <button onclick="tekanNumpad('6')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">6</button>
+            
+            <button onclick="tekanNumpad('7')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">7</button>
+            <button onclick="tekanNumpad('8')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">8</button>
+            <button onclick="tekanNumpad('9')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">9</button>
+            
+            <button onclick="resetNumpad()" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-[13px] font-black text-slate-500 transition active:scale-95 shadow-sm">HAPUS</button>
+            <button onclick="tekanNumpad('0')" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-2xl font-black text-slate-800 transition active:scale-95 shadow-sm">0</button>
+            <button onclick="hapusSatuNumpad()" class="bg-slate-50/80 border border-slate-100 hover:bg-slate-100 rounded-2xl py-3.5 text-xl font-black text-slate-700 transition active:scale-95 shadow-sm flex items-center justify-center">
+                <i class="fa-solid fa-delete-left"></i>
+            </button>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-6 text-center">Mainstay Drink POS • Sistem Kasir & Manajemen Terpadu</p>
+    </div>
+</div>
 
         <!-- ========================================== -->
         <!-- 5. Modal Kamera Absensi (Check-in/out)     -->
