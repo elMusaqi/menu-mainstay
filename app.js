@@ -4272,32 +4272,163 @@ window.hubungiOwner = () => {
 };
 
 // 2. Render Menu dari Database ke Layar Kasir
+// ==========================================
+// 2. KATALOG POS: KATEGORI, FILTER & VARIAN
+// ==========================================
+let kategoriAktifPOS = 'Semua';
+let menuDipilihSementara = null;
+
+// A. Render Tombol Kategori
+window.renderKategoriPOS = (daftarMenu) => {
+    const kontainerKat = document.getElementById('pos-kategori-container');
+    if (!kontainerKat) return;
+
+    const setKategori = new Set(['Semua']);
+    daftarMenu.forEach(m => {
+        const kat = m.kategori || m.category || m.jenis || 'Lainnya';
+        setKategori.add(kat);
+    });
+
+    kontainerKat.innerHTML = '';
+    setKategori.forEach(kat => {
+        const aktif = kategoriAktifPOS === kat;
+        kontainerKat.innerHTML += `
+            <button onclick="pilihKategoriPOS('${kat}')" class="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${aktif ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                ${kat}
+            </button>
+        `;
+    });
+};
+
+window.pilihKategoriPOS = (kat) => {
+    kategoriAktifPOS = kat;
+    window.renderKatalogPOS();
+};
+
+// B. Render Menu dari Database ke Layar POS (Dengan Filter)
 window.renderKatalogPOS = () => {
     const wadah = document.getElementById('pos-katalog-menu');
     if (!wadah) return;
     wadah.innerHTML = '';
     
-    Object.keys(globalMenus).forEach(key => {
-        const menu = globalMenus[key];
+    if (typeof globalMenus === 'undefined' || !globalMenus) {
+        wadah.innerHTML = `<p class="text-xs text-red-400 col-span-full text-center">Database menu tidak ditemukan!</p>`;
+        return;
+    }
+
+    const daftarMenu = Array.isArray(globalMenus) ? globalMenus : Object.keys(globalMenus).map(key => ({ key, ...globalMenus[key] }));
+
+    if (daftarMenu.length === 0) {
+        wadah.innerHTML = `<p class="text-xs text-slate-400 col-span-full text-center">Belum ada menu di katalog.</p>`;
+        return;
+    }
+
+    // Render navigasi kategori
+    window.renderKategoriPOS(daftarMenu);
+
+    // Filter menu sesuai kategori
+    const menuTampil = daftarMenu.filter(m => {
+        if (kategoriAktifPOS === 'Semua') return true;
+        const kat = m.kategori || m.category || m.jenis || 'Lainnya';
+        return kat === kategoriAktifPOS;
+    });
+
+    if (menuTampil.length === 0) {
+        wadah.innerHTML = `<p class="text-xs text-slate-400 col-span-full text-center">Tidak ada menu dalam kategori ini.</p>`;
+        return;
+    }
+
+    menuTampil.forEach((menu, index) => {
+        const keyUnik = menu.key !== undefined ? menu.key : index;
+        const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
+        const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
+
         wadah.innerHTML += `
-            <div onclick="tambahKeKeranjangPOS('${key}')" class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex flex-col justify-between shadow-sm active:scale-95">
-                <h4 class="text-xs font-bold text-slate-700 line-clamp-2">${menu.nama}</h4>
-                <p class="text-[11px] text-indigo-600 font-black mt-1">Rp ${Number(menu.harga).toLocaleString('id-ID')}</p>
+            <div onclick='klikMenuPOS(${JSON.stringify(menu).replace(/'/g, "&#39;")}, "${keyUnik}")' class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex flex-col justify-between shadow-sm active:scale-95">
+                <h4 class="text-xs font-bold text-slate-700 line-clamp-2">${namaMenu}</h4>
+                <p class="text-[11px] text-indigo-600 font-black mt-1">Rp ${hargaMenu.toLocaleString('id-ID')}</p>
             </div>
         `;
     });
 };
 
-// 3. Klik Menu Masuk Keranjang
-window.tambahKeKeranjangPOS = (key) => {
-    const menu = globalMenus[key];
-    if(!menu) return;
-    
+// C. Klik Menu (Buka Varian/Topping atau Langsung Keranjang)
+window.klikMenuPOS = (menu, keyUnik) => {
+    const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
+    const hargaDasar = Number(menu.harga || menu.price || menu.cost || 0);
+    const varianList = menu.varian || menu.variants || menu.topping || menu.options;
+
+    if (varianList && (Array.isArray(varianList) ? varianList.length > 0 : Object.keys(varianList).length > 0)) {
+        menuDipilihSementara = { key: keyUnik, nama: namaMenu, hargaDasar, varianList };
+        bukaModalVarian(menuDipilihSementara);
+    } else {
+        tambahKeKeranjangPOS(keyUnik, namaMenu, hargaDasar, "Normal");
+    }
+};
+
+window.bukaModalVarian = (data) => {
+    const modal = document.getElementById('modal-varian-pos');
+    const titleEl = document.getElementById('modal-menu-title');
+    const optionsEl = document.getElementById('modal-varian-options');
+    if (!modal) return;
+
+    titleEl.innerText = data.nama;
+    optionsEl.innerHTML = '';
+
+    const list = Array.isArray(data.varianList) ? data.varianList : Object.values(data.varianList);
+
+    list.forEach((v, idx) => {
+        const namaVarian = typeof v === 'string' ? v : (v.nama || v.name || `Pilihan ${idx+1}`);
+        const extraHarga = Number(v.harga || v.price || 0);
+        const formatExtra = extraHarga > 0 ? ` (+Rp ${extraHarga.toLocaleString('id-ID')})` : '';
+
+        optionsEl.innerHTML += `
+            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 transition">
+                <div class="flex items-center gap-2">
+                    <input type="radio" name="pilihan_varian" value="${namaVarian}" data-harga="${extraHarga}" ${idx === 0 ? 'checked' : ''} class="text-indigo-600 focus:ring-indigo-500">
+                    <span class="text-xs font-semibold text-slate-700">${namaVarian}</span>
+                </div>
+                <span class="text-[11px] font-bold text-indigo-600">${formatExtra}</span>
+            </label>
+        `;
+    });
+
+    modal.classList.remove('hidden');
+};
+
+window.tutupModalVarian = () => {
+    const modal = document.getElementById('modal-varian-pos');
+    if (modal) modal.classList.add('hidden');
+    menuDipilihSementara = null;
+};
+
+window.konfirmasiTambahVarian = () => {
+    if (!menuDipilihSementara) return;
+
+    const selectedRadio = document.querySelector('input[name="pilihan_varian"]:checked');
+    let catatanVarian = "Normal";
+    let tambahanHarga = 0;
+
+    if (selectedRadio) {
+        catatanVarian = selectedRadio.value;
+        tambahanHarga = Number(selectedRadio.getAttribute('data-harga')) || 0;
+    }
+
+    const hargaFinal = menuDipilihSementara.hargaDasar + tambahanHarga;
+    const namaLengkap = `${menuDipilihSementara.nama} (${catatanVarian})`;
+
+    // Gabungkan key dengan varian agar item beda varian tidak menumpuk di 1 baris keranjang
+    tambahKeKeranjangPOS(menuDipilihSementara.key + "_" + catatanVarian, namaLengkap, hargaFinal, catatanVarian);
+    window.tutupModalVarian();
+};
+
+// D. Klik Menu Masuk Keranjang (Fungsi Final)
+window.tambahKeKeranjangPOS = (key, nama, harga, varian = "Normal") => {
     const index = posKeranjang.findIndex(item => item.key === key);
     if(index > -1) {
         posKeranjang[index].qty += 1;
     } else {
-        posKeranjang.push({ key: key, nama: menu.nama, harga: Number(menu.harga), qty: 1 });
+        posKeranjang.push({ key: key, nama: nama, harga: Number(harga), qty: 1, varian: varian });
     }
     renderKeranjangPOS();
 };
