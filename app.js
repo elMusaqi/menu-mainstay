@@ -728,7 +728,7 @@ window.renderKatalog = () => {
 
         // Rancang Card HTML Menu (KEMBALI KE VERSI ASLI - BESAR & LEGA)
         const cardHtml = `
-            <div onclick="bukaModalDetail('${key}')" class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:-translate-y-1 hover:shadow-md transition duration-200">
+            <div onclick="bukaModalDetail('${key}')" class="w-full bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col cursor-pointer group hover:-translate-y-1 hover:shadow-md transition duration-200">
                 <div class="w-full h-28 bg-slate-100 rounded-xl overflow-hidden relative mb-2">
                     <img src="${imgUrl}" alt="${menu.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     ${menu.isBestSeller ? '<span class="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-2 py-1 rounded-md shadow-sm z-10">BEST</span>' : ''}
