@@ -4711,24 +4711,29 @@ window.prosesOrderanPOS = () => {
     const metodeBayarTerpilih = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
     const petugasAktif = localStorage.getItem('mainstay_staff_name') || "Owner (Master)";
 
-// --- TAMBAHAN: Tarik nomor WA dari input HTML ---
-const elemenWa = document.getElementById('input-wa-kasir');
-const nomorWaKasir = elemenWa && elemenWa.value ? elemenWa.value : '-';
+    // --- AMBIL DATA DARI FORM KASIR ---
+    const inputNama = document.getElementById('pos-nama').value.trim();
+    const inputWa = document.getElementById('pos-wa').value.trim();
+    const isMemberCheck = document.getElementById('pos-member').checked;
 
-const transaksiBaru = {
-    id: idTransaksi,
-    waktu: new Date().toLocaleTimeString('id-ID'),
-    tanggal: new Date().toLocaleDateString('id-ID'),
-    namaPelanggan: "Manual POS (" + tipePesanan.toUpperCase() + ")",
-    nomorWa: nomorWaKasir, // <-- Data WA masuk ke sini
-    items: [...posKeranjang],
-    total: posTotalTagihan,
-    bayar: nominalUang,
-    kembalian: kembalian,
-    metode: metodeBayarTerpilih,
-    kasir: petugasAktif,
-    status: "selesai"
-};
+    // Jika nama kosong, gunakan format default, jika diisi gunakan nama input kasir
+    const namaPelangganFinal = inputNama ? inputNama : ("Manual POS (" + tipePesanan.toUpperCase() + ")");
+
+    const transaksiBaru = {
+        id: idTransaksi,
+        waktu: new Date().toLocaleTimeString('id-ID'),
+        tanggal: new Date().toLocaleDateString('id-ID'),
+        namaPelanggan: namaPelangganFinal,
+        nomorWa: inputWa || '-',
+        isMember: isMemberCheck,
+        items: [...posKeranjang],
+        total: posTotalTagihan,
+        bayar: nominalUang,
+        kembalian: kembalian,
+        metode: metodeBayarTerpilih,
+        kasir: petugasAktif,
+        status: "masuk"
+    };
 
     try {
         let savedOrders = JSON.parse(localStorage.getItem('mainstay_offline_orders') || '[]');
