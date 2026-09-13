@@ -4412,16 +4412,28 @@ window.bukaModalVarian = (data) => {
     optionsEl.innerHTML = '';
 
     const rawList = data.varianList;
-    const list = Array.isArray(rawList) ? rawList : Object.entries(rawList).map(([k, v]) => {
-        if (typeof v === 'object' && v !== null) return { id: k, ...v };
-        return { id: k, nama: v, harga: 0 };
-    });
+    let list = [];
+
+    if (Array.isArray(rawList)) {
+        list = rawList;
+    } else if (typeof rawList === 'object' && rawList !== null) {
+        list = Object.entries(rawList).map(([k, v]) => {
+            if (typeof v === 'object' && v !== null) return { id: k, ...v };
+            return { id: k, nama: v, harga: 0 };
+        });
+    }
 
     list.forEach((v, idx) => {
-        let namaVarian = v.nama || v.name || v.title || v.text || v.label || v.pilihan || (typeof v === 'string' ? v : `Pilihan ${idx+1}`);
-        let extraHarga = Number(v.harga || v.price || v.cost || v.nominal || 0);
+        let namaVarian = "Pilihan " + (idx + 1);
+        let extraHarga = 0;
 
-        // Jika nama masih berupa ID (misal berawalan top_), cek ke master database globalToppings jika ada
+        if (typeof v === 'string') {
+            namaVarian = v;
+        } else if (typeof v === 'object' && v !== null) {
+            namaVarian = v.nama || v.name || v.title || v.text || v.label || v.pilihan || v.id || `Pilihan ${idx+1}`;
+            extraHarga = Number(v.harga || v.price || v.cost || v.nominal || 0);
+        }
+
         if (namaVarian.toString().startsWith('top_') && typeof globalToppings !== 'undefined' && globalToppings[namaVarian]) {
             const master = globalToppings[namaVarian];
             namaVarian = master.nama || master.name || namaVarian;
@@ -4608,7 +4620,7 @@ window.toggleMetodeBayarPOS = () => {
 };
 
 window.prosesOrderanPOS = () => {
-    if (posKeranjang.length === 0) {
+    if (!posKeranjang || posKeranjang.length === 0) {
         alert("Keranjang pesanan masih kosong!");
         return;
     }
@@ -4637,34 +4649,26 @@ window.prosesOrderanPOS = () => {
         bayar: nominalUang,
         kembalian: kembalian,
         metode: metodeBayarTerpilih,
-        kasir: petugasAktif, // Mencatat siapa penginputnya
-        status: "selesai",
-        tab: "selesai"
+        kasir: petugasAktif,
+        status: "selesai"
     };
 
-    // Masukkan ke penyimpanan global orders
-    if (typeof globalOrders !== 'undefined') {
-        if (Array.isArray(globalOrders)) {
-            globalOrders.unshift(transaksiBaru);
-        } else if (globalOrders && typeof globalOrders === 'object') {
-            globalOrders[idTransaksi] = transaksiBaru;
-        }
-    }
-
-    // Simpan backup ke localStorage agar langsung masuk tab riwayat kasir
     try {
         let savedOrders = JSON.parse(localStorage.getItem('mainstay_offline_orders') || '[]');
         savedOrders.unshift(transaksiBaru);
         localStorage.setItem('mainstay_offline_orders', JSON.stringify(savedOrders));
+        
+        if (typeof globalOrders !== 'undefined') {
+            if (Array.isArray(globalOrders)) globalOrders.unshift(transaksiBaru);
+            else globalOrders[idTransaksi] = transaksiBaru;
+        }
     } catch(e) {}
 
-    // Panggil semua fungsi render tab kasir yang ada di aplikasi
     if (typeof window.renderKasirOrders === 'function') window.renderKasirOrders();
     if (typeof window.updateLiveCashDrawer === 'function') window.updateLiveCashDrawer();
     if (typeof window.renderOrders === 'function') window.renderOrders();
     if (typeof window.loadOrders === 'function') window.loadOrders();
 
-    // Reset keranjang
     posKeranjang = [];
     if (typeof renderKeranjangPOS === 'function') renderKeranjangPOS();
 
@@ -4679,14 +4683,8 @@ window.prosesOrderanPOS = () => {
 // FUNGSI OWNER MASUK KASIR TANPA ABSEN
 // ==========================================
 window.ownerMasukKasirTanpaAbsen = () => {
-    window.activeStaff = {
-        name: "Owner (Master)",
-        role: "owner"
-    };
-    
     localStorage.setItem('mainstay_session_role', 'kasir');
     localStorage.setItem('mainstay_staff_name', "Owner (Master)");
-    localStorage.setItem('mainstay_active_staff', JSON.stringify(window.activeStaff));
     
     if (typeof window.switchRoleView === 'function') {
         window.switchRoleView('kasir');
@@ -4698,7 +4696,6 @@ window.ownerMasukKasirTanpaAbsen = () => {
     }
 };
 
-// PEMULIH SESI ANTI-REFRESH ULTIMATE
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const sesiAktif = localStorage.getItem('mainstay_session_role');
