@@ -4314,7 +4314,10 @@ window.renderKatalogPOS = () => {
         return;
     }
 
-    const daftarMenu = Array.isArray(globalMenus) ? globalMenus : Object.keys(globalMenus).map(key => ({ key, ...globalMenus[key] }));
+    // KONVERSI AMAN UNTUK OBJECT / ARRAY FIREBASE
+    const daftarMenu = Array.isArray(globalMenus) 
+        ? globalMenus 
+        : Object.keys(globalMenus).map(key => ({ key, ...globalMenus[key] }));
 
     if (daftarMenu.length === 0) {
         wadah.innerHTML = `<p class="text-xs text-slate-400 col-span-full text-center">Belum ada menu di katalog.</p>`;
@@ -4339,10 +4342,9 @@ window.renderKatalogPOS = () => {
         const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
         const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
         
-        // Ambil link gambar dari database
-        const gambarMenu = menu.gambar || menu.image || menu.img; 
+        // Deteksi gambar dari database (mendukung berbagai variasi nama properti)
+        const gambarMenu = menu.gambar || menu.image || menu.img || menu.foto || menu.imgUrl; 
 
-        // LOGIKA CERDAS: Jika ada gambar pakai IMG, jika tidak ada pakai kotak ikon
         const elemenVisual = gambarMenu 
             ? `<img src="${gambarMenu}" onerror="this.style.display='none'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-100 shrink-0 border border-slate-200">`
             : `<div class="w-12 h-12 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0 border border-indigo-100"><i class="fa-solid fa-utensils text-sm"></i></div>`;
@@ -4360,7 +4362,11 @@ window.renderKatalogPOS = () => {
 };
 
 window.klikMenuPOS = (keyUnik) => {
-    const menu = Array.isArray(globalMenus) ? globalMenus.find((m, idx) => (m.key !== undefined ? m.key == keyUnik : idx == keyUnik)) : globalMenus[keyUnik];
+    // Ambil data menu dengan aman baik dari Array maupun Object Firebase
+    const menu = Array.isArray(globalMenus) 
+        ? globalMenus.find((m, idx) => (m.key !== undefined ? m.key == keyUnik : idx == keyUnik)) 
+        : globalMenus[keyUnik];
+
     if (!menu) return;
 
     const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
