@@ -3005,12 +3005,17 @@ const restorePersistentSession = () => {
 
 // Listener utama yang memicu seluruh ekosistem aplikasi
 document.addEventListener('DOMContentLoaded', () => {
-    applyLayoutFixes(); 
+    applyLayoutFixes();
     startClock();
-    initFirebaseListeners(); // Koneksi real-time ke Firebase
-    restorePersistentSession(); // Amankan navigasi via Session
-});
+    initFirebaseListeners(); 
+    restorePersistentSession(); // Sesi utama bawaan aplikasi
 
+    // --- PASTIKAN KUNCI NYA SAMA ---
+if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
+    if (typeof window.bukaPanelKasirManual === 'function') {
+        window.bukaPanelKasirManual();
+    };
+};
 // ==========================================
 // MODUL SAKELAR: PELANGGAN <-> KASIR
 // ==========================================
@@ -4634,6 +4639,9 @@ window.bukaPanelKasirManual = () => {
         renderKatalogPOS();
         posKeranjang = [];
         renderKeranjangPOS();
+        
+        // --- TAMBAHKAN INI (Simpan memori bahwa kasir sedang dibuka) ---
+        localStorage.setItem('mainstay_is_kasir_open', 'true');
     }
 };
 
@@ -4642,6 +4650,9 @@ window.tutupPanelKasirManual = () => {
     if (panel) {
         panel.classList.add('hidden');
         panel.classList.remove('flex');
+        
+        // --- TAMBAHKAN INI (Hapus memori kasir saat ditutup) ---
+        localStorage.setItem('mainstay_is_kasir_open', 'false');
     }
 };
 
