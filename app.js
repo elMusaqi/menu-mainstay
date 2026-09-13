@@ -4447,3 +4447,59 @@ window.ownerMasukKasirTanpaAbsen = () => {
         elemenNamaKasir.innerText = "Owner (Master)";
     }
 };
+
+// ==========================================
+// MESIN EKSEKUSI TRANSAKSI POS MANUAL
+// ==========================================
+window.prosesOrderanPOS = () => {
+    // 1. Validasi: Cek keranjang kosong atau belum
+    if (posKeranjang.length === 0) {
+        alert("Keranjang pesanan masih kosong, Mas!");
+        return;
+    }
+
+    // 2. Validasi: Cek nominal pembayaran kasir
+    const inputUang = document.getElementById('pos-uang-diterima').value;
+    const nominalUang = parseInt(inputUang) || 0;
+    
+    if (nominalUang < posTotalTagihan) {
+        alert("Nominal uang yang diterima masih kurang dari total tagihan!");
+        return;
+    }
+
+    const kembalian = nominalUang - posTotalTagihan;
+    const tipePesanan = document.getElementById('pos-tipe-pesanan').value;
+    const idTransaksi = "CSH-" + Math.floor(100000 + Math.random() * 900000);
+
+    // 3. Susun data transaksi baru
+    const transaksiBaru = {
+        id: idTransaksi,
+        waktu: new Date().toLocaleTimeString('id-ID'),
+        namaPelanggan: `Manual POS (${tipePesanan.toUpperCase()})`,
+        items: [...posKeranjang],
+        total: posTotalTagihan,
+        bayar: nominalUang,
+        kembalian: kembalian,
+        metode: "Tunai (Manual POS)",
+        status: "selesai"
+    };
+
+    // 4. Masukkan ke penyimpanan/array global aplikasi (jika ada)
+    if (typeof globalOrders !== 'undefined') {
+        globalOrders.unshift(transaksiBaru);
+    }
+
+    // 5. Update tampilan Omzet & Laci Kas secara otomatis
+    if (typeof window.updateLiveCashDrawer === 'function') {
+        window.updateLiveCashDrawer();
+    }
+    if (typeof window.renderKasirOrders === 'function') {
+        window.renderKasirOrders();
+    }
+
+    // 6. Notifikasi sukses & reset panel
+    alert(`Transaksi Berhasil! 🎉\nID: ${idTransaksi}\nTotal: Rp ${posTotalTagihan.toLocaleString('id-ID')}\nKembalian: Rp ${kembalian.toLocaleString('id-ID')}`);
+
+    // Tutup panel kasir manual
+    window.tutupPanelKasirManual();
+};
