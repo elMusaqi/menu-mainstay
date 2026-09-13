@@ -590,12 +590,18 @@
                             <h2 class="font-black text-lg leading-none text-white">Owner Master</h2>
                         </div>
                     </div>
-                    <!-- Tambahkan di sebelah tombol keluar Owner -->
-    <!-- Tombol Pintas ke Kasir (Hanya Ikon & Selaras dengan Tombol Keluar) -->
-     <button onclick="ownerMasukKasirTanpaAbsen()" title="Buka Kasir (Tanpa Absen)" class="bg-gray-800 hover:bg-gray-700 text-indigo-400 hover:text-indigo-300 p-2.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center mr-2">
-        <i class="fa-solid fa-cash-register text-base"></i>
-     </button>
-                    <button onclick="prosesLogout('owner')" class="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center border border-red-500/20 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <!-- Bungkus kedua tombol agar berdampingan rapi dan ukurannya kembar -->
+    <div class="flex items-center gap-2">
+        <!-- Tombol Pintas ke Kasir (Dibuat kembar identik dengan tombol logout) -->
+        <button onclick="ownerMasukKasirTanpaAbsen()" title="Buka Kasir (Tanpa Absen)" class="w-10 h-10 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition cursor-pointer">
+            <i class="fa-solid fa-cash-register"></i>
+        </button>
+
+        <!-- Tombol Logout Asli Owner -->
+        <button onclick="prosesLogout('owner')" class="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center border border-red-500/20 hover:bg-red-500 hover:text-white transition">
+            <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+    </div>
                 </div>
             </div>
 
@@ -1072,6 +1078,6 @@
     </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=329"></script>
+    <script type="module" src="app.js?v=330"></script>
 </body>
 </html>
