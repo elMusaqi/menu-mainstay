@@ -1069,11 +1069,10 @@
         </div>
 
         <!-- Wadah Gambar QRIS (Otomatis muncul jika QRIS dipilih) -->
-        <div id="pos-qris-container" class="hidden mb-4 p-3 border-2 border-dashed border-indigo-200 rounded-xl text-center bg-indigo-50/50">
-            <p class="text-[11px] text-indigo-600 font-bold mb-2">Silakan scan QRIS di bawah ini</p>
-            <!-- Sesuaikan src dengan lokasi gambar QRIS jenengan di folder assets -->
-            <img src="assets/qris-mainstay.png" alt="QRIS Mainstay" class="w-32 h-32 object-contain mx-auto rounded-lg shadow-sm">
-        </div>
+        <div id="pos-qris-container" class="hidden text-center p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mb-3">
+    <p class="text-[11px] font-bold text-indigo-900 mb-2">Silakan Scan QRIS di Bawah Ini:</p>
+    <img src="qris-mainstay.png" alt="QRIS Mainstay" onerror="this.src='https://via.placeholder.com/150?text=QRIS+Mainstay'" class="w-32 h-32 object-contain mx-auto rounded-lg shadow-sm bg-white p-1 border border-slate-200">
+</div>
                 
                 <!-- Input Manual -->
                 <div class="relative w-full mb-3">
@@ -1132,6 +1131,6 @@
     </div>
     
     <!-- MODULE PEMANGGIL JAVASCRIPT (VERSI 1 - CLEAN SLATE) -->
-    <script type="module" src="app.js?v=341"></script>
+    <script type="module" src="app.js?v=342"></script>
 </body>
 </html>
