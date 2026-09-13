@@ -3004,18 +3004,21 @@ const restorePersistentSession = () => {
 };
 
 // Listener utama yang memicu seluruh ekosistem aplikasi
+// --- PASTIKAN STRUKTUR INI BERSIH ---
 document.addEventListener('DOMContentLoaded', () => {
     applyLayoutFixes();
     startClock();
     initFirebaseListeners(); 
-    restorePersistentSession(); // Sesi utama bawaan aplikasi
+    restorePersistentSession();
 
-    // --- PASTIKAN KUNCI NYA SAMA ---
-if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
-    if (typeof window.bukaPanelKasirManual === 'function') {
-        window.bukaPanelKasirManual();
-    };
-};
+    // Pemulihan kasir manual yang aman
+    if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
+        if (typeof window.bukaPanelKasirManual === 'function') {
+            window.bukaPanelKasirManual();
+        }
+    }
+});
+
 // ==========================================
 // MODUL SAKELAR: PELANGGAN <-> KASIR
 // ==========================================
