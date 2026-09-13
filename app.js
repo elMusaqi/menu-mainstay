@@ -4342,15 +4342,20 @@ window.renderKatalogPOS = () => {
         const keyUnik = menu.key !== undefined ? menu.key : index;
         const namaMenu = menu.nama || menu.title || menu.name || "Menu Tanpa Nama";
         const hargaMenu = Number(menu.harga || menu.price || menu.cost || 0);
+        // Tarik gambar dari database, berikan gambar fallback jika kosong
+        const gambarMenu = menu.gambar || menu.image || menu.img || 'https://via.placeholder.com/150?text=Menu'; 
 
+        // Desain baru: Ada gambar thumbnail kecil di sebelah kiri
         wadah.innerHTML += `
-            <div onclick='klikMenuPOS(${JSON.stringify(menu).replace(/'/g, "&#39;")}, "${keyUnik}")' class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex flex-col justify-between shadow-sm active:scale-95">
-                <h4 class="text-xs font-bold text-slate-700 line-clamp-2">${namaMenu}</h4>
-                <p class="text-[11px] text-indigo-600 font-black mt-1">Rp ${hargaMenu.toLocaleString('id-ID')}</p>
+            <div onclick='klikMenuPOS(${JSON.stringify(menu).replace(/'/g, "&#39;")}, "${keyUnik}")' class="bg-slate-50 border border-slate-200 p-2 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center gap-2.5 shadow-sm active:scale-95">
+                <img src="${gambarMenu}" onerror="this.src='https://via.placeholder.com/150?text=No+Img'" alt="${namaMenu}" class="w-12 h-12 object-cover rounded-md bg-slate-200 shrink-0 border border-slate-200">
+                <div class="flex flex-col justify-center w-full overflow-hidden">
+                    <h4 class="text-[11px] font-bold text-slate-700 leading-tight truncate">${namaMenu}</h4>
+                    <p class="text-[10px] text-indigo-600 font-black mt-1">Rp ${hargaMenu.toLocaleString('id-ID')}</p>
+                </div>
             </div>
         `;
     });
-};
 
 // C. Klik Menu (Buka Varian/Topping atau Langsung Keranjang)
 window.klikMenuPOS = (menu, keyUnik) => {
@@ -4548,6 +4553,27 @@ window.setUangCepat = (nominal) => {
     hitungKembalian(); 
 };
 
+    // ==========================================
+// TOGGLE METODE PEMBAYARAN POS (CASH / QRIS)
+// ==========================================
+window.toggleMetodeBayarPOS = () => {
+    const metode = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
+    const wadahQris = document.getElementById('pos-qris-container');
+    const inputUang = document.getElementById('pos-uang-diterima');
+
+    if (metode === 'QRIS') {
+        if(wadahQris) wadahQris.classList.remove('hidden');   // Munculkan barcode QRIS
+        if(inputUang) {
+            inputUang.value = posTotalTagihan;      // Otomatis isi uang pas
+            inputUang.disabled = true;              // Kunci input uang
+        }
+        if (typeof hitungKembalian === 'function') hitungKembalian(); // Update tulisan kembalian
+    } else {
+        if(wadahQris) wadahQris.classList.add('hidden');      // Sembunyikan QRIS
+        if(inputUang) inputUang.disabled = false;             // Buka kembali input uang
+    }
+};
+
 // 10. Placeholder Kalkulasi Ojol (Untuk Tahap Selanjutnya)
 window.hitungUlangTotalKasir = () => {
     const tipe = document.getElementById('pos-tipe-pesanan').value;
@@ -4602,6 +4628,9 @@ window.prosesOrderanPOS = () => {
     const tipePesanan = document.getElementById('pos-tipe-pesanan').value;
     const idTransaksi = "CSH-" + Math.floor(100000 + Math.random() * 900000);
 
+    // Ambil metode bayar yang dipilih kasir (Tunai / QRIS)
+    const metodeBayarTerpilih = document.querySelector('input[name="pos_metode_bayar"]:checked').value;
+
     // 3. Susun data transaksi baru
     const transaksiBaru = {
         id: idTransaksi,
@@ -4611,7 +4640,7 @@ window.prosesOrderanPOS = () => {
         total: posTotalTagihan,
         bayar: nominalUang,
         kembalian: kembalian,
-        metode: "Tunai (Manual POS)",
+        metode: metodeBayarTerpilih, // <-- Otomatis menyesuaikan Tunai/QRIS
         status: "selesai"
     };
 
