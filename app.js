@@ -4791,7 +4791,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // MESIN NUMPAD UNTUK MODAL UTAMA (modal-login)
 // ==========================================
-let currentPinInput = "";
+currentPinInput = "";
 
 window.openModalLogin = () => {
     currentPinInput = "";
