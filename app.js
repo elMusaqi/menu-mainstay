@@ -3008,13 +3008,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startClock();
     initFirebaseListeners(); 
     restorePersistentSession();
-
-    // Pemulihan kasir manual yang aman
-    if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
-        if (typeof window.bukaPanelKasirManual === 'function') {
-            window.bukaPanelKasirManual();
-        }
-    }
+    
 });
 
 // ==========================================
