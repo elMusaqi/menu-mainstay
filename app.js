@@ -2880,9 +2880,53 @@ window.simpanDataVoucher = () => {
         // Buat link auto-apply dinamis sesuai domain saat ini
         urlLink: `${window.location.origin}${window.location.pathname}?voucher=${kode}`
     };
+// --- LOGIKA CRUD MASTER PANEL VOUCHER ---
 
-    // Proses simpan ke Firebase (asumsikan objek 'db' sudah ada dari initFirebase)
-    set(ref(db, 'vouchers/' + id), data)
+window.toggleWaInput = (value) => {
+    const wadah = document.getElementById('wadah-target-wa');
+    if(wadah) wadah.classList.toggle('hidden', value === 'publik');
+};
+
+window.bukaModalVoucher = () => {
+    document.getElementById('form-voucher').reset();
+    document.getElementById('v-id').value = '';
+    toggleWaInput('publik');
+    
+    // Set minimal tanggal hari ini
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('v-tanggal').min = today;
+    
+    document.getElementById('modal-form-voucher').classList.remove('hidden');
+};
+
+window.tutupModalVoucher = () => {
+    document.getElementById('modal-form-voucher').classList.add('hidden');
+};
+
+window.simpanDataVoucher = () => {
+    const id = document.getElementById('v-id').value || 'VCH-' + Date.now().toString();
+    const kode = document.getElementById('v-kode').value.toUpperCase();
+    const nilai = Number(document.getElementById('v-nilai').value);
+    
+    if(!kode || !nilai || !document.getElementById('v-tanggal').value) {
+        alert("Kode, Nilai, dan Tanggal Berlaku harus diisi!");
+        return;
+    }
+
+    const data = {
+        kode: kode,
+        tipe: document.getElementById('v-tipe').value,
+        nilai: nilai,
+        minPembelian: Number(document.getElementById('v-min-beli').value) || 0,
+        targetAudience: document.getElementById('v-target').value,
+        waList: document.getElementById('v-wa-list').value.replace(/\s+/g, ''),
+        berlakuHingga: document.getElementById('v-tanggal').value,
+        status: 'aktif',
+        urlLink: `${window.location.origin}${window.location.pathname}?voucher=${kode}`
+    };
+
+    // Menggunakan penulisan Firebase Klasik
+    firebase.database().ref('vouchers/' + id).set(data)
         .then(() => {
             tutupModalVoucher();
         })
@@ -2890,11 +2934,11 @@ window.simpanDataVoucher = () => {
 };
 
 window.renderVoucherList = () => {
-    const { ref, onValue } = window;
     const wadah = document.getElementById('list-manajemen-voucher');
     if (!wadah) return;
 
-    onValue(ref(db, 'vouchers'), (snapshot) => {
+    // Menggunakan penulisan Firebase Klasik
+    firebase.database().ref('vouchers').on('value', (snapshot) => {
         wadah.innerHTML = '';
         if (!snapshot.exists()) {
             wadah.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed rounded-xl"><p class="text-xs text-slate-500 font-bold">Belum ada voucher yang dibuat.</p></div>';
@@ -2902,20 +2946,18 @@ window.renderVoucherList = () => {
         }
 
         const dataVoucher = snapshot.val();
-        // Urutkan dari yang terbaru (dibalik)
+        
         Object.keys(dataVoucher).reverse().forEach(id => {
             const v = dataVoucher[id];
             const bgStatus = v.status === 'aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600';
             const iconTarget = v.targetAudience === 'khusus' ? '<i class="fa-solid fa-bullseye text-amber-500"></i>' : '<i class="fa-solid fa-earth-americas text-sky-500"></i>';
             const diskonTeks = v.tipe === 'persen' ? `${v.nilai}%` : `Rp ${v.nilai.toLocaleString('id-ID')}`;
             
-            // Format Tanggal
             const tgl = new Date(v.berlakuHingga);
             const formatTgl = `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {month:'short'})} ${tgl.getFullYear()}`;
 
             wadah.innerHTML += `
                 <div class="bg-white border rounded-xl p-3 shadow-sm relative overflow-hidden">
-                    <!-- Aksen warna kiri -->
                     <div class="absolute left-0 top-0 bottom-0 w-1 ${v.status === 'aktif' ? 'bg-emerald-400' : 'bg-red-400'}"></div>
                     
                     <div class="flex justify-between items-start pl-2">
@@ -2933,7 +2975,6 @@ window.renderVoucherList = () => {
                         <p class="text-[10px] font-bold text-slate-500 flex items-center gap-1">${iconTarget} Exp: ${formatTgl}</p>
                     </div>
                     
-                    <!-- Tombol Aksi -->
                     <div class="grid grid-cols-2 gap-2 mt-3 pl-2">
                         <button onclick="salinLinkVoucher('${v.urlLink}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] py-1.5 rounded-lg font-bold flex items-center justify-center gap-1">
                             <i class="fa-solid fa-link"></i> Salin Link
@@ -2953,8 +2994,8 @@ window.salinLinkVoucher = (link) => {
 };
 
 window.toggleStatusVoucher = (id, curStatus) => {
-    const { ref, set } = window;
-    set(ref(db, `vouchers/${id}/status`), curStatus === 'aktif' ? 'nonaktif' : 'aktif');
+    // Menggunakan penulisan Firebase Klasik
+    firebase.database().ref(`vouchers/${id}/status`).set(curStatus === 'aktif' ? 'nonaktif' : 'aktif');
 };
 
 // ---------------------------------------------------------
