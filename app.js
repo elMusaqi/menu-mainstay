@@ -3031,11 +3031,23 @@ document.addEventListener('DOMContentLoaded', () => {
 window.loginKeKasir = () => {
     // Buka layar kasir
     document.getElementById('layar-kasir').classList.remove('hidden');
+    
+    // --- TAMBAHKAN SIMPAN SESI INI ---
+    localStorage.setItem('mainstay_session_role', 'kasir');
+    
+    // Amankan data staff aktif jika ada
+    const staffData = typeof activeStaff !== 'undefined' && activeStaff ? activeStaff : { name: "Kasir Utama" };
+    localStorage.setItem('mainstay_session_staff', JSON.stringify(staffData));
 };
 
 window.keluarDariKasir = () => {
     // Tutup layar kasir dan kembali ke mode pelanggan
     document.getElementById('layar-kasir').classList.add('hidden');
+    
+    // --- HAPUS SESI SAAT KELUAR ---
+    localStorage.removeItem('mainstay_session_role');
+    localStorage.removeItem('mainstay_session_staff');
+
     // Matikan kamera jika sebelumnya menyala
     if (typeof matikanKamera === 'function') matikanKamera();
 };
