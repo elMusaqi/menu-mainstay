@@ -2986,25 +2986,20 @@ window.cetakStruk = (orderKey) => {
 // INISIALISASI SAAT DOM SELESAI DIMUAT (AKHIR DARI SCRIPT)
 // ============================================================================
 
-const restorePersistentSession = () => {
-    const savedRole = localStorage.getItem('mainstay_session_role');
-    const savedStaff = localStorage.getItem('mainstay_session_staff');
-
-    if (savedRole === 'owner') {
-        window.switchRoleView('owner');
-    } else if (savedRole === 'kasir' && savedStaff) {
-        activeStaff = JSON.parse(savedStaff);
-        const nameEl = document.getElementById('kasir-active-name');
-        if (nameEl) nameEl.innerText = activeStaff.name;
-        window.switchRoleView('kasir');
-    } else if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
-        if (typeof window.bukaPanelKasirManual === 'function') {
-            window.bukaPanelKasirManual();
+// --- PEREKAM OTOMATIS SESI VIEW ---
+if (typeof window.switchRoleView === 'function') {
+    const originalSwitchRoleView = window.switchRoleView;
+    window.switchRoleView = (role) => {
+        localStorage.setItem('mainstay_session_role', role);
+        if (role === 'kasir' && typeof activeStaff !== 'undefined' && activeStaff) {
+            localStorage.setItem('mainstay_session_staff', JSON.stringify(activeStaff));
+        } else if (role === 'customer') {
+            localStorage.removeItem('mainstay_session_role');
+            localStorage.removeItem('mainstay_session_staff');
         }
-    } else {
-        window.switchRoleView('customer');
-    }
-};
+        originalSwitchRoleView(role);
+    };
+}
 
 // Listener utama yang memicu seluruh ekosistem aplikasi
 // --- PASTIKAN STRUKTUR INI BERSIH ---
