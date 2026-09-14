@@ -3008,9 +3008,9 @@ const restorePersistentSession = () => {
     if (savedRole === 'owner') {
         window.switchRoleView('owner');
     } else if (savedRole === 'kasir' && savedStaff) {
-        activeStaff = JSON.parse(savedStaff);
+        window.activeStaff = JSON.parse(savedStaff);
         const nameEl = document.getElementById('kasir-active-name');
-        if (nameEl) nameEl.innerText = activeStaff.name;
+        if (nameEl) nameEl.innerText = window.activeStaff.name;
         window.switchRoleView('kasir');
     } else if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
         if (typeof window.bukaPanelKasirManual === 'function') {
