@@ -4763,8 +4763,20 @@ window.prosesOrderanPOS = () => {
         kembalian: kembalian,
         metode: metodeBayarTerpilih,
         kasir: petugasAktif,
-        status: "masuk"
+        status: "masuk" // Masuk ke antrean dapur
     };
+
+    // --- TAMBAHKAN INI SUPAYA MASUK KE DATABASE FIREBASE ---
+    if (typeof database !== 'undefined' && database) {
+        database.ref('transaksi').push(transaksiBaru);
+    } else if (typeof firebase !== 'undefined') {
+        firebase.database().ref('transaksi').push(transaksiBaru);
+    }
+
+    // Reset keranjang POS setelah berhasil diproses
+    posKeranjang = [];
+    renderKeranjangPOS();
+    alert('Pesanan kasir berhasil dikirim ke antrean dapur!');
 
     try {
         let savedOrders = JSON.parse(localStorage.getItem('mainstay_offline_orders') || '[]');
