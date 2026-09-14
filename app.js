@@ -2998,12 +2998,10 @@ const restorePersistentSession = () => {
         if (nameEl) nameEl.innerText = activeStaff.name;
         window.switchRoleView('kasir');
     } else if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
-        // --- JIKA KASIR MANUAL SEDANG DIBUKA, PERTAHANKAN DI SINI ---
         if (typeof window.bukaPanelKasirManual === 'function') {
             window.bukaPanelKasirManual();
         }
     } else {
-        // Jika tidak ada sesi sama sekali, baru paksa kembali ke view customer
         window.switchRoleView('customer');
     }
 };
@@ -3032,10 +3030,8 @@ window.loginKeKasir = () => {
     // Buka layar kasir
     document.getElementById('layar-kasir').classList.remove('hidden');
     
-    // --- TAMBAHKAN SIMPAN SESI INI ---
+    // Simpan sesi
     localStorage.setItem('mainstay_session_role', 'kasir');
-    
-    // Amankan data staff aktif jika ada
     const staffData = typeof activeStaff !== 'undefined' && activeStaff ? activeStaff : { name: "Kasir Utama" };
     localStorage.setItem('mainstay_session_staff', JSON.stringify(staffData));
 };
@@ -3044,13 +3040,15 @@ window.keluarDariKasir = () => {
     // Tutup layar kasir dan kembali ke mode pelanggan
     document.getElementById('layar-kasir').classList.add('hidden');
     
-    // --- HAPUS SESI SAAT KELUAR ---
+    // Hapus sesi saat keluar
     localStorage.removeItem('mainstay_session_role');
     localStorage.removeItem('mainstay_session_staff');
 
-    // Matikan kamera jika sebelumnya menyala
-    if (typeof matikanKamera === 'function') matikanKamera();
+    if (typeof matikanKamera === 'function') {
+        matikanKamera();
+    }
 };
+
 // ==========================================
 // MODUL RUANG KERJA KASIR (TAB NAVIGASI)
 // ==========================================
