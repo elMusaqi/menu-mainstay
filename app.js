@@ -2731,24 +2731,230 @@ window.tarikLaporanKeuangan = async () => {
     }
 };
 
-// ---------------------------------------------------------
-// MODUL 5: PROMO & VOUCHER (UI Placeholder Blueprint)
-// ---------------------------------------------------------
+// ==========================================
+// MODUL 5: PROMO & VOUCHER (UI MASTER PANEL)
+// ==========================================
 window.renderPanelPromo = () => {
-    document.getElementById('owner-inner-panels-container').innerHTML = `
+    const container = document.getElementById('owner-inner-panels-container');
+    container.innerHTML = `
         <div class="fixed inset-0 bg-slate-50 z-[300] flex flex-col fade-in">
+            <!-- Header Panel -->
             <div class="bg-gray-900 text-white p-4 flex items-center gap-3 shrink-0 shadow-md">
                 <button onclick="closePanel()" class="w-10 h-10 bg-gray-800 rounded-xl hover:bg-gray-700 transition flex items-center justify-center">
                     <i class="fa-solid fa-arrow-left"></i>
                 </button>
                 <h2 class="font-black text-lg leading-none">Promo & Voucher</h2>
             </div>
-            <div class="flex-1 p-5 flex flex-col items-center justify-center text-center text-gray-400">
-                <i class="fa-solid fa-ticket text-5xl mb-4 text-pink-500"></i>
-                <p class="font-bold text-sm">Database Voucher Targeted & Auto-Apply<br>akan diaktifkan di fase update berikutnya.</p>
+
+            <!-- Konten Master Panel Voucher -->
+            <div class="flex-1 overflow-y-auto p-4 pb-20">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-xs text-slate-500 font-bold">Kelola Diskon & Promo</p>
+                    <button onclick="bukaModalVoucher()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">
+                        + Buat Voucher
+                    </button>
+                </div>
+
+                <!-- List Voucher akan dirender di sini -->
+                <div id="list-manajemen-voucher" class="flex flex-col gap-3">
+                    <div class="text-center p-6 text-slate-400">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                        <p class="text-xs">Memuat database voucher...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MODAL FORM TAMBAH/EDIT VOUCHER (Di-inject di sini) -->
+            <div id="modal-form-voucher" class="hidden fixed inset-0 z-[400] bg-black/60 flex justify-center items-end sm:items-center p-0 sm:p-4 transition-all">
+                <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 h-[85vh] sm:h-auto overflow-y-auto flex flex-col">
+                    <div class="flex justify-between items-center mb-4 shrink-0">
+                        <h3 class="font-black text-lg text-slate-800" id="title-modal-voucher">Tambah Voucher</h3>
+                        <button onclick="tutupModalVoucher()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500 font-bold">X</button>
+                    </div>
+                    
+                    <form id="form-voucher" class="flex flex-col gap-3 flex-1">
+                        <input type="hidden" id="v-id">
+                        
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kode Voucher Unik</label>
+                            <input type="text" id="v-kode" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 uppercase font-black text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Cth: MAINSTAY20" required>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tipe</label>
+                                <select id="v-tipe" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-bold outline-none">
+                                    <option value="persen">Persentase (%)</option>
+                                    <option value="nominal">Nominal (Rp)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nilai Diskon</label>
+                                <input type="number" id="v-nilai" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-bold outline-none" placeholder="Cth: 20" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Min. Pembelian (Rp)</label>
+                            <input type="number" id="v-min-beli" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-bold outline-none" value="0">
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Target Audiens</label>
+                            <select id="v-target" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-bold outline-none" onchange="toggleWaInput(this.value)">
+                                <option value="publik">Publik (Siapa Saja)</option>
+                                <option value="khusus">Khusus (Targeted WA)</option>
+                            </select>
+                        </div>
+
+                        <div id="wadah-target-wa" class="hidden">
+                            <label class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Nomor WA Target (Pisahkan dgn koma)</label>
+                            <textarea id="v-wa-list" class="w-full bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs outline-none" rows="2" placeholder="0812..., 0813..."></textarea>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Berlaku Hingga</label>
+                            <input type="date" id="v-tanggal" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-bold outline-none" required>
+                        </div>
+
+                        <div class="mt-4 shrink-0 pb-4">
+                            <button type="button" onclick="simpanDataVoucher()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-black text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700">Simpan Voucher</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     `;
+
+    // Setelah UI ter-inject, langsung panggil fungsi untuk load datanya dari Firebase
+    if (typeof renderVoucherList === 'function') {
+        renderVoucherList();
+    }
+};
+
+// --- LOGIKA CRUD MASTER PANEL VOUCHER ---
+
+window.toggleWaInput = (value) => {
+    const wadah = document.getElementById('wadah-target-wa');
+    if(wadah) wadah.classList.toggle('hidden', value === 'publik');
+};
+
+window.bukaModalVoucher = () => {
+    document.getElementById('form-voucher').reset();
+    document.getElementById('v-id').value = '';
+    toggleWaInput('publik');
+    
+    // Set minimal tanggal hari ini
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('v-tanggal').min = today;
+    
+    document.getElementById('modal-form-voucher').classList.remove('hidden');
+};
+
+window.tutupModalVoucher = () => {
+    document.getElementById('modal-form-voucher').classList.add('hidden');
+};
+
+window.simpanDataVoucher = () => {
+    // Gunakan sintaks modular database (ref, set) agar sesuai dengan Firebase v9+ yang Anda pakai
+    const { ref, set } = window; // Pastikan ini di-import/dikenali di scope Anda
+    
+    const id = document.getElementById('v-id').value || 'VCH-' + Date.now().toString();
+    const kode = document.getElementById('v-kode').value.toUpperCase();
+    const nilai = Number(document.getElementById('v-nilai').value);
+    
+    if(!kode || !nilai || !document.getElementById('v-tanggal').value) {
+        alert("Kode, Nilai, dan Tanggal Berlaku harus diisi!");
+        return;
+    }
+
+    const data = {
+        kode: kode,
+        tipe: document.getElementById('v-tipe').value,
+        nilai: nilai,
+        minPembelian: Number(document.getElementById('v-min-beli').value) || 0,
+        targetAudience: document.getElementById('v-target').value,
+        waList: document.getElementById('v-wa-list').value.replace(/\s+/g, ''),
+        berlakuHingga: document.getElementById('v-tanggal').value,
+        status: 'aktif',
+        // Buat link auto-apply dinamis sesuai domain saat ini
+        urlLink: `${window.location.origin}${window.location.pathname}?voucher=${kode}`
+    };
+
+    // Proses simpan ke Firebase (asumsikan objek 'db' sudah ada dari initFirebase)
+    set(ref(db, 'vouchers/' + id), data)
+        .then(() => {
+            tutupModalVoucher();
+        })
+        .catch(err => alert('Gagal menyimpan: ' + err.message));
+};
+
+window.renderVoucherList = () => {
+    const { ref, onValue } = window;
+    const wadah = document.getElementById('list-manajemen-voucher');
+    if (!wadah) return;
+
+    onValue(ref(db, 'vouchers'), (snapshot) => {
+        wadah.innerHTML = '';
+        if (!snapshot.exists()) {
+            wadah.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed rounded-xl"><p class="text-xs text-slate-500 font-bold">Belum ada voucher yang dibuat.</p></div>';
+            return;
+        }
+
+        const dataVoucher = snapshot.val();
+        // Urutkan dari yang terbaru (dibalik)
+        Object.keys(dataVoucher).reverse().forEach(id => {
+            const v = dataVoucher[id];
+            const bgStatus = v.status === 'aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600';
+            const iconTarget = v.targetAudience === 'khusus' ? '<i class="fa-solid fa-bullseye text-amber-500"></i>' : '<i class="fa-solid fa-earth-americas text-sky-500"></i>';
+            const diskonTeks = v.tipe === 'persen' ? `${v.nilai}%` : `Rp ${v.nilai.toLocaleString('id-ID')}`;
+            
+            // Format Tanggal
+            const tgl = new Date(v.berlakuHingga);
+            const formatTgl = `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {month:'short'})} ${tgl.getFullYear()}`;
+
+            wadah.innerHTML += `
+                <div class="bg-white border rounded-xl p-3 shadow-sm relative overflow-hidden">
+                    <!-- Aksen warna kiri -->
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${v.status === 'aktif' ? 'bg-emerald-400' : 'bg-red-400'}"></div>
+                    
+                    <div class="flex justify-between items-start pl-2">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-black text-indigo-900 text-lg tracking-tight">${v.kode}</span>
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-black tracking-widest ${bgStatus}">${v.status.toUpperCase()}</span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-700">Diskon: <span class="text-indigo-600">${diskonTeks}</span></p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Min. Order: Rp ${v.minPembelian.toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-100 pl-2">
+                        <p class="text-[10px] font-bold text-slate-500 flex items-center gap-1">${iconTarget} Exp: ${formatTgl}</p>
+                    </div>
+                    
+                    <!-- Tombol Aksi -->
+                    <div class="grid grid-cols-2 gap-2 mt-3 pl-2">
+                        <button onclick="salinLinkVoucher('${v.urlLink}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] py-1.5 rounded-lg font-bold flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-link"></i> Salin Link
+                        </button>
+                        <button onclick="toggleStatusVoucher('${id}', '${v.status}')" class="border ${v.status === 'aktif' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'} text-[10px] py-1.5 rounded-lg font-bold">
+                            ${v.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    });
+};
+
+window.salinLinkVoucher = (link) => {
+    navigator.clipboard.writeText(link).then(() => alert('Link Auto-Apply disalin! Tempel di Bio IG atau WA.'));
+};
+
+window.toggleStatusVoucher = (id, curStatus) => {
+    const { ref, set } = window;
+    set(ref(db, `vouchers/${id}/status`), curStatus === 'aktif' ? 'nonaktif' : 'aktif');
 };
 
 // ---------------------------------------------------------
