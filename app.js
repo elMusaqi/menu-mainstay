@@ -2997,8 +2997,13 @@ const restorePersistentSession = () => {
         const nameEl = document.getElementById('kasir-active-name');
         if (nameEl) nameEl.innerText = activeStaff.name;
         window.switchRoleView('kasir');
+    } else if (localStorage.getItem('mainstay_is_kasir_open') === 'true') {
+        // --- JIKA KASIR MANUAL SEDANG DIBUKA, PERTAHANKAN DI SINI ---
+        if (typeof window.bukaPanelKasirManual === 'function') {
+            window.bukaPanelKasirManual();
+        }
     } else {
-        // Jika tidak ada sesi, paksa kembali ke view customer
+        // Jika tidak ada sesi sama sekali, baru paksa kembali ke view customer
         window.switchRoleView('customer');
     }
 };
