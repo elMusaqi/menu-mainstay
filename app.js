@@ -2892,7 +2892,41 @@ window.renderVoucherList = () => {
     if (!wadah) return;
 
     // Menggunakan penulisan Firebase Klasik
-    firebase.database().ref('vouchers').on('value', (snapshot) => {
+    window.simpanDataVoucher = () => {
+    const id = document.getElementById('v-id').value || 'VCH-' + Date.now().toString();
+    const kode = document.getElementById('v-kode').value.toUpperCase();
+    const nilai = Number(document.getElementById('v-nilai').value);
+    
+    if(!kode || !nilai || !document.getElementById('v-tanggal').value) {
+        alert("Kode, Nilai, dan Tanggal Berlaku harus diisi!");
+        return;
+    }
+
+    const data = {
+        kode: kode,
+        tipe: document.getElementById('v-tipe').value,
+        nilai: nilai,
+        minPembelian: Number(document.getElementById('v-min-beli').value) || 0,
+        targetAudience: document.getElementById('v-target').value,
+        waList: document.getElementById('v-wa-list').value.replace(/\s+/g, ''),
+        berlakuHingga: document.getElementById('v-tanggal').value,
+        status: 'aktif',
+        urlLink: `${window.location.origin}${window.location.pathname}?voucher=${kode}`
+    };
+
+    set(ref(db, 'vouchers/' + id), data)
+        .then(() => {
+            tutupModalVoucher();
+            alert('Voucher berhasil disimpan!');
+        })
+        .catch(err => alert('Gagal menyimpan: ' + err.message));
+};
+
+window.renderVoucherList = () => {
+    const wadah = document.getElementById('list-manajemen-voucher');
+    if (!wadah) return;
+
+    onValue(ref(db, 'vouchers'), (snapshot) => {
         wadah.innerHTML = '';
         if (!snapshot.exists()) {
             wadah.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed rounded-xl"><p class="text-xs text-slate-500 font-bold">Belum ada voucher yang dibuat.</p></div>';
@@ -2948,10 +2982,8 @@ window.salinLinkVoucher = (link) => {
 };
 
 window.toggleStatusVoucher = (id, curStatus) => {
-    // Menggunakan penulisan Firebase Klasik
-    firebase.database().ref(`vouchers/${id}/status`).set(curStatus === 'aktif' ? 'nonaktif' : 'aktif');
+    set(ref(db, `vouchers/${id}/status`), curStatus === 'aktif' ? 'nonaktif' : 'aktif');
 };
-
 // ---------------------------------------------------------
 // MODUL 6: PENGATURAN TOKO (Buka/Tutup & PIN)
 // ---------------------------------------------------------
