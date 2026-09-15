@@ -2905,9 +2905,11 @@ window.renderVoucherList = () => {
             const v = dataVoucher[id];
             const bgStatus = v.status === 'aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600';
             const iconTarget = v.targetAudience === 'khusus' ? '<i class="fa-solid fa-bullseye text-amber-500"></i>' : '<i class="fa-solid fa-earth-americas text-sky-500"></i>';
-            const diskonTeks = v.tipe === 'persen' ? `${v.nilai}%` : `Rp ${v.nilai.toLocaleString('id-ID')}`;
+            const diskonTeks = v.tipe === 'persen' ? `${v.nilai}%` : `Rp ${Number(v.nilai || 0).toLocaleString('id-ID')}`;
             
-            const tgl = new Date(v.berlakuHingga);
+            const minBeliNominal = Number(v.minPembelian || 0);
+            
+            const tgl = v.berlakuHingga ? new Date(v.berlakuHingga) : new Date();
             const formatTgl = `${tgl.getDate()} ${tgl.toLocaleString('id-ID', {month:'short'})} ${tgl.getFullYear()}`;
 
             wadah.innerHTML += `
@@ -2918,10 +2920,10 @@ window.renderVoucherList = () => {
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="font-black text-indigo-900 text-lg tracking-tight">${v.kode}</span>
-                                <span class="text-[9px] px-2 py-0.5 rounded-full font-black tracking-widest ${bgStatus}">${v.status.toUpperCase()}</span>
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-black tracking-widest ${bgStatus}">${(v.status || 'aktif').toUpperCase()}</span>
                             </div>
                             <p class="text-xs font-bold text-slate-700">Diskon: <span class="text-indigo-600">${diskonTeks}</span></p>
-                            <p class="text-[10px] text-slate-500 mt-0.5">Min. Order: Rp ${v.minPembelian.toLocaleString('id-ID')}</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Min. Order: Rp ${minBeliNominal.toLocaleString('id-ID')}</p>
                         </div>
                     </div>
                     
@@ -2930,10 +2932,10 @@ window.renderVoucherList = () => {
                     </div>
                     
                     <div class="grid grid-cols-2 gap-2 mt-3 pl-2">
-                        <button onclick="salinLinkVoucher('${v.urlLink}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] py-1.5 rounded-lg font-bold flex items-center justify-center gap-1">
+                        <button onclick="salinLinkVoucher('${v.urlLink || ''}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] py-1.5 rounded-lg font-bold flex items-center justify-center gap-1">
                             <i class="fa-solid fa-link"></i> Salin Link
                         </button>
-                        <button onclick="toggleStatusVoucher('${id}', '${v.status}')" class="border ${v.status === 'aktif' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'} text-[10px] py-1.5 rounded-lg font-bold">
+                        <button onclick="toggleStatusVoucher('${id}', '${v.status || 'aktif'}')" class="border ${v.status === 'aktif' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'} text-[10px] py-1.5 rounded-lg font-bold">
                             ${v.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan'}
                         </button>
                     </div>
