@@ -2880,18 +2880,6 @@ window.simpanDataVoucher = () => {
     };
 
     // Menggunakan penulisan Firebase Klasik
-    firebase.database().ref('vouchers/' + id).set(data)
-        .then(() => {
-            tutupModalVoucher();
-        })
-        .catch(err => alert('Gagal menyimpan: ' + err.message));
-};
-
-window.renderVoucherList = () => {
-    const wadah = document.getElementById('list-manajemen-voucher');
-    if (!wadah) return;
-
-    // Menggunakan penulisan Firebase Klasik
     window.simpanDataVoucher = () => {
     const id = document.getElementById('v-id').value || 'VCH-' + Date.now().toString();
     const kode = document.getElementById('v-kode').value.toUpperCase();
@@ -2984,6 +2972,7 @@ window.salinLinkVoucher = (link) => {
 window.toggleStatusVoucher = (id, curStatus) => {
     set(ref(db, `vouchers/${id}/status`), curStatus === 'aktif' ? 'nonaktif' : 'aktif');
 };
+    
 // ---------------------------------------------------------
 // MODUL 6: PENGATURAN TOKO (Buka/Tutup & PIN)
 // ---------------------------------------------------------
