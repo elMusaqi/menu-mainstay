@@ -29,11 +29,12 @@ import {
         
         // Jika HP pembeli pakai data lawas, kita cuci bersih!
         if (versiDiHPPembeli !== versiTerbaru) {
-            localStorage.clear();
-            sessionStorage.clear();
-            localStorage.setItem('versi_cache_mainstay', versiTerbaru);
-            window.location.reload(true);
-        }
+        localStorage.removeItem('master_varian');
+        localStorage.removeItem('master_topping');
+        // (Baris clear() dihapus semua)
+        localStorage.setItem('versi_cache_mainstay', versiTerbaru);
+        window.location.reload(true);
+    }
     } catch (e) {
         console.log("Browser tidak mendukung auto-clear.");
     }
@@ -57,7 +58,7 @@ const db = getDatabase(app);
 // ============================================================================
 // 2. GLOBAL STATE & VARIABLES
 // ============================================================================
-let currentRole = 'customer'; // Default ke tampilan Customer
+let currentRole = localStorage.getItem('mainstay_session_role') || 'customer'; // Cek sesi aktif, jika kosong baru jadi customer
 let activeStaff = null;
 let activeCategoryFilter = 'all';
 let cart = [];
