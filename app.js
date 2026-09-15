@@ -1173,15 +1173,15 @@ window.switchRoleView = (role) => {
     // --------------------------------------------
     // --- PUSAT KENDALI: BGM & ALWAYS ON DISPLAY ---
     if (role === 'kasir') {
-        window.matikanBGM();
+        if (typeof window.matikanBGM === 'function') window.matikanBGM();
         window.requestWakeLock(); // Layar nyala terus saat jaga kasir!
         const fab = document.getElementById('fab-kasir-container');
-            if(fab) fab.classList.remove('hidden');
+        if(fab) fab.classList.remove('hidden');
     } else if (role === 'owner') {
-        window.matikanBGM();
+        if (typeof window.matikanBGM === 'function') window.matikanBGM();
         window.releaseWakeLock(); // Lepas kunci layar agar HP bisa istirahat
     } else {
-        window.nyalakanBGM();
+        if (typeof window.nyalakanBGM === 'function') window.nyalakanBGM();
         window.releaseWakeLock(); // Lepas kunci layar saat mode pelanggan
     }
     // ----------------------------------------------
