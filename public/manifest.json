@@ -1,0 +1,51 @@
+{
+  "id": "/",
+  "name": "Mainstay Drink E-Menu & POS Kasir",
+  "short_name": "Mainstay POS",
+  "description": "Sistem Kasir Offline, Pemesanan Mandiri, dan Pusat Kendali Restoran Mainstay Drink",
+  "lang": "id",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#0f172a",
+  "theme_color": "#f59e0b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pesan Menu (Self-Order)",
+      "short_name": "Menu",
+      "description": "Buka katalog menu & pemesanan mandiri pelanggan",
+      "url": "/?view=customer",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Login Staff & Owner",
+      "short_name": "Login PIN",
+      "description": "Masuk ke Dashboard Kasir POS atau Master Owner",
+      "url": "/?action=login",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "categories": ["food", "business", "productivity"]
+}

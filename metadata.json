@@ -1,0 +1,6 @@
+{
+  "name": "Mainstay Drink POS",
+  "description": "Sistem Point of Sale Mainstay Drink Shop dengan visualisasi data laporan keuangan D3.js",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
